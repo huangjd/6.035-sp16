@@ -1,6 +1,7 @@
 package edu.mit.compilers;
 
 import java.io.*;
+
 import antlr.Token;
 import edu.mit.compilers.grammar.*;
 import edu.mit.compilers.tools.CLI;
@@ -22,13 +23,26 @@ class Main {
         while (!done) {
           try {
             for (token = scanner.nextToken();
-                 token.getType() != DecafParserTokenTypes.EOF;
-                 token = scanner.nextToken()) {
+                token.getType() != DecafParserTokenTypes.EOF;
+                token = scanner.nextToken()) {
               String type = "";
               String text = token.getText();
               switch (token.getType()) {
-               // TODO: add strings for the other types here...
-               case DecafScannerTokenTypes.ID:
+              // TODO: add strings for the other types here...
+              case DecafScannerTokenTypes.CHARLITERAL:
+                type = " CHARLITERAL";
+                break;
+              case DecafScannerTokenTypes.INTLITERAL:
+                type = " INTLITERAL";
+                break;
+              case DecafScannerTokenTypes.TK_true:
+              case DecafScannerTokenTypes.TK_false:
+                type = " BOOLEANLITERAL";
+                break;
+              case DecafScannerTokenTypes.STRING:
+                type = " STRINGLITERAL";
+                break;
+              case DecafScannerTokenTypes.ID:
                 type = " IDENTIFIER";
                 break;
               }
@@ -37,12 +51,13 @@ class Main {
             done = true;
           } catch(Exception e) {
             // print the error:
-            System.err.println(CLI.infile + " " + e);
+            // System.err.println(CLI.infile + " " + e);
+            System.err.println(CLI.infile.substring(CLI.infile.lastIndexOf('/') + 1) + " " + e);
             scanner.consume();
           }
         }
       } else if (CLI.target == Action.PARSE ||
-                 CLI.target == Action.DEFAULT) {
+          CLI.target == Action.DEFAULT) {
         DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
         DecafParser parser = new DecafParser(scanner);
@@ -54,7 +69,7 @@ class Main {
       }
     } catch(Exception e) {
       // print the error:
-      System.err.println(CLI.infile+" "+e);
+      System.err.println(CLI.infile + " " + e);
     }
   }
 }
