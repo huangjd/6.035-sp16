@@ -60,4 +60,15 @@ options
   }
 }
 
-program: TK_class ID LCURLY RCURLY EOF;
+program: (callout_decl)* (field_decl)* (method_decl)* EOF;
+callout_decl: TK_callout ID SEMICOLON;
+field_decl: type (ID | ID LSQUARE INTLITERAL RSQUARE) (COMMA (ID | ID LSQUARE INTLITERAL RSQUARE))* SEMICOLON;
+method_decl: (type|TK_void) ID LPAREN (type ID (COMMA type ID)*)? RPAREN block;
+type: TK_int | TK_boolean;
+block: LCURLY (field_decl)* (statement)* RCURLY;
+statement: TK_if;
+
+
+
+
+

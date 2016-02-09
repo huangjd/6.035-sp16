@@ -31,6 +31,7 @@ public class ScannerTest {
 
     InputStream inputStream = process.getErrorStream();
     if (!process.waitFor(1, TimeUnit.SECONDS)) {
+      process.destroy();
       throw new Exception();
     }
 
