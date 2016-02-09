@@ -17,7 +17,6 @@ options
 
 tokens 
 {
-  "class";
   "boolean";
   "break";
   "callout";
@@ -68,28 +67,11 @@ RPAREN options { paraphrase = ")"; } : ")";
 SEMICOLON options { paraphrase = ";"; } : ';';
 
 ID options { paraphrase = "an identifier"; } :
-  ALPHA (ALNUM)* 
-  {
-    // Ugly hack to extract keywords
-    String _tmp_string = $getText;
-         if (_tmp_string == "boolean") { $setType(TK_boolean); }
-    else if (_tmp_string == "break")   { $setType(TK_break); }
-    else if (_tmp_string == "callout") { $setType(TK_callout); }
-    else if (_tmp_string == "continue"){ $setType(TK_continue); }
-    else if (_tmp_string == "else")    { $setType(TK_else); }
-    else if (_tmp_string == "false")   { $setType(TK_false); }
-    else if (_tmp_string == "for")     { $setType(TK_for); }
-    else if (_tmp_string == "while")   { $setType(TK_while); }
-    else if (_tmp_string == "if")      { $setType(TK_if); }
-    else if (_tmp_string == "int")     { $setType(TK_int); }
-    else if (_tmp_string == "return")  { $setType(TK_return); }
-    else if (_tmp_string == "true")    { $setType(TK_true); }
-    else if (_tmp_string == "void")    { $setType(TK_void); }
-  };
-
+  ALPHA (ALNUM)*; 
+  
 CHARLITERAL : '\'' (ESC|~('\''|'\"'|'\\'|'\n'|'\t')) '\'';
 INTLITERAL : ((NUMBER)+ | "0x" (NUMBER|'A'..'F'|'a'..'f')+);
-STRING : '"' (ESC|~('\''|'\"'|'\\'|'\n'|'\t'))* '"';
+STRINGLITERAL : '"' (ESC|~('\''|'\"'|'\\'|'\n'|'\t'))* '"';
 
 COMMA options { paraphrase = ","; } : ',';
 QUESTION : '?';
@@ -102,7 +84,8 @@ EQUAL : '=';
 MUL_OP : '*' | '/' | '%';
 REL_OP : '<' | '>' | "<=" | ">=";
 EQ_OP : "==" | "!=";
-COND_OP : "&&" | "||"; 
+AND : "&&";
+OR : "||"; 
 
 // Note that here, the {} syntax allows you to literally command the lexer
 // to skip mark this token as skipped, or to advance to the next line

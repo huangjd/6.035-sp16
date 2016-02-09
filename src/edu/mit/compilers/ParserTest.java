@@ -16,7 +16,7 @@ public class ParserTest {
     Process process = Runtime.getRuntime().exec(new String[]{
         System.getProperty("user.dir") + "/run.sh",
         "--target=parse",
-        System.getProperty("user.dir") + "/tests/parser/legal/legal-" + Integer.toString(n)});
+        System.getProperty("user.dir") + "/tests/parser/legal/legal-" + String.format("%02d", n)});
 
     if (!process.waitFor(1, TimeUnit.SECONDS)) {
       process.destroy();
@@ -29,19 +29,13 @@ public class ParserTest {
     Process process = Runtime.getRuntime().exec(new String[]{
         System.getProperty("user.dir") + "/run.sh",
         "--target=parse",
-        System.getProperty("user.dir") + "/tests/parser/illegal/illegal-" + Integer.toString(n)});
+        System.getProperty("user.dir") + "/tests/parser/illegal/illegal-" + String.format("%02d", n)});
 
     if (!process.waitFor(1, TimeUnit.SECONDS)) {
       process.destroy();
       throw new Exception();
     }
     assertNotEquals(0, process.exitValue());
-  }
-
-  @Test
-  public void legal0() throws Exception {
-    throw new Exception();
-    // testLegal(0);
   }
 
   @Test

@@ -39,7 +39,7 @@ class Main {
               case DecafScannerTokenTypes.TK_false:
                 type = " BOOLEANLITERAL";
                 break;
-              case DecafScannerTokenTypes.STRING:
+              case DecafScannerTokenTypes.STRINGLITERAL:
                 type = " STRINGLITERAL";
                 break;
               case DecafScannerTokenTypes.ID:
