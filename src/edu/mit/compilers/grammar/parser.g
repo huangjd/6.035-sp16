@@ -28,11 +28,13 @@ options
   public void reportError (RecognitionException ex) {
     // Print the error via some kind of error reporting mechanism.
     error = true;
+    System.err.println(ex);
   }
   @Override
   public void reportError (String s) {
     // Print the error via some kind of error reporting mechanism.
     error = true;
+    System.err.println(s);
   }
   public boolean getError () {
     return error; 
@@ -84,7 +86,7 @@ statement: assign_stmt
 
 assign_stmt: location (cop)? EQUAL expr SEMICOLON;
 cop: PLUS | MINUS;
- 
+
 call: ID LPAREN (argument_list)? RPAREN;
 argument_list: argument (COMMA argument)*;
 argument: expr | STRINGLITERAL;
@@ -95,9 +97,7 @@ while_stmt: TK_while LPAREN expr RPAREN block;
 return_stmt: TK_return (expr)? SEMICOLON; 
 
 expr: ternary_expr;
-ternary_expr:  or_expr (QUESTION ternary_expr COLON ternary_expr)? {
-	// TODO: Hack this, invert tree
-};
+ternary_expr:  or_expr (QUESTION ternary_expr COLON ternary_expr)?;
 
 or_expr: and_expr (OR and_expr)*;
 and_expr: eq_expr (AND eq_expr)*;
@@ -105,7 +105,7 @@ eq_expr: rel_expr (EQ_OP rel_expr)*;
 rel_expr: add_expr (REL_OP add_expr)*;
 add_expr: mul_expr (add_op mul_expr)*;
 mul_expr: unary_expr (MUL_OP unary_expr)*;
-unary_expr: (unary_op)* primary_expr;     
+unary_expr: (unary_op)* primary_expr;
 
 primary_expr: location
             | call
@@ -114,7 +114,7 @@ primary_expr: location
             | boolean_literal
             | length
             | LPAREN expr RPAREN;
-    
+
 length: AT_SIGN ID;
 unary_op: MINUS | EXCLAMATION;
 add_op: PLUS | MINUS;
