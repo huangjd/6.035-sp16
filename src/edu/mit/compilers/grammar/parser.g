@@ -84,8 +84,8 @@ statement: assign_stmt
          | TK_break SEMICOLON
          | TK_continue SEMICOLON;
 
-assign_stmt: location (cop)? EQUAL expr SEMICOLON;
-cop: PLUS | MINUS;
+assign_stmt: location assign_op expr SEMICOLON;
+assign_op: EQUAL | PLUS_EQ | MINUS_EQ;
 
 call: ID LPAREN (argument_list)? RPAREN;
 argument_list: argument (COMMA argument)*;

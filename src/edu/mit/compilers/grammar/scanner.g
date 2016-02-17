@@ -81,6 +81,8 @@ MINUS : '-';
 PLUS : '+';
 EXCLAMATION : '!';
 EQUAL : '=';
+PLUS_EQ : "+=";
+MINUS_EQ : "-=";
 MUL_OP : '*' | '/' | '%';
 REL_OP : '<' | '>' | "<=" | ">=";
 EQ_OP : "==" | "!=";
