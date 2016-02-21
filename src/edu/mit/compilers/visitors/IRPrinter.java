@@ -35,4 +35,12 @@ public class IRPrinter extends Visitor {
     System.out.print("@");
     System.out.print(node.toString());
   }
+
+  @Override
+  protected void visit(Load node) {
+    System.out.print(node.arrayName);
+    System.out.print("[");
+    enter(node.index);
+    System.out.print("[");
+  }
 }

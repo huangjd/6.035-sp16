@@ -89,6 +89,10 @@ public class Visitor {
   protected void visit(Length node) {
   }
 
+  protected void visit(Load node) {
+    node.index.accept(this);
+  }
+
   protected void visit(IntLiteral node) {
   }
 

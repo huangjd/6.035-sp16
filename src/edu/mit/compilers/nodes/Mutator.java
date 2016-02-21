@@ -143,6 +143,14 @@ public class Mutator extends Visitor {
   }
 
   @Override
+  protected void visit(Load node) {
+    ExpressionNode index = node.index.accept(this);
+    if (index != node.index) {
+      returnNode = new Load(node.arrayName, index, node.pos);
+    }
+  }
+
+  @Override
   protected void visit(Length node) {
   }
 
