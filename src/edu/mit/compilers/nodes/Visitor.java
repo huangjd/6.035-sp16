@@ -89,6 +89,11 @@ public class Visitor {
   protected void visit(Length node) {
   }
 
+  protected void visit(Store node) {
+    node.index.accept(this);
+    node.value.accept(this);
+  }
+
   protected void visit(Load node) {
     node.index.accept(this);
   }
