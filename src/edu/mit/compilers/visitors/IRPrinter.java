@@ -29,4 +29,10 @@ public class IRPrinter extends Visitor {
   protected void visit(IntLiteral node) {
     System.out.print(node.toString());
   }
+
+  @Override
+  protected void visit(Length node) {
+    System.out.print("@");
+    System.out.print(node.toString());
+  }
 }

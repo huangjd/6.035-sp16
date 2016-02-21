@@ -86,6 +86,9 @@ public class Visitor {
     node.falseExpr.accept(this);
   }
 
+  protected void visit(Length node) {
+  }
+
   protected void visit(IntLiteral node) {
   }
 

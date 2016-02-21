@@ -143,6 +143,10 @@ public class Mutator extends Visitor {
   }
 
   @Override
+  protected void visit(Length node) {
+  }
+
+  @Override
   protected void visit(IntLiteral node) {
   }
 
