@@ -6,7 +6,7 @@ public class ErrorLogger {
     TOKEN(1),
     PARSER(2),
     SEMANTICS(4),
-    LINK(8),
+    LINKER(8),
     WARNING1(16),
     WARNING2(32),
     WARNING3(64),

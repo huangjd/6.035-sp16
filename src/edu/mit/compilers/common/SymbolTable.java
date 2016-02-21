@@ -42,7 +42,11 @@ public class SymbolTable implements ScopedMap {
   }
 
   public SymbolInfo lookup(String id) {
-    return map.get(id);
+    SymbolInfo result = map.get(id);
+    if (result == null && parentScope != null) {
+      return parentScope.lookup(id);
+    }
+    return result;
   }
 
   public boolean insert(String id, SymbolInfo symbolInfo) {
