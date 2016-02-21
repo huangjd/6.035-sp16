@@ -4,5 +4,9 @@ public enum Type {
   NONE, 
   BOOLEAN, 
   INT, 
-  STRING
+  BOOLEANARRAY,
+  INTARRAY,
+  STRING,
+  CALL,
+  CALLOUT
 }

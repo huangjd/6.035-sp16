@@ -153,4 +153,8 @@ public class Mutator extends Visitor {
   @Override
   protected void visit(StringLiteral node) {
   }
+
+  @Override
+  protected void visit(Pass node) {
+  }
 }

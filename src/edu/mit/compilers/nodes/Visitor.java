@@ -94,4 +94,7 @@ public class Visitor {
 
   protected void visit(StringLiteral node) {
   }
+
+  protected void visit(Pass node) {
+  }
 }
