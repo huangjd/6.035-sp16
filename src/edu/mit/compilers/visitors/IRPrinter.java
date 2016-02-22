@@ -41,6 +41,15 @@ public class IRPrinter extends Visitor {
     System.out.print(node.arrayName);
     System.out.print("[");
     enter(node.index);
+    System.out.print("]");
+  }
+  
+  @Override
+  protected void visit(Store node) {
+    System.out.print(node.arrayName);
     System.out.print("[");
+    enter(node.index);
+    System.out.print("] = ");
+    enter(node.value);
   }
 }
