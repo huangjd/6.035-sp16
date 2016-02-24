@@ -2,18 +2,18 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Store extends Expression {
+public class Store extends Statement {
 
-  private String arrayName;
-  private ExpressionNode index;
-  private ExpressionNode value;
+  public Var array;
+  public ExpressionNode index;
+  public ExpressionNode value;
 
-  public Store (String arrayName, ExpressionNode index, ExpressionNode value, SourcePosition pos) {
+  public Store(Var array, ExpressionNode index, ExpressionNode value, SourcePosition pos) {
     super(pos);
-    this.arrayName = arrayName;
+    this.array = array;
     this.index = index;
     this.value = value;
-    hashCache = arrayName.hashCode() * 13 + index.hashCode() * 31 + value.hashCode();
+    hashCache = array.hashCode() * 11 + index.hashCode() * 37 + value.hashCode();
   }
 
   @Override
@@ -23,12 +23,6 @@ public class Store extends Expression {
 
   @Override
   public String toString() {
-    return  arrayName + "[" + index.toString() + "]" + " = " + value.toString();
-  }
-
-  @Override
-  public Type getType() {
-    // TODO 
-    return null;
+    return array.id + "[" + index.toString() + "]" + " = " + value.toString() + ";\n";
   }
 }

@@ -1,17 +1,27 @@
 package edu.mit.compilers.common;
 
-public class MethodTable implements ScopedMap {
+import java.util.HashMap;
 
-  @Override
-  public ScopedMap scope() {
-    // TODO Auto-generated method stub
-    return null;
+import edu.mit.compilers.nodes.Function;
+
+public class MethodTable {
+
+  private HashMap<String, Function> map;
+
+  public MethodTable() {
+    map = new HashMap<>();
   }
 
-  @Override
-  public ScopedMap unscope() {
-    // TODO Auto-generated method stub
-    return null;
+  public Function lookup(String id) {
+    return map.get(id);
   }
 
+  public boolean insert(Function f) {
+    if (map.containsKey(f.id)) {
+      return false;
+    } else {
+      map.put(f.id, f);
+      return true;
+    }
+  }
 }

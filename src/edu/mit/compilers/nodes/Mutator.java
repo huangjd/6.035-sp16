@@ -1,5 +1,7 @@
 package edu.mit.compilers.nodes;
 
+import java.util.ArrayList;
+
 public class Mutator extends Visitor {
   Node returnNode;
 
@@ -9,11 +11,38 @@ public class Mutator extends Visitor {
   }
 
   @Override
+  public void visit(Program node) {
+    super.visit(node); // TODO
+  }
+
+  @Override
+  public void visit(Function node) {
+    returnNode = node.body;
+    visit(node.body);
+    if (returnNode != node.body) {
+      returnNode = new Function(node.id, node.returnType, node.parameters, (Block) returnNode,
+          node.getSourcePosition());
+    } else {
+      returnNode = node;
+    }
+  }
+
+  // ---------------- Expressions -----------
+  @Override
   protected void visit(Add node) {
     ExpressionNode left = node.left.accept(this);
     ExpressionNode right = node.right.accept(this);
     if (left != node.left || right != node.right) {
       returnNode = new Add(left, right, node.getSourcePosition());
+    }
+  }
+
+  @Override
+  protected void visit(Sub node) {
+    ExpressionNode left = node.left.accept(this);
+    ExpressionNode right = node.right.accept(this);
+    if (left != node.left || right != node.right) {
+      returnNode = new Sub(left, right, node.getSourcePosition());
     }
   }
 
@@ -146,18 +175,12 @@ public class Mutator extends Visitor {
   protected void visit(Load node) {
     ExpressionNode index = node.index.accept(this);
     if (index != node.index) {
-      returnNode = new Load(node.arrayName, index, node.pos);
+      returnNode = new Load(node.array, index, node.getSourcePosition());
     }
   }
-  
-  @Override
-  protected void visit(Store node) {
-    ExpressionNode index = node.index.accept(this);
-    ExpressionNode value = node.value.accept(this);
 
-    if (index != node.index || value != node.value) {
-      returnNode = new Store(node.arrayName, index, value, node.pos);
-    }
+  @Override
+  protected void visit(VarExpr node) {
   }
 
   @Override
@@ -174,6 +197,34 @@ public class Mutator extends Visitor {
 
   @Override
   protected void visit(StringLiteral node) {
+  }
+  // ------------------- Statements -----------
+
+  @Override
+  protected void visit(Block node) {
+    ArrayList<StatementNode> statements = new ArrayList<>();
+    boolean replace = false;
+    for (StatementNode statement : node.statements) {
+      StatementNode temp = statement.accept(this);
+      if (temp != statement) {
+        replace = true;
+      }
+      if (temp != null) {
+        statements.add(temp);
+      }
+    }
+    if (replace) {
+      returnNode = new Block(statements, node.getSourcePosition());
+    }
+  }
+
+  @Override
+  protected void visit(Store node) {
+    ExpressionNode index = node.index.accept(this);
+    ExpressionNode value = node.value.accept(this);
+    if (index != node.index || value != node.value) {
+      returnNode = new Store(node.array, index, value, node.getSourcePosition());
+    }
   }
 
   @Override

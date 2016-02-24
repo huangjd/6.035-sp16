@@ -4,13 +4,14 @@ import edu.mit.compilers.common.*;
 
 public class Load extends Expression {
 
-  private String arrayName;
-  private ExpressionNode index;
-  public Load(String arrayName, ExpressionNode node, SourcePosition pos) {
+  public Var array;
+  public ExpressionNode index;
+
+  public Load(Var array, ExpressionNode node, SourcePosition pos) {
     super(pos);
-    this.arrayName = arrayName;
+    this.array = array;
     this.index = node;
-    hashCache = arrayName.hashCode() * 13 + node.hashCode();
+    hashCache = array.hashCode() * 13 + node.hashCode();
   }
 
   @Override
@@ -20,12 +21,11 @@ public class Load extends Expression {
 
   @Override
   public String toString() {
-    return  arrayName + "[" + node.toString() + "]";
+    return array.id + "[" + index.toString() + "]";
   }
 
   @Override
   public Type getType() {
-    // TODO 
-    return null;
+    return array.type;
   }
 }

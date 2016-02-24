@@ -3,18 +3,22 @@ package edu.mit.compilers.common;
 public class SourcePosition {
 
   public final int lineNum, colNum;
+  public final String filename;
 
   public SourcePosition() {
-    lineNum = 0;
-    colNum = 0;
+    this("", 0, 0);
   }
 
-  public SourcePosition(int lineNum) {
-    this.lineNum = lineNum;
-    colNum = 0;
+  public SourcePosition(String fileName) {
+    this(fileName, 0, 0);
   }
 
-  public SourcePosition(int lineNum, int colNum) {
+  public SourcePosition(String fileName, int lineNum) {
+    this(fileName, lineNum, 0);
+  }
+
+  public SourcePosition(String fileName, int lineNum, int colNum) {
+    this.filename = fileName;
     this.lineNum = lineNum;
     this.colNum = colNum;
   }

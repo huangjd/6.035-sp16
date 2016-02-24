@@ -1,6 +1,6 @@
 package edu.mit.compilers.nodes;
 
-public class IfStmt extends Statement {
+public class While extends Statement implements Breakable {
 
   @Override
   void dispatch(Visitor visitor) {

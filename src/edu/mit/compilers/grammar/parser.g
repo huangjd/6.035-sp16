@@ -1,5 +1,9 @@
 header {
 package edu.mit.compilers.grammar;
+import edu.mit.compilers.common.*;
+import edu.mit.compilers.nodes.*;
+import java.util.*;
+import java.lang.*;
 }
 
 options
@@ -60,17 +64,39 @@ options
       super.traceOut(rname);
     }
   }
+  
+  @Override
+  public void match(int arg0) throws MismatchedTokenException, TokenStreamException  {
+  	
+  	super(match);
+  }
+  
+  SymbolTable currentSymtab;
+  MethodTable methodTable;
+  Program program;
+  ArrayList<Expression> exprStack = new ArrayList<>();
+  
+  public Program getProgram() {
+  	return program;
+  }
 }
 
-program: (callout_decl)* (field_decl)* (method_decl)* EOF;
+program: {
+		currentSymtab = new SymbolTable();
+		methodTable = new MethodTable();
+		program = new Program(methodTable, currentSymtab);
+	} (callout_decl)* (field_decl)* (method_decl)* EOF!;
 
-callout_decl: TK_callout ID SEMICOLON;
+callout_decl: TK_callout! ID SEMICOLON!;
 
 field_decl: type (var_decl | array_decl) (COMMA (var_decl | array_decl))* SEMICOLON;
+
 var_decl: ID;
+
 array_decl: ID LSQUARE INTLITERAL RSQUARE;
 
 method_decl: (type|TK_void) ID LPAREN (parameter_list)? RPAREN block;
+
 parameter_list : type ID (COMMA type ID)*; 
 
 block: LCURLY (field_decl)* (statement)* RCURLY;
@@ -85,27 +111,70 @@ statement: assign_stmt
          | TK_continue SEMICOLON;
 
 assign_stmt: location assign_op expr SEMICOLON;
+
 assign_op: EQUAL | PLUS_EQ | MINUS_EQ;
 
 call: ID LPAREN (argument_list)? RPAREN;
+
 argument_list: argument (COMMA argument)*;
+
 argument: expr | STRINGLITERAL;
 
 if_stmt: TK_if LPAREN expr RPAREN block (TK_else block)?;
+
 for_stmt: TK_for LPAREN ID EQUAL expr COMMA expr (COMMA INTLITERAL)? RPAREN block;
+
 while_stmt: TK_while LPAREN expr RPAREN block;
+
 return_stmt: TK_return (expr)? SEMICOLON; 
 
 expr: ternary_expr;
+
 ternary_expr:  or_expr (QUESTION ternary_expr COLON ternary_expr)?;
 
 or_expr: and_expr (OR and_expr)*;
+
 and_expr: eq_expr (AND eq_expr)*;
+
 eq_expr: rel_expr (EQ_OP rel_expr)*;
+
 rel_expr: add_expr (REL_OP add_expr)*;
+
 add_expr: mul_expr (add_op mul_expr)*;
+
 mul_expr: unary_expr (MUL_OP unary_expr)*;
-unary_expr: (unary_op)* primary_expr;
+
+unary_expr returns [ExpressionNode e = null] {
+	ExpressionNod expr;
+	class OpDesc {
+		char op;
+		SourcePosition pos;
+		OpDesc(char op, int line, int col) {
+			this.op = op;
+			this.pos = new SourcePosition(line, col);
+		}
+	};
+	ArrayList<OpDesc> opStack = new ArrayList<>();
+}: ({char op;} op = unary_op { 
+		opStack.push(new OpDesc(op, ));
+	})*
+	expr = primary_expr {
+		if (expr == null) {
+			// TODO: error 
+		} else {
+			Collections.reverse(opStack);
+			for (Character c : opStack) {
+				if (c == "!") {
+					expr = new Not();
+				} else if (c == "-") {
+				
+				} else {
+					throw new RuntimeException("WTF"); 
+				}
+			}
+		}
+	}
+	;
 
 primary_expr: location
             | call
@@ -116,9 +185,13 @@ primary_expr: location
             | LPAREN expr RPAREN;
 
 length: AT_SIGN ID;
-unary_op: MINUS | EXCLAMATION;
-add_op: PLUS | MINUS;
+
+unary_op returns [char c = 0]: MINUS { c = '-';} | EXCLAMATION { c = '!';};
+
+add_op : PLUS | MINUS;
 
 type: TK_int | TK_boolean;
+
 location: ID | ID LSQUARE expr RSQUARE;
+
 boolean_literal : TK_true | TK_false;

@@ -1,24 +1,11 @@
 package edu.mit.compilers.common;
 
-import java.util.HashMap;
+import java.util.*;
 
 public class SymbolTable implements ScopedMap {
-  public class SymbolInfo {
-    Type type;
-    int stackOffset;
-    int length;
 
-    public boolean isArray() {
-      return type == Type.BOOLEANARRAY || type == Type.INTARRAY;
-    }
-
-    public boolean isVariable() {
-      return type == Type.BOOLEAN || type == Type.INT || isArray();
-    }
-  }
-
-  private HashMap<String, SymbolInfo> map;
-
+  private int offsetCounter;
+  private HashMap<String, Var> map;
   private SymbolTable parentScope;
 
   public SymbolTable() {
@@ -29,6 +16,7 @@ public class SymbolTable implements ScopedMap {
   public SymbolTable(SymbolTable parentScope) {
     map = new HashMap<>();
     this.parentScope = parentScope;
+    this.offsetCounter = parentScope.offsetCounter;
   }
 
   @Override
@@ -41,20 +29,58 @@ public class SymbolTable implements ScopedMap {
     return parentScope;
   }
 
-  public SymbolInfo lookup(String id) {
-    SymbolInfo result = map.get(id);
+  @Override
+  public void Swap(ScopedMap other) {
+    SymbolTable that = (SymbolTable) other;
+    offsetCounter = that.offsetCounter;
+    map = that.map;
+  }
+
+  public int getOffset() {
+    return offsetCounter;
+  }
+
+  public void setOffset(int value) {
+    offsetCounter = value;
+  }
+
+  public Var lookup(String id) {
+    Var result = map.get(id);
     if (result == null && parentScope != null) {
       return parentScope.lookup(id);
     }
     return result;
   }
 
-  public boolean insert(String id, SymbolInfo symbolInfo) {
-    if (map.containsKey(id) || !symbolInfo.isArray()) {
+  public boolean insert(Var var) {
+    if (map.containsKey(var.id) || !var.isVariable()) {
       return false;
     } else {
-      map.put(id, symbolInfo);
+      map.put(var.id, var);
+      switch (var.type) {
+      case INT:
+        offsetCounter = MathUtil.roundUp(offsetCounter, 8);
+        break;
+      case BOOLEANARRAY:
+      case INTARRAY:
+        offsetCounter = MathUtil.roundUp(offsetCounter, 16);
+      default:
+        break;
+      }
+      var.stackOffset = offsetCounter;
+      offsetCounter += var.size;
       return true;
     }
+  }
+
+  public ArrayList<Var> asList() {
+    ArrayList<Var> list = new ArrayList<Var>(map.values());
+    list.sort(new Comparator<Var>() {
+      @Override
+      public int compare(Var arg0, Var arg1) {
+        return Integer.compare(arg0.stackOffset, arg1.stackOffset);
+      }
+    });
+    return list;
   }
 }

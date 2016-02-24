@@ -7,6 +7,24 @@ public class Visitor {
     return node;
   }
 
+  public void visit(Program node) {
+    for (FunctionNode function : node.functions) {
+      function.accept(this);
+    }
+    if (node.main != null) {
+      node.main.accept(this);
+    }
+    for (VarDecl varDecl : node.varDecls) {
+      visit(varDecl);
+    }
+  }
+
+  public void visit(Function node) {
+    visit(node.body);
+  }
+
+  // ------------ Expressions ----------
+
   protected void visit(Add node) {
     node.left.accept(this);
     node.right.accept(this);
@@ -89,9 +107,7 @@ public class Visitor {
   protected void visit(Length node) {
   }
 
-  protected void visit(Store node) {
-    node.index.accept(this);
-    node.value.accept(this);
+  protected void visit(VarExpr node) {
   }
 
   protected void visit(Load node) {
@@ -107,6 +123,20 @@ public class Visitor {
   protected void visit(StringLiteral node) {
   }
 
+  // ------------- Statements ----------------
+
+  protected void visit(Block node) {
+    for (StatementNode statement : node.statements) {
+      statement.accept(this);
+    }
+  }
+
+  protected void visit(Store node) {
+    node.index.accept(this);
+    node.value.accept(this);
+  }
+
   protected void visit(Pass node) {
   }
+
 }

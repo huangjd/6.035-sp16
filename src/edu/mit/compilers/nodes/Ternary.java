@@ -4,7 +4,7 @@ import edu.mit.compilers.common.*;
 
 public class Ternary extends Expression {
 
-  ExpressionNode cond, trueExpr, falseExpr;
+  public ExpressionNode cond, trueExpr, falseExpr;
 
   protected Ternary(ExpressionNode cond, ExpressionNode trueExpr, ExpressionNode falseExpr, SourcePosition pos) {
     super(pos);
