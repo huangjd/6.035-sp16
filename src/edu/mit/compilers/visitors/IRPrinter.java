@@ -28,6 +28,8 @@ public class IRPrinter extends Visitor {
     enter(node.right);
     System.out.println(")");
   }
+  
+  
 
   @Override
   protected void visit(Sub node) {
@@ -65,4 +67,131 @@ public class IRPrinter extends Visitor {
     System.out.print("] = ");
     enter(node.value);
   }
+  
+  @Override
+  protected void visit(And node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" && ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Not node) {
+    System.out.print("!");
+    enter(node.right);
+  }
+  
+  @Override
+  protected void visit(Or node) {
+    System.out.print("(");
+    enter(node.left);
+    System.out.print(" || ");
+    enter(node.right);
+    System.out.println(")");
+  }
+ 
+  
+  @Override
+  protected void visit(Ternary node) {
+    System.out.print("(");
+    enter(node.cond);
+    System.out.print(" ? ");
+    enter(node.trueExpr);
+    System.out.print(" : ");
+    enter(node.falseExpr);
+    System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Div node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" / ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Eq node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" == ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Ge node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" >= ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Gt node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" > ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Le node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" <= ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Lt node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" < ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Ne node) {
+	  System.out.println("(");
+	  enter(node.left);
+	  System.out.println(" != ");
+	  enter(node.right);
+	  System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Mul node) {
+    System.out.print("(");
+    enter(node.left);
+    System.out.print(" * ");
+    enter(node.right);
+    System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Mod node) {
+    System.out.print("(");
+    enter(node.left);
+    System.out.print(" % ");
+    enter(node.right);
+    System.out.println(")");
+  }
+  
+  @Override
+  protected void visit(Minus node) {
+    System.out.print("-");
+    enter(node.right);
+  }
+  
+  
+  
+  
 }
