@@ -9,6 +9,10 @@ public class Eq extends BinaryOpExpr {
   public Eq(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);
     hashCache = (left.hashCode() + hashMask) ^ (right.hashCode() + hashMask);
+    if ((left.getType() == Type.INT && right.getType() == Type.INT)
+    	|| (left.getType() == Type.BOOLEAN && right.getType() == Type.BOOLEAN)) {
+        ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    }
   }
 
   @Override

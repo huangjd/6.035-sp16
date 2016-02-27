@@ -7,11 +7,14 @@ public class Load extends Expression {
   public Var array;
   public ExpressionNode index;
 
-  public Load(Var array, ExpressionNode node, SourcePosition pos) {
+  public Load(Var array, ExpressionNode index, SourcePosition pos) {
     super(pos);
     this.array = array;
-    this.index = node;
-    hashCache = array.hashCode() * 13 + node.hashCode();
+    this.index = index;
+    hashCache = array.hashCode() * 13 + index.hashCode();
+    if (!array.isArray() || index.getType() != Type.INT) {
+        ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    }
   }
 
   @Override

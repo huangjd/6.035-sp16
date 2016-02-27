@@ -7,6 +7,9 @@ public class Ge extends BinaryOpExpr {
   public Ge(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);
     hashCache = left.hashCode() * 107 + right.hashCode();
+    if (left.getType() != Type.INT || right.getType() != Type.INT) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+  }
   }
 
   @Override

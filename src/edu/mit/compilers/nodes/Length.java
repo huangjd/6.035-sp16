@@ -3,11 +3,14 @@ package edu.mit.compilers.nodes;
 import edu.mit.compilers.common.*;
 
 public class Length extends Expression {
-  private String variableName;
-  public Length (String variableName, SourcePosition pos) {
+  private Var array;
+  public Length (Var array, SourcePosition pos) {
     super(pos);
-    hashCache = variableName.hashCode() + 0b10001011101010101;
-
+    hashCache = array.hashCode() + 0b10001011101010101;
+    
+    if (!array.isArray()) {
+    	ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    }
   } 
 
   @Override
@@ -17,7 +20,7 @@ public class Length extends Expression {
 
   @Override
   public String toString() {
-    return "@" + variableName.toString();
+    return "@" + array.toString();
   }
 
   @Override

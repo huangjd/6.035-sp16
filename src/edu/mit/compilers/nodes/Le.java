@@ -7,6 +7,9 @@ public class Le extends BinaryOpExpr {
   public Le(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);
     hashCache = left.hashCode() * 103 + right.hashCode();
+    if (left.getType() != Type.INT || right.getType() != Type.INT) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    }
   }
 
   @Override

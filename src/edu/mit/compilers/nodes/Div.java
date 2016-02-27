@@ -7,6 +7,9 @@ public class Div extends BinaryOpExpr {
   public Div(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);
     hashCache = left.hashCode() * 43 + right.hashCode();
+    if (left.getType() != Type.INT || right.getType() != Type.INT) {
+        ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    }
   }
 
   @Override

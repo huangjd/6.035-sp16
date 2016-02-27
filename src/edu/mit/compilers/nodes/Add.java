@@ -16,8 +16,8 @@ public class Add extends BinaryOpExpr {
 
   @Override
   public void dispatch(Visitor visitor) {
-    visitor.visit(this);
-  }
+    visitor.visit(this); 
+  } 
 
   @Override
   public String toString() {
