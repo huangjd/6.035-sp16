@@ -7,6 +7,9 @@ public class And extends BinaryOpExpr {
   public And(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);
     hashCache = left.hashCode() * 127 + right.hashCode();
+    if (left.getType() != Type.BOOLEAN || right.getType() != Type.BOOLEAN) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    }
   }
 
   @Override
