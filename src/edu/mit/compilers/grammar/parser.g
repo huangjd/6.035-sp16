@@ -130,22 +130,223 @@ return_stmt: TK_return (expr)? SEMICOLON;
 
 expr: ternary_expr;
 
-ternary_expr:  or_expr (QUESTION ternary_expr COLON ternary_expr)?;
+ternary_expr returns [ExpressionNode e = null] :  or_expr (QUESTION ternary_expr COLON ternary_expr)?;
 
-or_expr: and_expr (OR and_expr)*;
+or_expr returns [ExpressionNode e = null] {
+	class OpDesc { // Operator descriptor
+		char op;
+		SourcePosition pos;
+		OpDesc(String op, SourcePosition position) {
+			this.op = op;
+			this.pos = position;
+		}
+	};
+	
+	ExpressionNode expr;
+	ArrayList<OpDesc> opStack = new ArrayList<>();
+	LinkedList<ExpressionNode> exprStack = new LinkedList<>();
+}: expr = and_expr {
+	exprStack.push(expr);
+} ({String or;} or = or_op {
+	opStack.push(new OpDesc(or, getPosition()));
+} expr = and_expr {
+	exprStack.push(expr);
+})* {
+	try {
+		for (OpDesc op : opStack) {
+			ExpressionNode left = exprStack.pollFirst();
+			ExpressionNode right = exprStack.pollFirst();
+			switch (op.op) {
+			case "||":
+				exprStack.addFirst(new Eq(left, right, getPosition()));
+				break;
+			default:
+				throw new RuntimeException("blah");
+			}
+		}
+		e = expr;
+	} catch (TypeCheckException e2) {
+		// TODO: handle exception
+	}
+};
 
-and_expr: eq_expr (AND eq_expr)*;
+and_expr returns [ExpressionNode e = null] {
+	class OpDesc { // Operator descriptor
+		char op;
+		SourcePosition pos;
+		OpDesc(String op, SourcePosition position) {
+			this.op = op;
+			this.pos = position;
+		}
+	};
+	
+	ExpressionNode expr;
+	ArrayList<OpDesc> opStack = new ArrayList<>();
+	LinkedList<ExpressionNode> exprStack = new LinkedList<>();
+	
+} : expr = eq_expr {
+	exprStack.push(expr);
+} ({String and;} and = and_op {
+	opStack.push(new OpDesc(and, getPosition()));
+} expr = eq_expr {
+	exprStack.push(expr);
+})* {
+	try {
+		for (OpDesc op : opStack) {
+			ExpressionNode left = exprStack.pollFirst();
+			ExpressionNode right = exprStack.pollFirst();
+			switch (op.op) {
+			case "&&":
+				exprStack.addFirst(new Eq(left, right, getPosition()));
+				break;
+			default:
+				throw new RuntimeException("blah");
+			}
+		}
+		e = expr;
+	} catch (TypeCheckException e2) {
+		// TODO: handle exception
+	}
+};
 
-eq_expr: rel_expr (EQ_OP rel_expr)*;
+eq_expr returns [ExpressionNode e = null] {
+	class OpDesc { // Operator descriptor
+		char op;
+		SourcePosition pos;
+		OpDesc(String op, SourcePosition position) {
+			this.op = op;
+			this.pos = position;
+		}
+	};
+	
+	ExpressionNode expr;
+	ArrayList<OpDesc> opStack = new ArrayList<>();
+	LinkedList<ExpressionNode> exprStack = new LinkedList<>();
+	
+} : expr = rel_expr {
+	exprStack.push(expr);
+} ({String eq;} eq = eq_op {
+	opStack.push(new OpDesc(eq, getPosition()));
+} expr = rel_expr {
+	exprStack.push(expr);
+})* {
+	try {
+		for (OpDesc op : opStack) {
+			ExpressionNode left = exprStack.pollFirst();
+			ExpressionNode right = exprStack.pollFirst();
+			switch (op.op) {
+			case '==':
+				exprStack.addFirst(new Eq(left, right, getPosition()));
+				break;
+			case '!=':
+				exprStack.addFirst(new Ne(left, right, getPosition()));
+				break;
+			default:
+				throw new RuntimeException("blah");
+			}
+		}
+		e = expr;
+	} catch (TypeCheckException e2) {
+		// TODO: handle exception
+	}
+};
 
-rel_expr: add_expr (REL_OP add_expr)*;
+rel_expr returns [ExpressionNode e = null] {
+	class OpDesc { // Operator descriptor
+		char op;
+		SourcePosition pos;
+		OpDesc(String op, SourcePosition position) {
+			this.op = op;
+			this.pos = position;
+		}
+	};
+	
+	ExpressionNode expr;
+	ArrayList<OpDesc> opStack = new ArrayList<>();
+	LinkedList<ExpressionNode> exprStack = new LinkedList<>();
+		
+} : expr = add_expr {
+	exprStack.push(expr);
+} ({String rel;} rel = rel_op {
+	opStack.push(new OpDesc(rel, getPosition()));
+} expr = add_expr {
+	exprStack.push(expr);
+})* {
+	try {
+		for (OpDesc op : opStack) {
+			ExpressionNode left = exprStack.pollFirst();
+			ExpressionNode right = exprStack.pollFirst();
+			switch (op.op) {
+			case ">":
+				exprStack.addFirst(new Gt(left, right, getPosition()));
+				break;
+			case "<":
+				exprStack.addFirst(new Lt(left, right, getPosition()));
+				break;
+			case ">=":
+				exprStack.addFirst(new Ge(left, right, getPosition()));
+				break;
+			case "<=":
+				exprStack.addFirst(new Le(left, right, getPosition()));
+				break;
+			default:
+				throw new RuntimeException("blah");
+			}
+		}
+		e = expr;
+	} catch (TypeCheckException e2) {
+		// TODO: handle exception
+	}
+	
+};
 
-add_expr: mul_expr (add_op mul_expr)*;
+add_expr returns [ExpressionNode e = null] { //   (add_op mul_expr)*;
+	class OpDesc { // Operator descriptor
+		char op;
+		SourcePosition pos;
+		OpDesc(char op, SourcePosition position) {
+			this.op = op;
+			this.pos = position;
+		}
+	};
+	
+	ExpressionNode expr;
+	ArrayList<OpDesc> opStack = new ArrayList<>();
+	LinkedList<ExpressionNode> exprStack = new LinkedList<>();
+}: expr = mul_expr {
+	exprStack.push(expr);
+} ({char add;} add = add_op {
+	opStack.push(new OpDesc(add, getPosition()));
+} expr = mul_expr {
+	exprStack.push(expr);
+})* {
+	try {
+		for (OpDesc op : opStack) {
+			ExpressionNode left = exprStack.pollFirst();
+			ExpressionNode right = exprStack.pollFirst();
+			switch (op.op) {
+			case '+':
+				exprStack.addFirst(new Add(left, right, getPosition()));
+				break;
+			case '-':
+				exprStack.addFirst(new Sub(left, right, getPosition()));
+				break;
+			default:
+				throw new RuntimeException("blah");
+		
+			}
+		}
+		e = expr;
+	} catch (TypeCheckException e2) {
+		// TODO: handle exception
+	}
+};
+
 
 mul_expr: unary_expr (MUL_OP unary_expr)*;
 
 unary_expr returns [ExpressionNode e = null] {
-	ExpressionNod expr;
+	ExpressionNode expr;
 	class OpDesc {
 		char op;
 		SourcePosition pos;
@@ -162,17 +363,23 @@ unary_expr returns [ExpressionNode e = null] {
 		if (expr == null) {
 			// TODO: error 
 		} else {
-			Collections.reverse(opStack);
-			for (Character c : opStack) {
-				if (c == "!") {
-					expr = new Not();
-				} else if (c == "-") {
-				
-				} else {
-					throw new RuntimeException("WTF"); 
+		  try {
+		  	Collections.reverse(opStack);
+				for (Character c : opStack) {
+					if (c == "!") {
+						expr = new Not(expr.box(), getSourcePosition());
+					} else if (c == "-") {
+						expr = new Minus(expr.box(), getSourcePosition());
+					} else {
+						throw new RuntimeException("WTF"); 
+					}
 				}
+			} catch (TypeCheckException ex) {
+				// TODO: error
 			}
+		  e = expr;
 		}
+		
 	}
 	;
 
@@ -188,7 +395,15 @@ length: AT_SIGN ID;
 
 unary_op returns [char c = 0]: MINUS { c = '-';} | EXCLAMATION { c = '!';};
 
-add_op : PLUS | MINUS;
+add_op returns [char add = 0]: PLUS { add = '+';}| MINUS {add = '-';};
+
+rel_op returns [String rel = 0]: "<" { rel = "<";} | ">" { rel = ">";} | "<=" { rel = "<=";} | ">=" {rel = ">=";};
+
+eq_op returns [String eq = 0]: "==" { eq = "==";} | "!=" { eq = "!="; };
+
+and_op returns [String and = 0]: AND {and = "&&";};
+
+or_op returns [String or = 0]: OR {or = "||";};
 
 type: TK_int | TK_boolean;
 
