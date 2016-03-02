@@ -10,10 +10,10 @@ public class IntLiteral extends Literal {
     super(pos);
     try {
     	value = v;
-        hashCache = Long.hashCode(v);
-	} catch (Exception e) {
-		ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
-	} 
+      hashCache = Long.hashCode(v);
+  	} catch (Exception e) {
+  		ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+  	} 
   }
 
   @Override

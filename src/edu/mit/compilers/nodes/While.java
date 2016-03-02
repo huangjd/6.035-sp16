@@ -12,6 +12,9 @@ public class While extends Statement implements Breakable {
     this.cond = cond;
     this.body = body;
     this.hashCache = cond.hashCode() + body.hashCode() * 37;
+    if (cond != Type.BOOLEAN) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    }
   }
 
   @Override
