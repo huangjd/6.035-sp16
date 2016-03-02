@@ -122,6 +122,10 @@ public class Visitor {
 
   protected void visit(StringLiteral node) {
   }
+  
+  protected void visit(IntLiteralUnparsed node) {
+  	node.box().accept(this);
+  }
 
   // ------------- Statements ----------------
 

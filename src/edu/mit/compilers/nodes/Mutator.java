@@ -2,6 +2,8 @@ package edu.mit.compilers.nodes;
 
 import java.util.ArrayList;
 
+import edu.mit.compilers.common.SourcePosition;
+
 public class Mutator extends Visitor {
   Node returnNode;
 
@@ -178,6 +180,19 @@ public class Mutator extends Visitor {
       returnNode = new Load(node.array, index, node.getSourcePosition());
     }
   }
+  
+  @Override
+  protected void visit(IntLiteralUnparsed node) {
+  	SourcePosition pos = node.getSourcePosition();
+  	if (node.toString().charAt(0) == '-') {
+  		IntLiteralUnparsed rightIntLiteral = 
+  				new IntLiteralUnparsed(node.toString().substring(1), pos);
+  		ExpressionNode rightNode = rightIntLiteral.box().accept(this);
+  		returnNode = new Minus(rightNode, pos);
+  	} else {
+  		returnNode = new IntLiteral(Long.parseLong(node.toString()), pos);
+  	}
+  }
 
   @Override
   protected void visit(VarExpr node) {
@@ -198,6 +213,8 @@ public class Mutator extends Visitor {
   @Override
   protected void visit(StringLiteral node) {
   }
+  
+  
   // ------------------- Statements -----------
 
   @Override
