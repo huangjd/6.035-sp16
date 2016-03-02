@@ -13,7 +13,7 @@ public class IntLiteralUnparsed extends Literal {
       hashCache = v.hashCode();
 		} catch (Exception e) {
 			ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
-		} 
+		}
   }
 
   @Override
