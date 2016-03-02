@@ -9,8 +9,13 @@ public class Mul extends BinaryOpExpr {
   public Mul(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);
     hashCache = (left.hashCode() + hashMask) ^ (right.hashCode() + hashMask);
-    if (left.getType() != Type.INT || right.getType() != Type.INT) {
+    if (left.getType() != Type.INT) {
       ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+      throw new TypeException(left,Type.INT);
+    }
+    if (right.getType() != Type.INT) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+      throw new TypeException(right,Type.INT);
     }
   }
 

@@ -2,6 +2,8 @@ header {
 package edu.mit.compilers.grammar;
 import edu.mit.compilers.common.*;
 import edu.mit.compilers.nodes.*;
+import sun.util.locale.LanguageTag;
+
 import java.util.*;
 import java.lang.*;
 }
@@ -65,11 +67,16 @@ options
     }
   }
   
+  SourcePosition currentTokenPos = new SourcePosition(getFileName());
   @Override
   public void match(int arg0) throws MismatchedTokenException, TokenStreamException  {
-  	
+  	currentTokenPos = new SourcePosition(getFilename(), LT(1).getLine(), LT(1).getColumn());
   	super(match);
   }
+  public SourcePosition getSourcePosition() {
+    return currentTokenPos;
+  }
+  
   
   SymbolTable currentSymtab;
   MethodTable methodTable;
@@ -188,7 +195,7 @@ or_expr returns [ExpressionNode e = null] {
 }: expr = and_expr {
 	exprStack.push(expr);
 } ({String or;} or = or_op {
-	opStack.push(new OpDesc(or, getPosition()));
+	opStack.push(new OpDesc(or, getSourcePosition()));
 } expr = and_expr {
 	exprStack.push(expr);
 })* {
@@ -198,7 +205,7 @@ or_expr returns [ExpressionNode e = null] {
 			ExpressionNode right = exprStack.pollFirst();
 			switch (op.op) {
 			case "||":
-				exprStack.addFirst(new Eq(left, right, getPosition()));
+				exprStack.addFirst(new Eq(left, right, getSourcePosition()));
 				break;
 			default:
 				throw new RuntimeException("blah");
@@ -227,7 +234,7 @@ and_expr returns [ExpressionNode e = null] {
 } : expr = eq_expr {
 	exprStack.push(expr);
 } ({String and;} and = and_op {
-	opStack.push(new OpDesc(and, getPosition()));
+	opStack.push(new OpDesc(and, getSourcePosition()));
 } expr = eq_expr {
 	exprStack.push(expr);
 })* {
@@ -237,7 +244,7 @@ and_expr returns [ExpressionNode e = null] {
 			ExpressionNode right = exprStack.pollFirst();
 			switch (op.op) {
 			case "&&":
-				exprStack.addFirst(new Eq(left, right, getPosition()));
+				exprStack.addFirst(new Eq(left, right, getSourcePosition()));
 				break;
 			default:
 				throw new RuntimeException("blah");
@@ -266,7 +273,7 @@ eq_expr returns [ExpressionNode e = null] {
 } : expr = rel_expr {
 	exprStack.push(expr);
 } ({String eq;} eq = eq_op {
-	opStack.push(new OpDesc(eq, getPosition()));
+	opStack.push(new OpDesc(eq, getSourcePosition()));
 } expr = rel_expr {
 	exprStack.push(expr);
 })* {
@@ -276,10 +283,10 @@ eq_expr returns [ExpressionNode e = null] {
 			ExpressionNode right = exprStack.pollFirst();
 			switch (op.op) {
 			case '==':
-				exprStack.addFirst(new Eq(left, right, getPosition()));
+				exprStack.addFirst(new Eq(left, right, getSourcePosition()));
 				break;
 			case '!=':
-				exprStack.addFirst(new Ne(left, right, getPosition()));
+				exprStack.addFirst(new Ne(left, right, getSourcePosition()));
 				break;
 			default:
 				throw new RuntimeException("blah");
@@ -308,7 +315,7 @@ rel_expr returns [ExpressionNode e = null] {
 } : expr = add_expr {
 	exprStack.push(expr);
 } ({String rel;} rel = rel_op {
-	opStack.push(new OpDesc(rel, getPosition()));
+	opStack.push(new OpDesc(rel, getSourcePosition()));
 } expr = add_expr {
 	exprStack.push(expr);
 })* {
@@ -318,16 +325,16 @@ rel_expr returns [ExpressionNode e = null] {
 			ExpressionNode right = exprStack.pollFirst();
 			switch (op.op) {
 			case ">":
-				exprStack.addFirst(new Gt(left, right, getPosition()));
+				exprStack.addFirst(new Gt(left, right, getSourcePosition()));
 				break;
 			case "<":
-				exprStack.addFirst(new Lt(left, right, getPosition()));
+				exprStack.addFirst(new Lt(left, right, getSourcePosition()));
 				break;
 			case ">=":
-				exprStack.addFirst(new Ge(left, right, getPosition()));
+				exprStack.addFirst(new Ge(left, right, getSourcePosition()));
 				break;
 			case "<=":
-				exprStack.addFirst(new Le(left, right, getPosition()));
+				exprStack.addFirst(new Le(left, right, getSourcePosition()));
 				break;
 			default:
 				throw new RuntimeException("blah");
@@ -356,7 +363,7 @@ add_expr returns [ExpressionNode e = null] { //   (add_op mul_expr)*;
 }: expr = mul_expr {
 	exprStack.push(expr);
 } ({char add;} add = add_op {
-	opStack.push(new OpDesc(add, getPosition()));
+	opStack.push(new OpDesc(add, getSourcePosition()));
 } expr = mul_expr {
 	exprStack.push(expr);
 })* {
@@ -366,10 +373,10 @@ add_expr returns [ExpressionNode e = null] { //   (add_op mul_expr)*;
 			ExpressionNode right = exprStack.pollFirst();
 			switch (op.op) {
 			case '+':
-				exprStack.addFirst(new Add(left, right, getPosition()));
+				exprStack.addFirst(new Add(left, right, getSourcePosition()));
 				break;
 			case '-':
-				exprStack.addFirst(new Sub(left, right, getPosition()));
+				exprStack.addFirst(new Sub(left, right, getSourcePosition()));
 				break;
 			default:
 				throw new RuntimeException("blah");
@@ -406,15 +413,15 @@ unary_expr returns [ExpressionNode e = null] {
 		  try {
 		  	Collections.reverse(opStack);
 				for (Character c : opStack) {
-					if (c == "!") {
+					if (c == '!') {
 						expr = new Not(expr.box(), getSourcePosition());
-					} else if (c == "-") {
+					} else if (c == '-') {
 						expr = new Minus(expr.box(), getSourcePosition());
 					} else {
 						throw new RuntimeException("WTF"); 
 					}
 				}
-			} catch (TypeCheckException ex) {
+			} catch (TypeException ex) {
 				// TODO: error
 			}
 		  e = expr;
@@ -437,13 +444,13 @@ unary_op returns [char c = 0]: MINUS { c = '-';} | EXCLAMATION { c = '!';};
 
 add_op returns [char add = 0]: PLUS { add = '+';}| MINUS {add = '-';};
 
-rel_op returns [String rel = 0]: "<" { rel = "<";} | ">" { rel = ">";} | "<=" { rel = "<=";} | ">=" {rel = ">=";};
+rel_op returns [String rel]: "<" { rel = "<";} | ">" { rel = ">";} | "<=" { rel = "<=";} | ">=" {rel = ">=";};
 
-eq_op returns [String eq = 0]: "==" { eq = "==";} | "!=" { eq = "!="; };
+eq_op returns [String eq]: "==" { eq = "==";} | "!=" { eq = "!="; };
 
-and_op returns [String and = 0]: AND {and = "&&";};
+and_op returns [String and]: AND {and = "&&";};
 
-or_op returns [String or = 0]: OR {or = "||";};
+or_op returns [String or]: OR {or = "||";};
 
 type: TK_int | TK_boolean;
 

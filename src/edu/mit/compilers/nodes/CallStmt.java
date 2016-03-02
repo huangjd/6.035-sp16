@@ -1,13 +1,24 @@
 package edu.mit.compilers.nodes;
 
+import edu.mit.compilers.common.SourcePosition;
+
 public class CallStmt extends Statement {
 
-  public Call call;
+  public final Call call;
+
+  protected CallStmt(Call call, SourcePosition pos) {
+    super(pos);
+    this.call = call;
+    this.hashCache = call.hashCode();
+  }
 
   @Override
   void dispatch(Visitor visitor) {
-    // TODO Auto-generated method stub
-
+    visitor.visit(this);
   }
 
+  @Override
+  public String toString() {
+    return call.toString() + ";\n";
+  }
 }

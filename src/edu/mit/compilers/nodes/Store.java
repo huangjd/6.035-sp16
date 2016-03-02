@@ -15,10 +15,18 @@ public class Store extends Statement {
     this.value = value;
     hashCache = array.hashCode() * 11 + index.hashCode() * 37 + value.hashCode();
     
-    if (!array.isArray() || index.getType() != Type.INT || // id must be array var, index must be int
-    		((array.type == Type.INTARRAY && value.getType() == Type.INT) || // must save int into intarray, bool into bool array
-    		(array.type == Type.BOOLEANARRAY && value.getType() == Type.BOOLEAN))) {
-        ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    if (!array.isArray()){
+    	ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    	throw new TypeException(array, false);
+    }
+    if (index.getType() != Type.INT){
+    	ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    	throw new TypeException(index, Type.INT);
+    }
+    if ((array.type == Type.INTARRAY && value.getType() == Type.INT) || // must save int into intarray, bool into bool array
+    		(array.type == Type.BOOLEANARRAY && value.getType() == Type.BOOLEAN)){
+    	ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    	throw new TypeException(array,value);
     }
   }
 

@@ -12,6 +12,7 @@ public class Eq extends BinaryOpExpr {
     if ((left.getType() == Type.INT && right.getType() == Type.INT)
     	|| (left.getType() == Type.BOOLEAN && right.getType() == Type.BOOLEAN)) {
         ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+        throw new TypeException(left,right);
     }
   }
 

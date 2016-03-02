@@ -44,15 +44,15 @@ public class Var {
   }
 
   public boolean isArray() {
-    return type == Type.BOOLEANARRAY || type == Type.INTARRAY;
+    return type.isArray();
   }
 
   public boolean isPrimitive() {
-    return type == Type.BOOLEAN || type == Type.INT;
+    return type.isPrimitive();
   }
 
   public boolean isVariable() {
-    return isPrimitive() || isArray();
+    return type.isVariable();
   }
 
   @Override

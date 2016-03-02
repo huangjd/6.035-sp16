@@ -10,6 +10,7 @@ public class Length extends Expression {
     
     if (!array.isArray()) {
     	ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+    	throw new TypeException(array,false);
     }
   } 
 

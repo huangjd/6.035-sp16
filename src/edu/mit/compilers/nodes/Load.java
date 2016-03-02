@@ -12,8 +12,13 @@ public class Load extends Expression {
     this.array = array;
     this.index = index;
     hashCache = array.hashCode() * 13 + index.hashCode();
-    if (!array.isArray() || index.getType() != Type.INT) {
+    if (!array.isArray()) {
         ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+        throw new TypeException(array,false);
+    }
+    if (index.getType() != Type.INT){
+        ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+        throw new TypeException(index,Type.INT);
     }
   }
 
