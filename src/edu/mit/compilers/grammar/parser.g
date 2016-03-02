@@ -130,7 +130,47 @@ return_stmt: TK_return (expr)? SEMICOLON;
 
 expr: ternary_expr;
 
-ternary_expr returns [ExpressionNode e = null] :  or_expr (QUESTION ternary_expr COLON ternary_expr)?;
+ternary_expr returns [ExpressionNode e = null] {
+	class OpDesc { // Operator descriptor
+		char op;
+		SourcePosition pos;
+		OpDesc(String op, SourcePosition position) {
+			this.op = op;
+			this.pos = position;
+		}
+	};
+	
+	ExpressionNode expr;
+	ArrayList<OpDesc> opStack = new ArrayList<>();
+	LinkedList<ExpressionNode> exprStack = new LinkedList<>();
+}:  expr = or_expr {
+	exprStack.push(expr);
+} ({char question;} question = QUESTION {
+	opStack.push(new OpDesc(question, getPosition()));
+} expr = ternary_expr {
+	exprStack.push(expr);
+} {char colon;} colon = COLON {
+	opStack.push(new OpDesc(colon, getPosition()));
+} expr = ternary_expr {
+	exprStack.push(expr);
+})? {
+	try {
+		for (OpDesc op : opStack) {
+			ExpressionNode left = exprStack.pollFirst();
+			ExpressionNode right = exprStack.pollFirst();
+			switch (op.op) {
+			case "||":
+				exprStack.addFirst(new Eq(left, right, getPosition()));
+				break;
+			default:
+				throw new RuntimeException("blah");
+			}
+		}
+		e = expr;
+	} catch (TypeCheckException e2) {
+		// TODO: handle exception
+	}
+};
 
 or_expr returns [ExpressionNode e = null] {
 	class OpDesc { // Operator descriptor

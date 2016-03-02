@@ -66,6 +66,17 @@ class Main {
         if(parser.getError()) {
           System.exit(1);
         }
+      } else if (CLI.target == Action.INTER) {
+      	DecafScanner scanner =
+            new DecafScanner(new DataInputStream(inputStream));
+        DecafParser parser = new DecafParser(scanner);
+        parser.setTrace(CLI.debug);
+        parser.program();
+        if(parser.getError()) {
+          System.exit(1);
+        }
+        // TODO 
+      	
       }
     } catch(Exception e) {
       // print the error:
