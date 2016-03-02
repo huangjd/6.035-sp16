@@ -9,6 +9,7 @@ public class Minus extends UnaryOpExpr {
     hashCache = right.hashCode() + 0b11010001000111010011110101011011;
     if (right.getType() != Type.INT) {
       ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+      throw new TypeException(right, Type.INT);
     }
   }
 

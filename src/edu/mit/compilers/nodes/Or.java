@@ -7,8 +7,13 @@ public class Or extends BinaryOpExpr {
   public Or(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);
     hashCache = left.hashCode() * 8191 + right.hashCode();
-    if (left.getType() != Type.BOOLEAN || right.getType() != Type.BOOLEAN) {
+    if (left.getType() != Type.BOOLEAN) {
       ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+      throw new TypeException(left, Type.BOOLEAN);
+    }
+    if (right.getType() != Type.BOOLEAN) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+      throw new TypeException(right, Type.BOOLEAN);
     }
   }
 

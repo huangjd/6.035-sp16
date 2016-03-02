@@ -14,6 +14,7 @@ public class Ternary extends Expression {
     hashCache = (cond.hashCode() * 131 + trueExpr.hashCode()) * 133 + falseExpr.hashCode();
     if (cond.getType() != Type.BOOLEAN) {
       ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
+      throw new TypeException(cond, Type.BOOLEAN);
     }
   }
 

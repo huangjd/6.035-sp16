@@ -19,18 +19,22 @@ public class For extends Statement implements Breakable {
     this.body = body;
 
     if (loopVar.type != Type.INT) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new TypeException(loopVar, Type.INT);
     }
 
     if (init.getType() != Type.INT) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new TypeException(init, Type.INT);
     }
 
     if (end.getType() != Type.INT) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new TypeException(end, Type.INT);
     }
 
     if (increment <= 0) {
+      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new IndexOutOfBoundsException(Long.toString(increment));
     }
 
