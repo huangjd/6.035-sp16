@@ -10,7 +10,7 @@ public class Function extends Node {
   public Type returnType;
   public boolean isCallout;
   public SymbolTable parameters;
-  public Block body;
+  public StatementNode body;
 
   public Function(String name, SourcePosition pos) {
     super(pos);
@@ -18,11 +18,11 @@ public class Function extends Node {
     this.returnType = Type.INT;
     this.isCallout = true;
     this.parameters = new SymbolTable();
-    this.body = new Block(pos);
+    this.body = null;
     this.hashCache = id.hashCode();
   }
 
-  public Function(String name, Type returnType, SymbolTable parameters, Block body, SourcePosition pos) {
+  public Function(String name, Type returnType, SymbolTable parameters, StatementNode body, SourcePosition pos) {
     super(pos);
     this.id = name;
     this.returnType = returnType;
@@ -51,5 +51,9 @@ public class Function extends Node {
 
       return returnType.toString() + " " + id + "(" + temp + ") " + body.toString() + "\n";
     }
+  }
+
+  public String getName() {
+    return id;
   }
 }

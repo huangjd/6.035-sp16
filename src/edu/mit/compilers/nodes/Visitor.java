@@ -20,7 +20,9 @@ public class Visitor {
   }
 
   public void visit(Function node) {
-    visit(node.body);
+    if (!node.isCallout) {
+      visit(node.body);
+    }
   }
 
   // ------------ Expressions ----------
@@ -104,14 +106,20 @@ public class Visitor {
     node.falseExpr.accept(this);
   }
 
-  protected void visit(Length node) {
+  protected void visit(Call node) {
+    for (ExpressionNode e : node.args) {
+      e.accept(this);
+    }
+  }
+
+  protected void visit(Load node) {
+    node.index.accept(this);
   }
 
   protected void visit(VarExpr node) {
   }
 
-  protected void visit(Load node) {
-    node.index.accept(this);
+  protected void visit(Length node) {
   }
 
   protected void visit(IntLiteral node) {
@@ -131,12 +139,51 @@ public class Visitor {
     }
   }
 
+  protected void visit(CallStmt node) {
+    visit(node.call);
+  }
+
+  protected void visit(ReturnStmt node) {
+    if (node.value != null) {
+      node.value.accept(this);
+    }
+  }
+
+  protected void visit(IfStmt node) {
+    node.cond.accept(this);
+    node.trueBlock.accept(this);
+    node.falseBlock.accept(this);
+  }
+
+  protected void visit(For node) {
+    node.init.accept(this);
+    node.end.accept(this);
+    node.body.accept(this);
+  }
+
+  protected void visit(While node) {
+    node.cond.accept(this);
+    node.body.accept(this);
+  }
+
+  protected void visit(Assign node) {
+    node.value.accept(this);
+  }
+
   protected void visit(Store node) {
     node.index.accept(this);
     node.value.accept(this);
   }
 
-  protected void visit(Pass node) {
+  protected void visit(BreakStmt node) {
   }
 
+  protected void visit(ContinueStmt node) {
+  }
+
+  protected void visit(VarDecl node) {
+  }
+
+  protected void visit(Pass node) {
+  }
 }

@@ -20,17 +20,39 @@ public enum Type {
     case INT:
       return "int";
     case BOOLEANARRAY:
-      return "<boolean[]>";
+      return "boolean[]";
     case INTARRAY:
-      return "<int[]>";
+      return "int[]";
     case STRING:
-      return "<string>";
+      return "string";
     case CALL:
-      return "<func>";
+      return "function";
     case CALLOUT:
-      return "<extern func>";
+      return "callout";
     default:
       return null;
+    }
+  }
+
+  public boolean isArray() {
+    return this == Type.BOOLEANARRAY || this == Type.INTARRAY;
+  }
+
+  public boolean isPrimitive() {
+    return this == Type.BOOLEAN || this == Type.INT;
+  }
+
+  public boolean isVariable() {
+    return isPrimitive() || isArray();
+  }
+
+  public Type getElementType() {
+    if (this == BOOLEANARRAY) {
+      return BOOLEAN;
+    } else if (this == INTARRAY) {
+      return INT;
+    } else {
+      throw new TypeException(TypeException.SubType.EXPECTED_ARRAY, this);
     }
   }
 }
