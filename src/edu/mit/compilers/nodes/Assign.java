@@ -14,7 +14,7 @@ public class Assign extends Statement {
     hashCache = var.hashCode() * 37 + value.hashCode();
 
     if (!var.isPrimitive()) {
-      throw new TypeException(var, false);
+      throw new TypeException(var, false, pos);
     }
     if (!value.getType().isPrimitive()) {
       throw new TypeException(value, false);

@@ -14,15 +14,13 @@ public class Visitor {
     if (node.main != null) {
       node.main.accept(this);
     }
-    for (VarDecl varDecl : node.varDecls) {
-      visit(varDecl);
+    for (StatementNode varDecl : node.varDecls) {
+      varDecl.accept(this);
     }
   }
 
   public void visit(Function node) {
-    if (!node.isCallout) {
-      visit(node.body);
-    }
+    node.body.accept(this);
   }
 
   // ------------ Expressions ----------
@@ -130,9 +128,8 @@ public class Visitor {
 
   protected void visit(StringLiteral node) {
   }
-  
-  protected void visit(IntLiteralUnparsed node) {
-  	node.box().accept(this);
+
+  protected void visit(UnparsedIntLiteral node) {
   }
 
   // ------------- Statements ----------------
@@ -147,13 +144,13 @@ public class Visitor {
     visit(node.call);
   }
 
-  protected void visit(ReturnStmt node) {
+  protected void visit(Return node) {
     if (node.value != null) {
       node.value.accept(this);
     }
   }
 
-  protected void visit(IfStmt node) {
+  protected void visit(If node) {
     node.cond.accept(this);
     node.trueBlock.accept(this);
     node.falseBlock.accept(this);
@@ -179,15 +176,18 @@ public class Visitor {
     node.value.accept(this);
   }
 
-  protected void visit(BreakStmt node) {
+  protected void visit(Break node) {
   }
 
-  protected void visit(ContinueStmt node) {
+  protected void visit(Continue node) {
   }
 
   protected void visit(VarDecl node) {
   }
 
   protected void visit(Pass node) {
+  }
+
+  protected void visit(Die node) {
   }
 }

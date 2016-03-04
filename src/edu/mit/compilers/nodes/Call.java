@@ -13,6 +13,21 @@ public class Call extends Expression {
     super(pos);
     this.func = func;
     this.args = args;
+
+    ArrayList<Var> parameters = func.parameters.asList();
+
+    if (!func.isCallout) {
+      if (parameters.size() != args.size()) {
+        throw new ArgumentsException(parameters.size(), args.size(), pos);
+      }
+
+      for (int i = 0; i < parameters.size(); i++) {
+        if (parameters.get(i).type != args.get(i).getType()) {
+          throw new TypeException(args.get(i), parameters.get(i).type);
+        }
+      }
+    }
+
     hashCache = func.getName().hashCode() * 991 + args.hashCode();
   }
 

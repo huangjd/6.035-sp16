@@ -6,7 +6,7 @@ public class CallStmt extends Statement {
 
   public final Call call;
 
-  protected CallStmt(Call call, SourcePosition pos) {
+  public CallStmt(Call call, SourcePosition pos) {
     super(pos);
     this.call = call;
     this.hashCache = call.hashCode();

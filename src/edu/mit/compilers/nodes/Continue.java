@@ -2,11 +2,11 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.SourcePosition;
 
-public class BreakStmt extends Statement {
+public class Continue extends Statement {
 
   public Breakable context;
 
-  public BreakStmt(Breakable node, SourcePosition pos) {
+  public Continue(Breakable node, SourcePosition pos) {
     super(pos);
     this.context = node;
     hashCache = node.hashCode();
@@ -19,6 +19,6 @@ public class BreakStmt extends Statement {
 
   @Override
   public String toString() {
-    return "break;\n";
+    return "continue;\n";
   }
 }

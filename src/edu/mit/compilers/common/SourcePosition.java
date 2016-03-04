@@ -22,4 +22,9 @@ public class SourcePosition {
     this.lineNum = lineNum;
     this.colNum = colNum;
   }
+
+  @Override
+  public String toString() {
+    return filename + ":" + String.valueOf(lineNum) + ":" + String.valueOf(colNum);
+  }
 }

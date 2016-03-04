@@ -53,6 +53,10 @@ public class Function extends Node {
     }
   }
 
+  public FunctionNode box() {
+    return new FunctionNode(this);
+  }
+
   public String getName() {
     return id;
   }

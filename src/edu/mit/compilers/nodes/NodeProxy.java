@@ -1,5 +1,7 @@
 package edu.mit.compilers.nodes;
 
+import edu.mit.compilers.common.SourcePosition;
+
 public abstract class NodeProxy {
   Node node;
 
@@ -12,6 +14,10 @@ public abstract class NodeProxy {
   }
 
   public abstract NodeProxy accept(Mutator mutator);
+
+  public SourcePosition getSourcePosition() {
+    return node.getSourcePosition();
+  }
 
   @Override
   public String toString() {

@@ -8,7 +8,7 @@ public class Program extends Node {
 
   public MethodTable methodTable;
   public SymbolTable globals;
-  public ArrayList<VarDecl> varDecls;
+  public ArrayList<StatementNode> varDecls;
   public ArrayList<FunctionNode> functions;
   public FunctionNode main;
 
@@ -36,7 +36,7 @@ public class Program extends Node {
       }
     }
 
-    for (VarDecl varDecl : varDecls) {
+    for (StatementNode varDecl : varDecls) {
       stringBuilder.append(varDecl.toString());
     }
 
@@ -51,5 +51,9 @@ public class Program extends Node {
       stringBuilder.append(main.toString());
     }
     return stringBuilder.toString();
+  }
+
+  public ProgramNode box() {
+    return new ProgramNode(this);
   }
 }

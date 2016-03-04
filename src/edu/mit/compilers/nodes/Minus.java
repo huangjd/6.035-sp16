@@ -4,11 +4,10 @@ import edu.mit.compilers.common.*;
 
 public class Minus extends UnaryOpExpr {
 
-  protected Minus(ExpressionNode right, SourcePosition pos) {
+  public Minus(ExpressionNode right, SourcePosition pos) {
     super(right, pos);
     hashCache = right.hashCode() + 0b11010001000111010011110101011011;
     if (right.getType() != Type.INT) {
-      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new TypeException(right, Type.INT);
     }
   }

@@ -7,13 +7,18 @@ public class Ne extends BinaryOpExpr {
   private static int hashMask = 0b11001001000100010110111101101100;
 
   public Ne(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
-	  super(left, right, pos);
-	  hashCache = (left.hashCode() + hashMask) ^ (right.hashCode() + hashMask);
-	  if ((left.getType() == Type.INT && right.getType() == Type.INT)
-			  || (left.getType() == Type.BOOLEAN && right.getType() == Type.BOOLEAN)) {
-		  ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
-		  throw new TypeException(left,right);
-	  }
+    super(left, right, pos);
+    hashCache = (left.hashCode() + hashMask) ^ (right.hashCode() + hashMask);
+
+    if (!left.getType().isPrimitive()) {
+      throw new TypeException(left, false);
+    }
+    if (!right.getType().isPrimitive()) {
+      throw new TypeException(right, false);
+    }
+    if (left.getType() != right.getType()) {
+      throw new TypeException(left, right);
+    }
   }
 
   @Override

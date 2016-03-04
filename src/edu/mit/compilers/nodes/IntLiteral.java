@@ -8,12 +8,8 @@ public class IntLiteral extends Literal {
 
   public IntLiteral(long v, SourcePosition pos) {
     super(pos);
-    try {
-    	value = v;
-      hashCache = Long.hashCode(v);
-  	} catch (Exception e) {
-  		ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
-  	} 
+    value = v;
+    hashCache = Long.hashCode(v);
   }
 
   @Override

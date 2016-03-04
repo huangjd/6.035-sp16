@@ -8,11 +8,9 @@ public class And extends BinaryOpExpr {
     super(left, right, pos);
     hashCache = left.hashCode() * 127 + right.hashCode();
     if (left.getType() != Type.BOOLEAN) {
-      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new TypeException(left, Type.BOOLEAN);
     }
     if (right.getType() != Type.BOOLEAN) {
-      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new TypeException(right, Type.BOOLEAN);
     }
   }

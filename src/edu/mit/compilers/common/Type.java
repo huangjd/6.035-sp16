@@ -52,7 +52,17 @@ public enum Type {
     } else if (this == INTARRAY) {
       return INT;
     } else {
-      throw new TypeException(TypeException.SubType.EXPECTED_ARRAY, this);
+      throw new TypeException(this, true, null);
+    }
+  }
+
+  public Type getArrayType() {
+    if (this == BOOLEAN) {
+      return BOOLEANARRAY;
+    } else if (this == INT) {
+      return INTARRAY;
+    } else {
+      throw new TypeException(this, false, null);
     }
   }
 }

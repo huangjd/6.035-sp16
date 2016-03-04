@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.SourcePosition;
 
-class Pass extends Statement {
+public class Pass extends Statement {
 
   private int nop;
 

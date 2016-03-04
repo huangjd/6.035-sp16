@@ -10,7 +10,7 @@ public class VarDecl extends Statement {
     super(pos);
 
     if (!var.isVariable()) {
-      throw new TypeException(var);
+      throw new TypeException(var, pos);
     }
 
     this.var = var;
@@ -21,17 +21,14 @@ public class VarDecl extends Statement {
     super(pos);
 
     if (!var.isVariable()) {
-      throw new TypeException(var);
+      throw new TypeException(var, pos);
     }
 
-    if (!symtab.insert(var)) {
-      Var conflictingVar = symtab.lookup(var.id);
-      if (conflictingVar != null) {
-        throw new RedeclaredSymbolException(conflictingVar, var);
-      } else {
-        throw new IllegalStateException("This theoretically shouldn't happen");
-      }
+    Var conflictingVar = symtab.lookup(var.id);
+    if (conflictingVar != null) {
+      throw new RedeclaredSymbolException(conflictingVar, var, pos);
     }
+    symtab.insert(var);
 
     this.var = var;
     this.hashCache = var.hashCode() + 2;
@@ -47,7 +44,7 @@ public class VarDecl extends Statement {
     if (var.isPrimitive()) {
       return var.type.toString() + " " + var.id + ";\n";
     } else if (var.isArray()){
-      return var.type.getElementType().toString() + " " + var.id + "[" + Integer.toString(var.length) + "];\n";
+      return var.type.getElementType().toString() + " " + var.id + "[" + String.valueOf(var.length) + "];\n";
     } else {
       throw new IllegalStateException("This theoretically shouldn't happen");
     }

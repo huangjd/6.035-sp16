@@ -6,9 +6,14 @@ public class VarExpr extends Expression {
 
   private Var var;
 
-  protected VarExpr(Var var, SourcePosition pos) {
+  public VarExpr(Var var, SourcePosition pos) {
     super(pos);
     this.var = var;
+
+    if (!var.isPrimitive()) {
+      throw new TypeException(var, false, pos);
+    }
+
     this.hashCache = var.hashCode();
   }
 

@@ -6,15 +6,23 @@ public class Ternary extends Expression {
 
   public ExpressionNode cond, trueExpr, falseExpr;
 
-  protected Ternary(ExpressionNode cond, ExpressionNode trueExpr, ExpressionNode falseExpr, SourcePosition pos) {
+  public Ternary(ExpressionNode cond, ExpressionNode trueExpr, ExpressionNode falseExpr, SourcePosition pos) {
     super(pos);
     this.cond = cond;
     this.trueExpr = trueExpr;
     this.falseExpr = falseExpr;
     hashCache = (cond.hashCode() * 131 + trueExpr.hashCode()) * 133 + falseExpr.hashCode();
     if (cond.getType() != Type.BOOLEAN) {
-      ErrorLogger.logError(ErrorLogger.ErrorMask.SEMANTICS, pos, this.toString(), ErrorType.TYPEERROR);
       throw new TypeException(cond, Type.BOOLEAN);
+    }
+    if (!trueExpr.getType().isPrimitive()) {
+      throw new TypeException(trueExpr, false);
+    }
+    if (!falseExpr.getType().isPrimitive()) {
+      throw new TypeException(falseExpr, false);
+    }
+    if (trueExpr.getType() != falseExpr.getType()) {
+      throw new TypeException(trueExpr, falseExpr);
     }
   }
 

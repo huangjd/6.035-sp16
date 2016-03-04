@@ -3,8 +3,8 @@ package edu.mit.compilers.common;
 public class Var {
   public final String id;
   public final Type type;
-  public final int size;
-  public final int length;
+  public final long size;
+  public final long length;
 
   int stackOffset;
   int registerIndex = -1;
@@ -26,7 +26,7 @@ public class Var {
     }
   }
 
-  public Var(String id, Type type, int length) {
+  public Var(String id, Type type, long length) {
     this.id = id;
     this.type = type;
     this.length = length;

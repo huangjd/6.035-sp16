@@ -3,9 +3,12 @@ package edu.mit.compilers;
 import java.io.*;
 
 import antlr.Token;
+import edu.mit.compilers.common.ErrorLogger;
 import edu.mit.compilers.grammar.*;
+import edu.mit.compilers.nodes.ProgramNode;
 import edu.mit.compilers.tools.CLI;
 import edu.mit.compilers.tools.CLI.Action;
+import edu.mit.compilers.visitors.IRPrinter;
 
 class Main {
   public static void main(String[] args) {
@@ -67,16 +70,18 @@ class Main {
           System.exit(1);
         }
       } else if (CLI.target == Action.INTER) {
-      	DecafScanner scanner =
+        DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
         DecafParser parser = new DecafParser(scanner);
-        parser.setTrace(CLI.debug);
-        parser.program();
-        if(parser.getError()) {
-          System.exit(1);
+        // parser.setTrace(CLI.debug);
+        ProgramNode program = parser.program();
+        ErrorLogger.printErrors();
+        if (program == null) {
+          System.exit(-1);
         }
-        // TODO 
-      	
+        if (CLI.debug) {
+          new IRPrinter().enter(program);
+        }
       }
     } catch(Exception e) {
       // print the error:

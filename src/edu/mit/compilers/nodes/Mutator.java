@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import java.util.ArrayList;
 
-import edu.mit.compilers.common.SourcePosition;
+import edu.mit.compilers.common.*;
 
 public class Mutator extends Visitor {
   Node returnNode;
@@ -14,7 +14,47 @@ public class Mutator extends Visitor {
 
   @Override
   public void visit(Program node) {
-    super.visit(node); // TODO
+    SymbolTable globals = new SymbolTable();
+    MethodTable methodTable = new MethodTable();
+    Program p = new Program(methodTable, globals);
+
+    boolean replace = false;
+
+    ArrayList<StatementNode> varDecls = new ArrayList<>();
+    ArrayList<FunctionNode> functions = new ArrayList<>();
+    for (StatementNode varDecl : node.varDecls) {
+      StatementNode n = varDecl.accept(this);
+      if (n != varDecl) {
+        replace = true;
+      }
+      if (n != null) {
+        p.varDecls.add(n);
+      }
+    }
+
+    for (FunctionNode function : node.functions) {
+      FunctionNode f = function.accept(this);
+      if (f != function) {
+        replace = true;
+      }
+      if (f != null) {
+        p.functions.add(f);
+      }
+    }
+
+    if (node.main != null) {
+      FunctionNode f = node.main.accept(this);
+      if (f != node.main) {
+        replace = true;
+      }
+      if (f != null) {
+        p.main = f;
+      }
+    }
+
+    if (replace) {
+      returnNode = p;
+    }
   }
 
   @Override
@@ -196,18 +236,9 @@ public class Mutator extends Visitor {
       returnNode = new Load(node.array, index, node.getSourcePosition());
     }
   }
-  
+
   @Override
-  protected void visit(IntLiteralUnparsed node) {
-  	SourcePosition pos = node.getSourcePosition();
-  	if (node.toString().charAt(0) == '-') {
-  		IntLiteralUnparsed rightIntLiteral = 
-  				new IntLiteralUnparsed(node.toString().substring(1), pos);
-  		ExpressionNode rightNode = rightIntLiteral.box().accept(this);
-  		returnNode = new Minus(rightNode, pos);
-  	} else {
-  		returnNode = new IntLiteral(Long.parseLong(node.toString()), pos);
-  	}
+  protected void visit(UnparsedIntLiteral node) {
   }
 
   @Override
@@ -229,8 +260,8 @@ public class Mutator extends Visitor {
   @Override
   protected void visit(StringLiteral node) {
   }
-  
-  
+
+
   // ------------------- Statements -----------
 
   @Override
@@ -265,22 +296,22 @@ public class Mutator extends Visitor {
   }
 
   @Override
-  protected void visit(ReturnStmt node) {
+  protected void visit(Return node) {
     if (node.value != null) {
       ExpressionNode value = node.value.accept(this);
       if (value != node.value) {
-        returnNode = new ReturnStmt(node.context, value, node.getSourcePosition());
+        returnNode = new Return(node.context, value, node.getSourcePosition());
       }
     }
   }
 
   @Override
-  protected void visit(IfStmt node) {
+  protected void visit(If node) {
     ExpressionNode cond = node.cond.accept(this);
     StatementNode trueBlock = node.trueBlock.accept(this);
     StatementNode falseBlock = node.falseBlock.accept(this);
     if (cond != node.cond || trueBlock != node.trueBlock || falseBlock != node.falseBlock) {
-      returnNode = new IfStmt(cond, trueBlock, falseBlock, node.getSourcePosition());
+      returnNode = new If(cond, trueBlock, falseBlock, node.getSourcePosition());
     }
   }
 
@@ -321,11 +352,11 @@ public class Mutator extends Visitor {
   }
 
   @Override
-  protected void visit(BreakStmt node) {
+  protected void visit(Break node) {
   }
 
   @Override
-  protected void visit(ContinueStmt node) {
+  protected void visit(Continue node) {
   }
 
   @Override
@@ -334,5 +365,9 @@ public class Mutator extends Visitor {
 
   @Override
   protected void visit(Pass node) {
+  }
+
+  @Override
+  protected void visit(Die node) {
   }
 }

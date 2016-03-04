@@ -52,6 +52,10 @@ public class SymbolTable implements ScopedMap {
     return result;
   }
 
+  public Var lookupCurrentScope(String id) {
+    return map.get(id);
+  }
+
   public boolean insert(Var var) {
     if (map.containsKey(var.id) || !var.isVariable()) {
       return false;
