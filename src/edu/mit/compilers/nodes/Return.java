@@ -35,7 +35,7 @@ public class Return extends Statement {
       }
     }
 
-    hashCache = node.hashCode() + 43 * value.hashCode();
+    hashCache = value.hashCode();
   }
 
   @Override

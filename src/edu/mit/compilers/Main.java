@@ -17,6 +17,8 @@ class Main {
       InputStream inputStream = args.length == 0 ?
           System.in : new java.io.FileInputStream(CLI.infile);
       PrintStream outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new java.io.FileOutputStream(CLI.outfile));
+
+      String filaName = CLI.infile.substring(CLI.infile.lastIndexOf('/') + 1);
       if (CLI.target == Action.SCAN) {
         DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
@@ -54,8 +56,7 @@ class Main {
             done = true;
           } catch(Exception e) {
             // print the error:
-            // System.err.println(CLI.infile + " " + e);
-            System.err.println(CLI.infile.substring(CLI.infile.lastIndexOf('/') + 1) + " " + e);
+            System.err.println(filaName + " " + e);
             scanner.consume();
           }
         }
@@ -73,7 +74,7 @@ class Main {
         DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
         DecafParser parser = new DecafParser(scanner);
-        // parser.setTrace(CLI.debug);
+        parser.setFilename(filaName);
         ProgramNode program = parser.program();
         ErrorLogger.printErrors();
         if (program == null) {

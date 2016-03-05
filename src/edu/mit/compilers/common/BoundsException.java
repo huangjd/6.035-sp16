@@ -28,11 +28,4 @@ public class BoundsException extends IllegalArgumentException {
     this.upper = e.upper;
     this.pos = pos;
   }
-
-  static public class ArrayDeclSizeException extends BoundsException {
-
-    public ArrayDeclSizeException(String id, SourcePosition pos) {
-      super(id, new Long(1), null, pos);
-    }
-  }
 }

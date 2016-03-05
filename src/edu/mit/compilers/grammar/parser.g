@@ -48,6 +48,7 @@ options
   MethodTable methodTable;
   Program program;
   SymbolTable currentSymtab;
+  Function temporaryFunc = null; // dummy symbol for recursion
 
   // Selectively turns on debug mode.
 
@@ -59,8 +60,12 @@ options
   }
   @Override
   public void traceIn(String rname) throws TokenStreamException {
-    if (rname.equals("block") || rname.equals("method_decl")) {
+    if (rname.equals("block")) {
       currentSymtab = currentSymtab.scope(); 
+    }
+    if (rname.equals("method_decl")) {
+      currentSymtab = currentSymtab.scope();
+      temporaryFunc = new Function(LT(2).getText(), null);
     }
     if (trace) {
       super.traceIn(rname);
@@ -68,8 +73,12 @@ options
   }
   @Override
   public void traceOut(String rname) throws TokenStreamException {
-    if (rname.equals("block") || rname.equals("method_decl")) {
+    if (rname.equals("block")) {
       currentSymtab = currentSymtab.unscope(); 
+    }
+    if (rname.equals("method_decl")) {
+      currentSymtab = currentSymtab.unscope();
+      temporaryFunc = null;
     }
     if (trace) {
       super.traceOut(rname);
@@ -77,10 +86,10 @@ options
   }
     
   public SourcePosition getPos() throws TokenStreamException {
-    SourcePosition usp = new SourcePosition(getFilename(), LT(1).getLine(), LT(1).getColumn());
+    SourcePosition usp = new SourcePosition(getFilename(), LT(1).getLine(), LT(1).getColumn() + LT(1).getText().length());
     return usp;
   }
-
+  
   public ProgramNode getProgram() {
   	return program.box();
   }
@@ -200,7 +209,12 @@ field_decl returns [ArrayList<StatementNode> declarations = null] {
 } : t = type  {pos.add(getPos());} 
     stmt = var_decl[t] {decls.add(stmt);} 
    (COMMA {pos.add(getPos());} stmt = var_decl[t] {decls.add(stmt);})* SEMICOLON {
-    declarations = decls;
+   declarations = decls;
+   for (StatementNode s : decls) {
+     if (s == null) {
+       declarations = null;
+     }
+   }  
 }; 
 
 var_decl [Type type] returns [StatementNode node = null] {
@@ -210,7 +224,7 @@ var_decl [Type type] returns [StatementNode node = null] {
   boolean bad = false;
 } : identifier = id (LSQUARE { 
   if (LA(2) != DecafScannerTokenTypes.RSQUARE) {
-    ErrorLogger.logError(new BoundsException.ArrayDeclSizeException(identifier, pos));
+    ErrorLogger.logError(new ArrayDeclSizeException(identifier, pos));
     bad = true;
   }
   intliteral = LT(1).getText(); 
@@ -355,15 +369,17 @@ call returns [Call e = null] {
   ExpressionNode temp;
 } : name = id {
   callee = methodTable.lookup(name);
-  if (callee == null) {
+  if (callee == null && !name.equals(temporaryFunc.id)) {
     ErrorLogger.logError(new UndeclaredSymbolException(name, methodTable, pos));
-    return null;
+    callee = temporaryFunc;
   }
 } LPAREN (temp = argument {args.add(temp);} 
   (COMMA temp = argument {args.add(temp);})*)? RPAREN {
   try {
     e = new Call(callee, args, getPos());
   } catch (TypeException ex) {
+    ErrorLogger.logError(ex);
+  } catch (ArgumentsException ex) {
     ErrorLogger.logError(ex);
   } catch (NullPointerException ex) {
   }
@@ -530,11 +546,11 @@ eq_expr returns [ExpressionNode e = null] {
 	LinkedList<ExpressionNode> exprStack = new LinkedList<>();
   SourcePosition pos = getPos(); 
 } : expression = rel_expr {
-	exprStack.push(expression);
+	exprStack.add(expression);
 } ({ pos = getPos(); String eq;} eq = eq_op {
 	opStack.add(new OpDesc(eq, pos));
 } expression = rel_expr {
-	exprStack.push(expression);
+	exprStack.add(expression);
 })* {
 	try {
 		for (OpDesc op : opStack) {
@@ -572,11 +588,11 @@ rel_expr returns [ExpressionNode e = null] {
   SourcePosition pos = getPos();
   String rel;
 } : expression = add_expr {
-	exprStack.push(expression);
+	exprStack.add(expression);
 } ( {pos = getPos();} rel = rel_op {
 	opStack.add(new OpDesc(rel, pos));
 } expression = add_expr {
-	exprStack.push(expression);
+	exprStack.add(expression);
 })* {
 	try {
 		for (OpDesc op : opStack) {
@@ -618,11 +634,11 @@ add_expr returns [ExpressionNode e = null] {
   SourcePosition pos = getPos();
   char add;
 }: expression = mul_expr {
-	exprStack.push(expression);
+	exprStack.add(expression);
 } ( {pos = getPos();} add = add_op {
 	opStack.add(new OpDesc(add, pos));
 } expression = mul_expr {
-	exprStack.push(expression);
+	exprStack.add(expression);
 })* {
 	try {
 		for (OpDesc op : opStack) {
@@ -662,11 +678,11 @@ mul_expr returns [ExpressionNode e = null] {
   SourcePosition pos = getPos();
   char c;
 } : expression = unary_expr {
-  exprStack.push(expression);
+  exprStack.add(expression);
 } ( {pos = getPos(); } c = mul_op { 
   opStack.add(new OpDesc(c, pos)); 
 } expression = unary_expr { 
-  exprStack.push(expression); 
+  exprStack.add(expression); 
 })* {
   try {
     for (OpDesc op : opStack) {

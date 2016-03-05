@@ -103,9 +103,11 @@ public class ErrorLogger {
 
   static public void logError(ArgumentsException e) {
     if (e.expected > e.actual) {
-      process(e.pos, "too few arguments to function");
+      process(e.pos, "too few arguments to function \"", e.func.getSignature(), "\", expected ", e.expected, ", got ",
+          e.actual);
     } else if (e.expected < e.actual) {
-      process(e.pos, "too many arguments to function");
+      process(e.pos, "too many arguments to function \"", e.func.getSignature(), "\", expected ", e.expected, ", got ",
+          e.actual);
     }
   }
 
@@ -113,7 +115,7 @@ public class ErrorLogger {
     process(e.pos, "for loop increment must be a positive int_literal, got \"", e.value, "\"");
   }
 
-  static public void logError(BoundsException.ArrayDeclSizeException e) {
+  static public void logError(ArrayDeclSizeException e) {
     process(e.pos, "size of array \"", e.value, "[]\" is not a positive integer");
   }
 

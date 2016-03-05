@@ -26,7 +26,7 @@ public class Function extends Node {
     super(pos);
     this.id = name;
     this.returnType = returnType;
-    this.isCallout = true;
+    this.isCallout = false;
     this.parameters = parameters;
     this.body = body;
     this.hashCache = id.hashCode();
@@ -50,6 +50,20 @@ public class Function extends Node {
       temp = temp.substring(0, temp.length() - 2);
 
       return returnType.toString() + " " + id + "(" + temp + ") " + body.toString() + "\n";
+    }
+  }
+
+  public String getSignature() {
+    if (isCallout) {
+      return "<callout> int " + id + "(...);";
+    } else {
+      String temp = "";
+      ArrayList<Var> param = parameters.asList();
+      for (Var var : param) {
+        temp += (var.type.toString() + ", ");
+      }
+      temp = temp.substring(0, temp.length() - 2);
+      return returnType.toString() + " " + id + "(" + temp + ");";
     }
   }
 

@@ -76,6 +76,6 @@ public class TypeException extends RuntimeException {
   }
 
   public TypeException(ExpressionNode left, ExpressionNode right) {
-    this(SubType.CONFLICT, null, null, left, right, null, right.getSourcePosition());
+    this(SubType.CONFLICT, left.getType(), right.getType(), left, right, null, right.getSourcePosition());
   }
 }

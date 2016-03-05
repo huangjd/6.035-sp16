@@ -18,7 +18,7 @@ public class Call extends Expression {
 
     if (!func.isCallout) {
       if (parameters.size() != args.size()) {
-        throw new ArgumentsException(parameters.size(), args.size(), pos);
+        throw new ArgumentsException(func, args.size(), pos);
       }
 
       for (int i = 0; i < parameters.size(); i++) {
