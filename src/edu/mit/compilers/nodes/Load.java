@@ -32,6 +32,6 @@ public class Load extends Expression {
 
   @Override
   public Type getType() {
-    return array.type;
+    return array.type.getElementType();
   }
 }

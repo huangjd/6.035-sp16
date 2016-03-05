@@ -6,13 +6,15 @@ import edu.mit.compilers.common.*;
 
 public class Call extends Expression {
 
-  public Function func;
-  public ArrayList<ExpressionNode> args;
+  public final Function func;
+  public final ArrayList<ExpressionNode> args;
+  public final String tempName;
 
   public Call(Function func, ArrayList<ExpressionNode> args, SourcePosition pos) {
     super(pos);
     this.func = func;
     this.args = args;
+    this.tempName = null;
 
     ArrayList<Var> parameters = func.parameters.asList();
 
@@ -29,6 +31,15 @@ public class Call extends Expression {
     }
 
     hashCache = func.getName().hashCode() * 991 + args.hashCode();
+  }
+
+  public Call(String tempName, ArrayList<ExpressionNode> args, SourcePosition pos) {
+    super(pos);
+    this.func = null;
+    this.args = args;
+    this.tempName = tempName;
+
+    hashCache = args.hashCode();
   }
 
   @Override

@@ -9,7 +9,9 @@ public class Break extends Statement {
   public Break(Breakable node, SourcePosition pos) {
     super(pos);
     this.context = node;
-    hashCache = node.hashCode();
+    if (node != null) {
+      hashCache = node.hashCode();
+    }
   }
 
   @Override

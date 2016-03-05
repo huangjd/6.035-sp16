@@ -48,7 +48,6 @@ options
   MethodTable methodTable;
   Program program;
   SymbolTable currentSymtab;
-  Function temporaryFunc = null; // dummy symbol for recursion
 
   // Selectively turns on debug mode.
 
@@ -65,7 +64,6 @@ options
     }
     if (rname.equals("method_decl")) {
       currentSymtab = currentSymtab.scope();
-      temporaryFunc = new Function(LT(2).getText(), null);
     }
     if (trace) {
       super.traceIn(rname);
@@ -78,7 +76,6 @@ options
     }
     if (rname.equals("method_decl")) {
       currentSymtab = currentSymtab.unscope();
-      temporaryFunc = null;
     }
     if (trace) {
       super.traceOut(rname);
@@ -129,7 +126,8 @@ program returns [ProgramNode p = null]: {
 callout_decl returns [FunctionNode f = null] {
   String name;
   SourcePosition pos;
-} : TK_callout {pos = getPos();} name = id SEMICOLON {
+} : TK_callout {pos = getPos();} 
+    name = id SEMICOLON {
   Function oldf = methodTable.lookup(name);
   if (oldf == null) {
     oldf = new Function(name, Type.INT, currentSymtab, null, pos);
@@ -137,7 +135,7 @@ callout_decl returns [FunctionNode f = null] {
     f = oldf.box();
   } else {
     ErrorLogger.logError(new RedeclaredSymbolException(oldf, pos));
-    return null;
+    f = null;
   }
 };
 
@@ -147,7 +145,7 @@ method_decl returns [FunctionNode f = null] {
   StatementNode body;
   SourcePosition pos = getPos();
   boolean ok = true;
-} : (returnType = type| TK_void {returnType = Type.NONE;}) 
+} : (returnType = type | TK_void {returnType = Type.NONE;}) 
     name = id  
     LPAREN (ok = parameter_list)? RPAREN 
     body = block {
@@ -259,7 +257,7 @@ var_decl [Type type] returns [StatementNode node = null] {
     ErrorLogger.logError(new BoundsException(ex, pos2));
   }
   if (bad) {
-    return null;
+    node = null;
   }
 };
 
@@ -364,19 +362,18 @@ assign_op returns [char c = 0]: EQUAL { c = '=';} | PLUS_EQ { c = '+';} | MINUS_
 call returns [Call e = null] {
   SourcePosition pos = getPos(); 
   String name;
-  Function callee;
   ArrayList<ExpressionNode> args = new ArrayList<>();
   ExpressionNode temp;
-} : name = id {
-  callee = methodTable.lookup(name);
-  if (callee == null && !name.equals(temporaryFunc.id)) {
-    ErrorLogger.logError(new UndeclaredSymbolException(name, methodTable, pos));
-    callee = temporaryFunc;
-  }
-} LPAREN (temp = argument {args.add(temp);} 
-  (COMMA temp = argument {args.add(temp);})*)? RPAREN {
+} : name = id 
+    LPAREN (temp = argument {args.add(temp);} 
+   (COMMA temp = argument {args.add(temp);})*)? RPAREN {
   try {
-    e = new Call(callee, args, getPos());
+    e = new Call(name, args, getPos());
+    for (ExpressionNode arg: args) {
+      if (arg == null) {
+        e = null;
+      }
+    } 
   } catch (TypeException ex) {
     ErrorLogger.logError(ex);
   } catch (ArgumentsException ex) {
@@ -463,7 +460,7 @@ return_stmt returns [StatementNode s = null] {
   try {
     if (e == temp) {
       s = new Return(null, pos).box();
-    } else {
+    } else if (e != null) {
       s = new Return(null, e, pos).box();
     }
   } catch (TypeException ex) {
