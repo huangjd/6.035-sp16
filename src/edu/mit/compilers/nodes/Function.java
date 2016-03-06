@@ -53,7 +53,11 @@ public class Function extends Node {
       for (Var var : getParams()) {
         temp += (var.type.toString() + " " + var.id + ", ");
       }
-      temp = temp.substring(0, temp.length() - 2);
+      try {
+        temp = temp.substring(0, temp.length() - 2);
+      } catch (StringIndexOutOfBoundsException e) {
+
+      }
 
       return returnType.toString() + " " + id + "(" + temp + ") " + body.toString() + "\n";
     }
@@ -67,7 +71,11 @@ public class Function extends Node {
       for (Var var : getParams()) {
         temp += (var.type.toString() + ", ");
       }
-      temp = temp.substring(0, temp.length() - 2);
+      try {
+        temp = temp.substring(0, temp.length() - 2);
+      } catch (StringIndexOutOfBoundsException e) {
+
+      }
       return returnType.toString() + " " + id + "(" + temp + ");";
     }
   }
