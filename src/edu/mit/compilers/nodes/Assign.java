@@ -4,8 +4,8 @@ import edu.mit.compilers.common.*;
 
 public class Assign extends Statement {
 
-  public Var var;
-  public ExpressionNode value;
+  public final Var var;
+  public final ExpressionNode value;
 
   public Assign(Var var, ExpressionNode value, SourcePosition pos) {
     super(pos);

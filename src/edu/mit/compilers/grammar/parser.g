@@ -1,7 +1,9 @@
 header {
 package edu.mit.compilers.grammar;
 import edu.mit.compilers.common.*;
+import edu.mit.compilers.visitors.*;
 import edu.mit.compilers.nodes.*;
+import edu.mit.compilers.codegen.*;
 
 import java.util.*;
 import java.lang.*;
@@ -48,6 +50,7 @@ options
   MethodTable methodTable;
   Program program;
   SymbolTable currentSymtab;
+  FunctionNode currentFunc = null;
 
   // Selectively turns on debug mode.
 
@@ -86,10 +89,6 @@ options
     SourcePosition usp = new SourcePosition(getFilename(), LT(1).getLine(), LT(1).getColumn() + LT(1).getText().length());
     return usp;
   }
-  
-  public ProgramNode getProgram() {
-  	return program.box();
-  }
 }
 
 program returns [ProgramNode p = null]: {
@@ -121,6 +120,13 @@ program returns [ProgramNode p = null]: {
   if (ok) {
     p = program.box(); 
   }
+  if (p != null && !error) {
+    SemanticsPostProcess a = new SemanticsPostProcess();
+    p = (ProgramNode) a.enter(p);
+    if (!a.ok) {
+      p = null;
+    }
+  }
 };
 
 callout_decl returns [FunctionNode f = null] {
@@ -130,7 +136,7 @@ callout_decl returns [FunctionNode f = null] {
     name = id SEMICOLON {
   Function oldf = methodTable.lookup(name);
   if (oldf == null) {
-    oldf = new Function(name, Type.INT, currentSymtab, null, pos);
+    oldf = new Function(name, pos);
     methodTable.insert(oldf);
     f = oldf.box();
   } else {
@@ -142,61 +148,112 @@ callout_decl returns [FunctionNode f = null] {
 method_decl returns [FunctionNode f = null] {
   Type returnType;
   String name;
-  StatementNode body;
+  StatementNode s;
+  
+  ArrayList<StatementNode> body = new ArrayList<>(), temps;
   SourcePosition pos = getPos();
-  boolean ok = true;
+  int ok = 0;
 } : (returnType = type | TK_void {returnType = Type.NONE;}) 
     name = id  
-    LPAREN (ok = parameter_list)? RPAREN 
-    body = block {
-  try {
-    Function oldf = methodTable.lookup(name);
-    if (oldf == null) {
-      if (body != null && ok) {
-        oldf = new Function(name, returnType, currentSymtab, body, pos);
-        methodTable.insert(oldf);
-        f = oldf.box();
-      } 
+    LPAREN (ok = parameter_list)? RPAREN {
+  Function oldf = methodTable.lookup(name);
+  if (oldf != null) {
+    ErrorLogger.logError(new RedeclaredSymbolException(oldf, pos));
+  } else {
+    oldf = new Function(name, returnType, ok, currentSymtab, new Pass(null).box(), pos);
+    methodTable.insert(oldf);
+    f = oldf.box();
+    currentFunc = f;
+  }
+  currentSymtab.setOffset(8);
+} LCURLY
+  (temps = field_decl {
+    if (temps != null) {
+      body.addAll(temps);
     } else {
-      ErrorLogger.logError(new RedeclaredSymbolException(oldf, pos));
+      ok = -1;
     }
-  } catch (NullPointerException ex) {
+  })*            
+  (s = statement {
+    if (s != null) {
+      body.add(s);
+    } else {
+      ok = -1;
+    }
+  })*
+  RCURLY {
+  
+  if (returnType == Type.NONE) {
+    body.add(new Return(f, null).box());
+  } else {
+    body.add(new Die(-2, null).box());
+  }
+  Block b = new Block(currentSymtab, body, pos);
+  oldf = new Function(name, returnType, ok, currentSymtab, b.box(), pos);
+  f.setNode(oldf);
+  methodTable.forceInsert(oldf);
+  currentFunc = null;
+  if (ok < 0) {
+    f = null;
   }
 };
 
-parameter_list returns [boolean ok = true] {
-  Type t = null;
+parameter_list returns [int ok = 0] {
+  Type t;
   String name;
   SourcePosition pos = getPos(), pos2;
+  int count = 0;
+  int offset = 16;
 } : t = type {pos2 = getPos();} name = id {
    if (t != null) {
      Var newVar = new Var(name, t); 
-     Var oldVar = currentSymtab.lookup(name);
+     Var oldVar = currentSymtab.lookupCurrentScope(name);
      if (oldVar == null) {
        currentSymtab.insert(newVar);
+       newVar.registerIndex = Register.argToReg(0);
+       newVar.stackOffset = 0;
+       count = 1;
      } else {
        ErrorLogger.logError(new RedeclaredSymbolException(oldVar, newVar, pos2));
-       ok = false;
+       ok = -1;
      }
    } else {
      ErrorLogger.logError(new TypeException(t, false, pos));
-     ok = false;
+     ok = -1;
    }
 } (COMMA {pos = getPos();} t = type {pos2 = getPos();} name = id {
   if (t != null) {
     Var newVar = new Var(name, t); 
-    Var oldVar = currentSymtab.lookup(name);
+    Var oldVar = currentSymtab.lookupCurrentScope(name);
     if (oldVar == null) {
       currentSymtab.insert(newVar);
+      newVar.stackOffset = 0;
+      switch (count) {
+      case 1:
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+        newVar.registerIndex = Register.argToReg(count);
+        break;
+      default:
+        newVar.stackOffset = (count - 4) * 8;
+        break; 
+      }
+      count++;
     } else {
       ErrorLogger.logError(new RedeclaredSymbolException(oldVar, newVar, pos2));
-      ok = false;
+      ok = -1;
     }
   } else {
     ErrorLogger.logError(new TypeException(t, false, pos));
-    ok = false;
+    ok = -1;
   }
-})*;
+})* {
+  if (ok != -1) {
+    ok = count;
+  }
+};
 
 	
 field_decl returns [ArrayList<StatementNode> declarations = null] {
@@ -270,12 +327,12 @@ block returns [StatementNode s = null] {
   StatementNode stmt = null;
 } : LCURLY (decls = field_decl {statements.addAll(decls);})* 
     (stmt = statement {statements.add(stmt);} )* RCURLY {  
+  s = new Block(currentSymtab, statements, pos).box();
   for (StatementNode node : statements) {
     if (node == null) {
-      return null;
+      s = null;
     }
   }
-  s = new Block(currentSymtab, statements, pos).box();
 };
 
 statement returns [StatementNode s = null] {
@@ -284,17 +341,19 @@ statement returns [StatementNode s = null] {
   : s = assign_stmt
   | s = store_stmt
   | {Call e;} e = call SEMICOLON {
-    s = new CallStmt(e, e.getSourcePosition()).box();
+    if (e != null) {
+      s = new CallStmt(e, e.getSourcePosition()).box();
+    }
   } 
   | s = if_stmt
   | s = for_stmt
   | s = while_stmt
   | s = return_stmt
   | TK_break SEMICOLON {
-      s = new Break(null, pos).box();
+      s = new Break(pos).box();
   }
   | TK_continue SEMICOLON {
-      s = new Continue(null, pos).box();
+      s = new Continue(pos).box();
   };
 
 assign_stmt returns [StatementNode s = null] {
@@ -317,7 +376,7 @@ assign_stmt returns [StatementNode s = null] {
       s = new Assign(var, new Sub(new VarExpr(var, pos).box(), value, pos).box(), pos).box();
       break;
     default:
-      throw new IllegalStateException("Internal error in parser: assign_stmt");    
+      throw new NullPointerException();
     }
   } catch (TypeException ex) {
     ErrorLogger.logError(ex);
@@ -349,7 +408,7 @@ store_stmt returns [StatementNode s = null] {
           value, pos).box(), pos).box();
       break;
     default:
-      throw new IllegalStateException("Internal error in parser: store_stmt");    
+      throw new NullPointerException();  
     }
   } catch (TypeException ex) {
     ErrorLogger.logError(ex);
@@ -367,13 +426,19 @@ call returns [Call e = null] {
 } : name = id 
     LPAREN (temp = argument {args.add(temp);} 
    (COMMA temp = argument {args.add(temp);})*)? RPAREN {
+  Function f = methodTable.lookup(name);
   try {
-    e = new Call(name, args, getPos());
-    for (ExpressionNode arg: args) {
-      if (arg == null) {
-        e = null;
-      }
-    } 
+    if (f == null) {
+      ErrorLogger.logError(new UndeclaredSymbolException(name, methodTable, pos));
+      e = null;
+    } else {
+      e = new Call(f, args, pos);
+      for (ExpressionNode arg: args) {
+        if (arg == null) {
+          e = null;
+        }
+      } 
+    }
   } catch (TypeException ex) {
     ErrorLogger.logError(ex);
   } catch (ArgumentsException ex) {
@@ -458,15 +523,18 @@ return_stmt returns [StatementNode s = null] {
   SourcePosition pos = getPos();
 } : TK_return (e = expr)? SEMICOLON {
   try {
+    if (currentFunc == null) {
+      ErrorLogger.logError(new GeneralException("return statement outside of a function body", pos));
+    }
     if (e == temp) {
-      s = new Return(null, pos).box();
+      s = new Return(currentFunc, pos).box();
     } else if (e != null) {
-      s = new Return(null, e, pos).box();
+      s = new Return(currentFunc, e, pos).box();
     }
   } catch (TypeException ex) {
     ErrorLogger.logError(ex);
   } catch (NullPointerException ex) {
-    return null;
+    s = null;
   }
 }; 
 
@@ -559,7 +627,7 @@ eq_expr returns [ExpressionNode e = null] {
 			} else if (op.op.equals("!=")) {
 				exprStack.addFirst(new Ne(left, right, op.pos).box());
 			} else {
-        throw new IllegalStateException("Internal error in parser: eq_expr");    
+			  throw new NullPointerException();
 			}
 		}
     e = exprStack.pollFirst();
@@ -605,7 +673,7 @@ rel_expr returns [ExpressionNode e = null] {
 			} else if (op.op.equals("<=")) {
 				exprStack.addFirst(new Le(left, right, op.pos).box());
 			} else {
-        throw new IllegalStateException("Internal error in parser: rel_expr");    
+			  throw new NullPointerException();
 			}
 		}
 		e = exprStack.pollFirst();
@@ -650,7 +718,7 @@ add_expr returns [ExpressionNode e = null] {
 				exprStack.addFirst(new Sub(left, right, op.pos).box());
 				break;
 			default:
-        throw new IllegalStateException("Internal error in parser: add_expr"); 		
+			  throw new NullPointerException();
 			}
 		}
     e = exprStack.pollFirst();
@@ -697,7 +765,7 @@ mul_expr returns [ExpressionNode e = null] {
         exprStack.addFirst(new Mod(left, right, op.pos).box());
         break;
       default:
-        throw new IllegalStateException("Internal error in parser: mul_expr"); 
+        throw new NullPointerException();
       }
     }
     e = exprStack.pollFirst();

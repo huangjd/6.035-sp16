@@ -4,7 +4,7 @@ import edu.mit.compilers.common.*;
 
 public class BooleanLiteral extends Literal {
 
-  private boolean value;
+  public final boolean value;
 
   public BooleanLiteral(boolean v, SourcePosition pos) {
     super(pos);

@@ -4,8 +4,9 @@ import edu.mit.compilers.common.*;
 
 public class Load extends Expression {
 
-  public Var array;
-  public ExpressionNode index;
+  public final Var array;
+  public final ExpressionNode index;
+  public boolean checkBounds = true;
 
   public Load(Var array, ExpressionNode index, SourcePosition pos) {
     super(pos);

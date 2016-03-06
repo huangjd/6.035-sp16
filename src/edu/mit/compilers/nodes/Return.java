@@ -4,23 +4,22 @@ import edu.mit.compilers.common.*;
 
 public class Return extends Statement {
 
-  public Function context;
-  public ExpressionNode value;
+  public final FunctionNode context;
+  public final ExpressionNode value;
 
-  public Return(Function node, SourcePosition pos) {
+  public Return(FunctionNode node, SourcePosition pos) {
     super(pos);
     this.context = node;
     this.value = null;
 
-    if (node != null) {
-      if (node.returnType != Type.NONE) {
-        throw new TypeException(node.returnType, Type.NONE, pos);
-      }
+    if (((Function) (node.node)).returnType != Type.NONE) {
+      throw new TypeException(((Function) (node.node)).returnType, Type.NONE, pos);
     }
+
     hashCache = node.hashCode();
   }
 
-  public Return(Function node, ExpressionNode value, SourcePosition pos) {
+  public Return(FunctionNode node, ExpressionNode value, SourcePosition pos) {
     super(pos);
     this.context = node;
     this.value = value;
@@ -29,13 +28,11 @@ public class Return extends Statement {
       throw new TypeException(value, false);
     }
 
-    if (node != null) {
-      if (node.returnType != value.getType()) {
-        throw new TypeException(node.returnType, value.getType(), pos);
-      }
+    if (((Function) (node.node)).returnType != value.getType()) {
+      throw new TypeException(value, ((Function) (node.node)).returnType);
     }
 
-    hashCache = value.hashCode();
+    hashCache = node.hashCode() + value.hashCode() * 37;
   }
 
   @Override

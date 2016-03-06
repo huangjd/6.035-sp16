@@ -4,7 +4,7 @@ import edu.mit.compilers.common.*;
 
 public class IntLiteral extends Literal {
 
-  private long value;
+  public final long value;
 
   public IntLiteral(long v, SourcePosition pos) {
     super(pos);

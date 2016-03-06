@@ -77,15 +77,18 @@ class Main {
         parser.setFilename(filaName);
         ProgramNode program = parser.program();
         ErrorLogger.printErrors();
-        if (program == null) {
+        if (program == null || ErrorLogger.log.errors.size() > 0 || parser.getError()) {
           System.exit(-1);
         }
         if (CLI.debug) {
-          new IRPrinter().enter(program);
+          IRPrinter p = new IRPrinter();
+          p.printSymtab = true;
+          p.enter(program);
         }
       }
-    } catch(Exception e) {
+    } catch (Exception e) {
       // print the error:
+      e.printStackTrace();
       System.err.println(CLI.infile + " " + e);
       System.exit(-1);
     }

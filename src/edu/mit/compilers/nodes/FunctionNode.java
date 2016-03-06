@@ -13,4 +13,8 @@ public class FunctionNode extends NodeProxy {
     mutator.returnNode = null;
     return new FunctionNode((Function) temp);
   }
+
+  public void setNode(Function func) {
+    this.node = func;
+  }
 }

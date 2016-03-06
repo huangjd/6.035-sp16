@@ -4,9 +4,9 @@ import edu.mit.compilers.common.SourcePosition;
 
 public class Pass extends Statement {
 
-  private int nop;
+  public final int nop;
 
-  protected Pass(SourcePosition pos) {
+  public Pass(SourcePosition pos) {
     super(pos);
     nop = 0;
   }

@@ -5,4 +5,6 @@ public interface ScopedMap {
   public ScopedMap unscope();
 
   public void Swap(ScopedMap other);
+
+  void SwapIn(ScopedMap other);
 }

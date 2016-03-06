@@ -12,7 +12,7 @@ public class ArgumentsException extends RuntimeException {
 
   public ArgumentsException(Function func, int actual, SourcePosition pos) {
     this.func = func;
-    this.expected = func.parameters.asList().size();
+    this.expected = func.getParams().size();
     this.actual = actual;
     this.pos = pos;
     if (expected == actual) {

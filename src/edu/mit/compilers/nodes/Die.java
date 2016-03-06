@@ -6,7 +6,7 @@ public class Die extends Statement {
 
   public final int exitCode;
 
-  protected Die(int exitCode, SourcePosition pos) {
+  public Die(int exitCode, SourcePosition pos) {
     super(pos);
     this.exitCode = exitCode;
     this.hashCache = exitCode;

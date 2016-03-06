@@ -7,7 +7,7 @@ public class Visitor {
     return node;
   }
 
-  public void visit(Program node) {
+  protected void visit(Program node) {
     for (FunctionNode function : node.functions) {
       function.accept(this);
     }
@@ -19,7 +19,7 @@ public class Visitor {
     }
   }
 
-  public void visit(Function node) {
+  protected void visit(Function node) {
     node.body.accept(this);
   }
 

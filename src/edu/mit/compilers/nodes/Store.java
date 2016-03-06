@@ -4,9 +4,10 @@ import edu.mit.compilers.common.*;
 
 public class Store extends Statement {
 
-  public Var array;
-  public ExpressionNode index;
-  public ExpressionNode value;
+  public final Var array;
+  public final ExpressionNode index;
+  public final ExpressionNode value;
+  public boolean checkBounds = true;
 
   public Store(Var array, ExpressionNode index, ExpressionNode value, SourcePosition pos) {
     super(pos);

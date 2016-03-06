@@ -6,8 +6,8 @@ public class Var {
   public final long size;
   public final long length;
 
-  int stackOffset;
-  int registerIndex = -1;
+  public int stackOffset = 0;
+  public int registerIndex = -1;
 
   public Var(String id, Type type) {
     this.id = id;
@@ -63,5 +63,9 @@ public class Var {
   @Override
   public int hashCode() {
     return id.hashCode();
+  }
+
+  public int getStackOffset() {
+    return stackOffset;
   }
 }

@@ -1,5 +1,6 @@
 package edu.mit.compilers.common;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 
 public class ErrorLogger {
@@ -8,7 +9,7 @@ public class ErrorLogger {
     log = new ErrorLogger();
   }
 
-  ArrayList<String> errors = new ArrayList<>();
+  public ArrayList<String> errors = new ArrayList<>();
 
   static String a = ": error: ";
   static String b = ": warning: ";
@@ -35,7 +36,11 @@ public class ErrorLogger {
     switch (e.subtype) {
     case MISMATCH:
       if (e.expr != null) {
-        process(e.pos, "expecting type \'", e.expected, "\', got type \'", e.actual, "\'\n", e.expr);
+        if (e.expected != Type.NONE) {
+          process(e.pos, "expecting type \'", e.expected, "\', got type \'", e.actual, "\'\n", e.expr);
+        } else {
+          process(e.pos, "function declared to return type void but got type \'", e.actual, "\'\n", e.expr);
+        }
       } else if (e.var != null) {
         process(e.pos, "expecting type \'", e.expected, "\', got type \'", e.actual, "\'\n", e.var);
       } else {
@@ -111,6 +116,10 @@ public class ErrorLogger {
     }
   }
 
+  static public void logError(GeneralException e) {
+    process(e.pos, e.msg);
+  }
+
   static public void logError(BoundsException e) {
     process(e.pos, "for loop increment must be a positive int_literal, got \"", e.value, "\"");
   }
@@ -125,7 +134,13 @@ public class ErrorLogger {
 
   static public void printErrors() {
     for (String s : log.errors) {
-      System.out.println(s);
+      System.err.println(s);
+    }
+  }
+
+  static public void printErrors(PrintStream out) {
+    for (String s : log.errors) {
+      out.println(s);
     }
   }
 

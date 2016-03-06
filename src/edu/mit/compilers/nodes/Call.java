@@ -1,6 +1,6 @@
 package edu.mit.compilers.nodes;
 
-import java.util.ArrayList;
+import java.util.*;
 
 import edu.mit.compilers.common.*;
 
@@ -8,17 +8,14 @@ public class Call extends Expression {
 
   public final Function func;
   public final ArrayList<ExpressionNode> args;
-  public final String tempName;
 
   public Call(Function func, ArrayList<ExpressionNode> args, SourcePosition pos) {
     super(pos);
     this.func = func;
     this.args = args;
-    this.tempName = null;
-
-    ArrayList<Var> parameters = func.parameters.asList();
 
     if (!func.isCallout) {
+      List<Var> parameters = func.getParams();
       if (parameters.size() != args.size()) {
         throw new ArgumentsException(func, args.size(), pos);
       }
@@ -31,15 +28,6 @@ public class Call extends Expression {
     }
 
     hashCache = func.getName().hashCode() * 991 + args.hashCode();
-  }
-
-  public Call(String tempName, ArrayList<ExpressionNode> args, SourcePosition pos) {
-    super(pos);
-    this.func = null;
-    this.args = args;
-    this.tempName = tempName;
-
-    hashCache = args.hashCode();
   }
 
   @Override

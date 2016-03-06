@@ -12,10 +12,12 @@ public class If extends Statement {
     this.cond = cond;
     this.trueBlock = trueBlock;
     this.falseBlock = falseBlock;
-    this.hashCache = cond.hashCode() + trueBlock.hashCode() * 17 + falseBlock.hashCode() * 19;
+    this.trueBlock.hashCode();
+    this.falseBlock.hashCode();
     if (cond.getType() != Type.BOOLEAN) {
       throw new TypeException(cond, Type.BOOLEAN);
     }
+    this.hashCache = cond.hashCode() + trueBlock.hashCode() * 17 + falseBlock.hashCode() * 19;
   }
 
   public If(ExpressionNode cond, StatementNode trueBlock, SourcePosition pos) {

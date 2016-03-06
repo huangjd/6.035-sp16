@@ -4,7 +4,7 @@ import edu.mit.compilers.common.*;
 
 public class VarExpr extends Expression {
 
-  private Var var;
+  public final Var var;
 
   public VarExpr(Var var, SourcePosition pos) {
     super(pos);

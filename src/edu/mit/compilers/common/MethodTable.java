@@ -24,4 +24,8 @@ public class MethodTable {
       return true;
     }
   }
+
+  public void forceInsert(Function f) {
+    map.put(f.id, f);
+  }
 }

@@ -28,4 +28,8 @@ public abstract class NodeProxy {
   public int hashCode() {
     return node.hashCode();
   }
+
+  public Node getNode() {
+    return node;
+  }
 }

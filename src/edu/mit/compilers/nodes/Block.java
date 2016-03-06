@@ -7,12 +7,17 @@ import edu.mit.compilers.common.*;
 public class Block extends Statement {
 
   public final SymbolTable localSymbolTable;
-  public final ArrayList<StatementNode> statements;
+  public ArrayList<StatementNode> statements;
 
   public Block(SymbolTable symtab, ArrayList<StatementNode> statements, SourcePosition pos) {
     super(pos);
     this.localSymbolTable = symtab;
     this.statements = statements;
+
+    if (symtab == null) {
+      throw new NullPointerException();
+    }
+
     hashCache = this.statements.hashCode();
   }
 

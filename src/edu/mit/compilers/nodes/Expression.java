@@ -1,7 +1,6 @@
 package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
-import edu.mit.compilers.nodes.Node;
 
 public abstract class Expression extends Node {
   protected Expression(SourcePosition pos) {
@@ -16,7 +15,7 @@ public abstract class Expression extends Node {
 }
 
 abstract class BinaryOpExpr extends Expression {
-  public ExpressionNode left, right;
+  public final ExpressionNode left, right;
 
   protected BinaryOpExpr(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(pos);

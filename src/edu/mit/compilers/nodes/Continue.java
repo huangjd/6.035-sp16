@@ -4,14 +4,17 @@ import edu.mit.compilers.common.SourcePosition;
 
 public class Continue extends Statement {
 
-  public Breakable context;
+  public final Breakable context;
+
+  public Continue(SourcePosition pos) {
+    super(pos);
+    this.context = null;
+  }
 
   public Continue(Breakable node, SourcePosition pos) {
     super(pos);
     this.context = node;
-    if (node != null) {
-      hashCache = node.hashCode();
-    }
+    this.hashCache = node.hashCode();
   }
 
   @Override

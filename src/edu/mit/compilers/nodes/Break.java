@@ -6,12 +6,15 @@ public class Break extends Statement {
 
   public Breakable context;
 
+  public Break(SourcePosition pos) {
+    super(pos);
+    context = null;
+  }
+
   public Break(Breakable node, SourcePosition pos) {
     super(pos);
     this.context = node;
-    if (node != null) {
-      hashCache = node.hashCode();
-    }
+    this.hashCache = node.hashCode();
   }
 
   @Override

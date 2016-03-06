@@ -4,7 +4,7 @@ import edu.mit.compilers.common.*;
 
 public class StringLiteral extends Expression {
 
-  private String value;
+  public final String value;
 
   public StringLiteral(String string, SourcePosition pos) {
     super(pos);

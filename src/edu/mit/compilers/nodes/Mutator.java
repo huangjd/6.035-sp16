@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import edu.mit.compilers.common.*;
 
 public class Mutator extends Visitor {
-  Node returnNode;
+  protected Node returnNode;
 
   @Override
   public NodeProxy enter(NodeProxy node) {
@@ -13,7 +13,7 @@ public class Mutator extends Visitor {
   }
 
   @Override
-  public void visit(Program node) {
+  protected void visit(Program node) {
     SymbolTable globals = new SymbolTable();
     MethodTable methodTable = new MethodTable();
     Program p = new Program(methodTable, globals);
@@ -58,11 +58,12 @@ public class Mutator extends Visitor {
   }
 
   @Override
-  public void visit(Function node) {
+  protected void visit(Function node) {
     if (!node.isCallout) {
       StatementNode body = node.body.accept(this);
       if (body != node.body) {
-        returnNode = new Function(node.id, node.returnType, node.parameters, body, node.getSourcePosition());
+        returnNode = new Function(node.id, node.returnType, node.nParams, node.localSymtab, body,
+            node.getSourcePosition());
       }
     }
   }

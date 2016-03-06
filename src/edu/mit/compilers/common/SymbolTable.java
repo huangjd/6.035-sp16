@@ -2,7 +2,9 @@ package edu.mit.compilers.common;
 
 import java.util.*;
 
-public class SymbolTable implements ScopedMap {
+import edu.mit.compilers.codegen.Register;
+
+public class SymbolTable {
 
   private int offsetCounter;
   private HashMap<String, Var> map;
@@ -19,21 +21,25 @@ public class SymbolTable implements ScopedMap {
     this.offsetCounter = parentScope.offsetCounter;
   }
 
-  @Override
   public SymbolTable scope() {
     return new SymbolTable(this);
   }
 
-  @Override
   public SymbolTable unscope() {
     return parentScope;
   }
 
-  @Override
-  public void Swap(ScopedMap other) {
-    SymbolTable that = (SymbolTable) other;
+  public void SwapIn(SymbolTable other) {
+    SymbolTable that = other;
+    HashMap<String, Var> tmp = map;
+    int tmp2 = offsetCounter;
+
     offsetCounter = that.offsetCounter;
     map = that.map;
+    parentScope = that.parentScope;
+
+    that.map = tmp;
+    that.offsetCounter = tmp2;
   }
 
   public int getOffset() {
@@ -71,7 +77,7 @@ public class SymbolTable implements ScopedMap {
       default:
         break;
       }
-      var.stackOffset = offsetCounter;
+      var.stackOffset = -offsetCounter;
       offsetCounter += var.size;
       return true;
     }
@@ -82,7 +88,11 @@ public class SymbolTable implements ScopedMap {
     list.sort(new Comparator<Var>() {
       @Override
       public int compare(Var arg0, Var arg1) {
-        return Integer.compare(arg0.stackOffset, arg1.stackOffset);
+        int i = Integer.compare(arg1.stackOffset, arg0.stackOffset);
+        if (i == 0) {
+          i = Integer.compare(Register.regToArg(arg1.registerIndex), Register.regToArg(arg0.registerIndex));
+        }
+        return i;
       }
     });
     return list;
