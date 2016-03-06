@@ -21,8 +21,7 @@ public class Var {
       size = 1;
       break;
     default:
-      size = 0;
-      break;
+      throw new TypeException(type, false, null);
     }
   }
 
@@ -34,12 +33,11 @@ public class Var {
     case INTARRAY:
       size = 8 * length;
       break;
-    case BOOLEAN:
+    case BOOLEANARRAY:
       size = length;
       break;
     default:
-      size = 0;
-      break;
+      throw new TypeException(type, true, null);
     }
   }
 

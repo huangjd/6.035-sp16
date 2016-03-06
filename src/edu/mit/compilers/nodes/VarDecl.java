@@ -24,7 +24,7 @@ public class VarDecl extends Statement {
       throw new TypeException(var, pos);
     }
 
-    Var conflictingVar = symtab.lookup(var.id);
+    Var conflictingVar = symtab.lookupCurrentScope(var.id);
     if (conflictingVar != null) {
       throw new RedeclaredSymbolException(conflictingVar, var, pos);
     }

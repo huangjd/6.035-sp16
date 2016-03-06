@@ -90,7 +90,8 @@ public class SymbolTable {
       public int compare(Var arg0, Var arg1) {
         int i = Integer.compare(arg1.stackOffset, arg0.stackOffset);
         if (i == 0) {
-          i = Integer.compare(Register.regToArg(arg1.registerIndex), Register.regToArg(arg0.registerIndex));
+          i = Integer.compare(Register.regToArg(arg1.registerIndex),
+              Register.regToArg(arg0.registerIndex));
         }
         return i;
       }

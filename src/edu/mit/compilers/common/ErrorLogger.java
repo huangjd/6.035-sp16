@@ -128,6 +128,10 @@ public class ErrorLogger {
     process(e.pos, "size of array \"", e.value, "[]\" is not a positive integer");
   }
 
+  static public void logError(InvalidBreakStatementException e) {
+    process(e.pos, e.isContinue ? "continue" : "break", " statement is not in a for statement or a while statement");
+  }
+
   static public void logError(Exception e) {
     process(null, e);
   }

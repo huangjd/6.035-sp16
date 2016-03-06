@@ -1,6 +1,6 @@
 package edu.mit.compilers.nodes;
 
-import java.util.List;
+import java.util.*;
 
 import edu.mit.compilers.common.*;
 
@@ -41,7 +41,9 @@ public class Function extends Node {
   }
 
   public List<Var> getParams() {
-    return localSymtab.asList().subList(0, nParams);
+    ArrayList<Var> a = new ArrayList<Var>(localSymtab.asList().subList(0, nParams));
+    Collections.reverse(a);
+    return a;
   }
 
   @Override

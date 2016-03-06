@@ -12,12 +12,11 @@ public final class SemanticsPostProcess extends Mutator {
   protected void visit(Program node) {
     super.visit(node);
 
-    for (FunctionNode function : node.functions) {
+    for (FunctionNode function : ((Program) returnNode).functions) {
       Function func = (Function) (function.getNode());
       if (func.id.equals("main") && func.getParams().size() == 0) {
-        node.main = function;
-        node.functions.remove(node.main);
-        returnNode = node;
+        ((Program) returnNode).main = function;
+        ((Program) returnNode).functions.remove(node.main);
         return;
       }
     }
@@ -65,9 +64,13 @@ public final class SemanticsPostProcess extends Mutator {
   @Override
   protected void visit(Minus node) {
     if (node.right.getNode() instanceof UnparsedIntLiteral) {
+      UnparsedIntLiteral i = (UnparsedIntLiteral) (node.right.getNode());
       try {
-        long value = Long.parseLong("-" + ((UnparsedIntLiteral) (node.right.getNode())).value);
-        returnNode = new IntLiteral(value, node.right.getSourcePosition());
+        if (i.value.length() > 2 && i.value.charAt(0) == '0' && i.value.charAt(1) == 'x') {
+          returnNode = new IntLiteral(Long.parseLong("-" + i.value.substring(2), 16), node.getSourcePosition());
+        } else {
+          returnNode = new IntLiteral(Long.parseLong("-" + i.value), node.getSourcePosition());
+        }
       } catch (NumberFormatException e) {
         ErrorLogger.logError(new GeneralException(
             "int literal \"" + ((UnparsedIntLiteral) (node.right.getNode())).value + "\" is out of range",
@@ -81,7 +84,11 @@ public final class SemanticsPostProcess extends Mutator {
   @Override
   protected void visit(UnparsedIntLiteral node) {
     try {
-      returnNode = new IntLiteral(Long.parseLong(node.value), node.getSourcePosition());
+      if (node.value.length() > 2 && node.value.charAt(0) == '0' && node.value.charAt(1) == 'x') {
+        returnNode = new IntLiteral(Long.parseLong(node.value.substring(2), 16), node.getSourcePosition());
+      } else {
+        returnNode = new IntLiteral(Long.parseLong(node.value), node.getSourcePosition());
+      }
     } catch (NumberFormatException e) {
       ErrorLogger.logError(new GeneralException(
           "int literal \"" + node.value + "\" is out of range", node.getSourcePosition()));

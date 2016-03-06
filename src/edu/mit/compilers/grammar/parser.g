@@ -106,7 +106,11 @@ program returns [ProgramNode p = null]: {
   }
 })* (declarations = field_decl {
   if (declarations != null) {
-    program.varDecls.addAll(declarations);
+    try {
+      program.varDecls.addAll(declarations);
+    } catch (Exception e) {
+      ok = false;
+    }
   } else {
     ok = false;
   }
@@ -169,7 +173,11 @@ method_decl returns [FunctionNode f = null] {
 } LCURLY
   (temps = field_decl {
     if (temps != null) {
-      body.addAll(temps);
+      try {
+        body.addAll(temps);
+      } catch (Exception ex) {
+        ok = -1;
+      }
     } else {
       ok = -1;
     }
@@ -325,13 +333,23 @@ block returns [StatementNode s = null] {
   ArrayList<StatementNode> statements = new ArrayList<>();
   ArrayList<StatementNode> decls;
   StatementNode stmt = null;
-} : LCURLY (decls = field_decl {statements.addAll(decls);})* 
+  boolean ok = true;
+} : LCURLY (decls = field_decl {
+  try {
+    statements.addAll(decls); 
+  } catch (Exception ex) {
+    ok = false;
+  }
+})*
     (stmt = statement {statements.add(stmt);} )* RCURLY {  
   s = new Block(currentSymtab, statements, pos).box();
   for (StatementNode node : statements) {
     if (node == null) {
       s = null;
     }
+  }
+  if (!ok) {
+    s = null;
   }
 };
 
@@ -831,7 +849,7 @@ primary_expr returns [ExpressionNode e = null] {
     }
   }
   | {Token charliteral = LT(1); } CHARLITERAL {
-    char c0 = charliteral.getText().charAt(0);
+    char c0 = charliteral.getText().charAt(1);
     e = new IntLiteral(c0, pos).box();
   }
   | { Token intliteral = LT(1); } INTLITERAL {

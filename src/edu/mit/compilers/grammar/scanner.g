@@ -70,7 +70,7 @@ ID options { paraphrase = "an identifier"; } :
   ALPHA (ALNUM)*; 
   
 CHARLITERAL : '\'' (ESC|~('\''|'\"'|'\\'|'\n'|'\t')) '\'';
-INTLITERAL : ((NUMBER)+ | "0x" (NUMBER|'A'..'F'|'a'..'f')+);
+INTLITERAL : ((NUMBER)+ | (HEXPREFIX (NUMBER|'A'..'F'|'a'..'f')+));
 STRINGLITERAL : '"' (ESC|~('\''|'\"'|'\\'|'\n'|'\t'))* '"';
 
 COMMA options { paraphrase = ","; } : ',';
@@ -106,3 +106,6 @@ ALPHA : ('a'..'z')|('A'..'Z')|'_';
 
 protected
 NUMBER : ('0'..'9');
+
+protected
+HEXPREFIX : "0x";
