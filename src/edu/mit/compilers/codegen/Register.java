@@ -18,6 +18,16 @@ public class Register {
   public static final int r13 = 13;
   public static final int r14 = 14;
   public static final int r15 = 15;
+  
+  public int value;
+  
+  public Register(int value) {
+  	this.value = value;
+  }
+  
+  public static Register RSP = null; // TODO initialize
+  public static Register RBP = null;
+  public static ComparisonTypes lastComparisonResult = ComparisonTypes.NONE;
 
   public static int argToReg(int n) {
     final int[] index = {7, 6, 3, 2, 8, 9};
