@@ -51,7 +51,7 @@ public class IRBuilder {
   }
 
   public Register emitOp(Opcode op, Register a, Register b) {
-
+  	
   }
 
   public Register emitOp(Opcode op, Register a, Immediate b) {
