@@ -54,7 +54,7 @@ public class Emits {
 		return null;
 	}
 
-	public static Register emitGe(Register a) {
+	public static Register emitGe(Register a, Register b) {
 		return null;
 	}
 
@@ -89,15 +89,15 @@ public class Emits {
 		return null;
 	}
 
-	public static Register emitMod(Register a) {
+	public static Register emitMod(Register a, Register b) {
 		return null;
 	}
 
-	public static Register emitMul(Register a) {
+	public static Register emitMul(Register a, Register b) {
 		return null;
 	}
 
-	public static Register emitNe(Register a) {
+	public static Register emitNe(Register a, Register b) {
 		return null;
 	}
 
@@ -125,11 +125,11 @@ public class Emits {
 		return null;
 	}
 
-	public static Register emitSub(Register a) {
+	public static Register emitSub(Register a, Register b) {
 		return null;
 	}
 
-	public static Register emitTernary(Register a) {
+	public static Register emitTernary(Register a, Register b, Register c) {
 		return null;
 	}
 
