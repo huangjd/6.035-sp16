@@ -6,12 +6,14 @@ public class BasicBlock {
 
   public ArrayList<Instruction> seq;
 
-  public BasicBlock(ArrayList<Instruction> seq) {
-    this.seq = seq;
-  }
+
 
   public BasicBlock() {
-    // TODO Auto-generated constructor stub
+    seq = new ArrayList<>();
+  }
+
+  public void add(Instruction inst) {
+    seq.add(inst);
   }
 
 }

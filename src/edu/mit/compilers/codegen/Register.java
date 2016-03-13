@@ -18,13 +18,13 @@ public class Register {
   public static final int r13 = 13;
   public static final int r14 = 14;
   public static final int r15 = 15;
-  
+
   public int value;
-  
+
   public Register(int value) {
-  	this.value = value;
+    this.value = value;
   }
-  
+
   public static Register RSP = null; // TODO initialize
   public static Register RBP = null;
   public static ComparisonTypes lastComparisonResult = ComparisonTypes.NONE;
@@ -49,4 +49,32 @@ public class Register {
     }
     return res;
   }
+
+  public static int uuid = 100;
+
+  enum RegisterType {
+    r8, r16, r32, r64, xmm, ymm;
+  }
+
+  public int id;
+  public RegisterType type;
+  public Register() {
+    id = uuid;
+    uuid++;
+    type = RegisterType.r64;
+  }
+
+  public Register(RegisterType type) {
+    id = uuid;
+    uuid++;
+    this.type = type;
+  }
+}
+
+class Immediate extends Register {
+
+}
+
+class Memory extends Register {
+
 }

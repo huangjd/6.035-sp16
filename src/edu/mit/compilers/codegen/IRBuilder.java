@@ -51,11 +51,30 @@ public class IRBuilder {
   }
 
   public Register emitOp(Opcode op, Register a, Register b) {
+    assert(a.type == b.type);
+    if (a instanceof Immediate || a instanceof Memory) {
+      if (b instanceof Immediate || b instanceof Memory) {
+        Register temp = new Register(b.type);
+        currentBB.add(new Instruction(Opcode.MOV, null, temp, b));
+      }
+    } else {
+      if (b instanceof Immediate || b instanceof Memory) {
 
+      } else {
+
+      }
+    }
+
+    Register res = new Register(a.type);
+    currentBB.add(new Instruction(op, Instruction.RegReg, res, new Register[]{a, b}, 0));
+    return res;
   }
 
   public Register emitOp(Opcode op, Register a, Immediate b) {
-
+    assert (a.type == b.type);
+    Register res = new Register(a.type);
+    currentBB.add(new Instruction(op, Instruction.RegImm, res, new Register[]{a, b}, 0));
+    return res;
   }
 
   public Register emitOp(Opcode op, Register a, Register base, Register index, long offset) {

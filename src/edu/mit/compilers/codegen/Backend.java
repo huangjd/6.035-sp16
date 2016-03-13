@@ -11,19 +11,24 @@ public class Backend extends Visitor {
   }
 
   protected void compile(ProgramNode node) {
-
+    node.accept(this);
   }
 
   protected void compile(FunctionNode node) {
-
+    node.accept(this);
   }
 
   protected void compile(StatementNode node) {
-
+    node.accept(this);
   }
 
   protected Register compile(ExpressionNode node) {
-
+    returnValue = null;
+    node.accept(this);
+    assert (returnValue != null);
+    Register temp = returnValue;
+    returnValue = null;
+    return temp;
   }
 
   @Override
