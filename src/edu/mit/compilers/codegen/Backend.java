@@ -77,7 +77,10 @@ public class Backend extends Visitor {
 
   @Override
   protected void visit(Eq node) {
-		// TODO implement 
+  	Register a = compile(node.left);
+		Register b = compile(node.right);
+		Register tmp = builder.emitOp(Opcode.CMP, a, b);
+		returnValue = builder.emitOp(Opcode.SETE, tmp);
 	}
 
   @Override
@@ -89,16 +92,16 @@ public class Backend extends Visitor {
   protected void visit(Ge node) {
 		Register a = compile(node.left);
 		Register b = compile(node.right);
-		Register tmp = builder.emitOp(Opcode.SUB, b, a);
-		returnValue = builder.emitOp(Opcode.CMP, tmp, new Immediate(1));
+		Register tmp = builder.emitOp(Opcode.CMP, a, b);
+		returnValue = builder.emitOp(Opcode.SETGE, tmp);
 	}
 
   @Override
   protected void visit(Gt node) {
 		Register a = compile(node.left);
 		Register b = compile(node.right);
-		Register tmp = builder.emitOp(Opcode.SUB, b, a);
-		returnValue = builder.emitOp(Opcode.CMP, tmp, new Immediate(0));
+		Register tmp = builder.emitOp(Opcode.CMP, a, b);
+		returnValue = builder.emitOp(Opcode.SETG, tmp);
 	}
 
   @Override
@@ -113,17 +116,18 @@ public class Backend extends Visitor {
 
   @Override
   protected void visit(Le node) {
-		Register a = compile(node.left);
+  	Register a = compile(node.left);
 		Register b = compile(node.right);
-		Register tmp = builder.emitOp(Opcode.SUB, a, b);
-		returnValue = builder.emitOp(Opcode.CMP, tmp, new Immediate(1));
+		Register tmp = builder.emitOp(Opcode.CMP, a, b);
+		returnValue = builder.emitOp(Opcode.SETLE, tmp);
 	}
 
   @Override
   protected void visit(Lt node) {
-		Register a = compile(node.left);
+  	Register a = compile(node.left);
 		Register b = compile(node.right);
-		returnValue = builder.emitOp(Opcode.CMP, a, b);
+		Register tmp = builder.emitOp(Opcode.CMP, a, b);
+		returnValue = builder.emitOp(Opcode.SETL, tmp);
 	}
 
   @Override
@@ -159,11 +163,10 @@ public class Backend extends Visitor {
 
   @Override
   protected void visit(Ne node) {
-		Register a = compile(node.left);
+  	Register a = compile(node.left);
 		Register b = compile(node.right);
-		Register l = builder.emitOp(Opcode.CMP, a, b);
-		Register g = builder.emitOp(Opcode.CMP, b, a);
-		returnValue = builder.emitOp(Opcode.NAND, a, b);
+		Register tmp = builder.emitOp(Opcode.CMP, a, b);
+		returnValue = builder.emitOp(Opcode.SETNE, tmp);
 	}
 
   @Override

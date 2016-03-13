@@ -31,7 +31,13 @@ public enum Opcode {
 	SHR,
 	SHL,
 	ROR,
-	CMP, // return new Register with 1, if a < b
+	CMP, 
+	SETGE,
+	SETG,
+	SETLE,
+	SETL,
+	SETE,
+	SETNE,
 	
 	AND,
 	OR,
