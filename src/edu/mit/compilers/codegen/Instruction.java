@@ -6,6 +6,12 @@ public class Instruction {
   public int addressingmode;
   public Register dest, a, b, c;
 
+  public Instruction(Opcode op, Register dest, Register a) {
+    this.op = op;
+    this.dest = dest;
+    this.a = a;
+  }
+
   public Instruction(Opcode op, Register dest, Register a, Register b) {
     this.op = op;
     this.dest = dest;

@@ -27,7 +27,6 @@ public class Register {
 
   public static Register RSP = null; // TODO initialize
   public static Register RBP = null;
-  public static ComparisonTypes lastComparisonResult = ComparisonTypes.NONE;
 
   public static int argToReg(int n) {
     final int[] index = {7, 6, 3, 2, 8, 9};

@@ -38,8 +38,11 @@ public class IRBuilder {
 
   public BasicBlock createBasicBlock() {
     BasicBlock bb = new BasicBlock();
-    functions.get(functions.size() - 1).add(bb);
     return bb;
+  }
+
+  public void insertBasicBlock(BasicBlock bb) {
+    functions.get(functions.size() - 1).add(bb);
   }
 
   public void setCurrentBasicBlock(BasicBlock bb) {
@@ -52,33 +55,18 @@ public class IRBuilder {
 
   public Register emitOp(Opcode op, Register a, Register b) {
     assert(a.type == b.type);
+    Register temp = new Register(b.type);
     if (a instanceof Immediate || a instanceof Memory) {
       if (b instanceof Immediate || b instanceof Memory) {
-        Register temp = new Register(b.type);
-        currentBB.add(new Instruction(Opcode.MOV, null, temp, b));
+        currentBB.add(new Instruction(Opcode.MOV, temp, b));
+        currentBB.add(new Instruction(op, temp, temp, a));
+      } else {
+        currentBB.add(new Instruction(op, temp, b, a));
       }
     } else {
-      if (b instanceof Immediate || b instanceof Memory) {
-
-      } else {
-
-      }
+      currentBB.add(new Instruction(op, temp, a, b));
     }
-
-    Register res = new Register(a.type);
-    currentBB.add(new Instruction(op, Instruction.RegReg, res, new Register[]{a, b}, 0));
-    return res;
-  }
-
-  public Register emitOp(Opcode op, Register a, Immediate b) {
-    assert (a.type == b.type);
-    Register res = new Register(a.type);
-    currentBB.add(new Instruction(op, Instruction.RegImm, res, new Register[]{a, b}, 0));
-    return res;
-  }
-
-  public Register emitOp(Opcode op, Register a, Register base, Register index, long offset) {
-
+    return temp;
   }
 
   public AbstractMap.SimpleEntry<Register, Register> emitDiv(Register a, Register b) {
@@ -93,9 +81,17 @@ public class IRBuilder {
 
   }
 
+  public void emitBranch(Register cond, BasicBlock trueBlock, BasicBlock falseBlock) {
 
+  }
 
+  public void emitBranch(BasicBlock br) {
 
+  }
+
+  public Register createPhiNode(AbstractMap.SimpleEntry<Register, BasicBlock> comeFrom) {
+
+  }
 
 
 
