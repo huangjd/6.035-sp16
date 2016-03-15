@@ -1,208 +1,309 @@
 package edu.mit.compilers.codegen;
 
+import java.util.AbstractMap;
+
+import edu.mit.compilers.common.SymbolTable;
 import edu.mit.compilers.nodes.*;
 
 public class Backend extends Visitor {
 
-  Register returnValue;
+  Value returnValue;
   IRBuilder builder;
+  SymbolTable currentSymtab;
+
+  BasicBlock currentBreakableEntrance, currentBreakableExit;
+
+  BasicBlock exit, exitM1, exitM2; // INIT
 
   public Backend() {
   }
 
-  protected void compile(ProgramNode node) {
-    node.accept(this);
-  }
-
-  protected void compile(FunctionNode node) {
-    node.accept(this);
-  }
-
-  protected void compile(StatementNode node) {
-    node.accept(this);
-  }
-
-  protected Register compile(ExpressionNode node) {
+  protected Value compile(ExpressionNode node) {
     returnValue = null;
     node.accept(this);
     assert (returnValue != null);
-    Register temp = returnValue;
+    Value temp = returnValue;
     returnValue = null;
     return temp;
   }
 
   @Override
   protected void visit(Add node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
+    Value a = compile(node.left);
+    Value b = compile(node.right);
     returnValue = builder.emitOp(Opcode.ADD, a, b);
   }
 
   @Override
   protected void visit(And node) {
-    Register a = compile(node.left);
     BasicBlock evalRight = builder.createBasicBlock();
     BasicBlock exit = builder.createBasicBlock();
+
+
+    Value a = compile(node.left);
     builder.emitBranch(a, evalRight, exit);
+    BasicBlock leftout = builder.getCurrentBasicBlock();
+
 
     builder.insertBasicBlock(evalRight);
     builder.setCurrentBasicBlock(evalRight);
-    Register b = compile(node.right);
+    Value b = compile(node.right);
     builder.emitBranch(exit);
+    BasicBlock rightout = builder.getCurrentBasicBlock();
 
     builder.insertBasicBlock(exit);
     builder.setCurrentBasicBlock(exit);
+    AbstractMap.SimpleEntry<?, ?>[] comeFroms = new AbstractMap.SimpleEntry<?, ?>[]{
+        new AbstractMap.SimpleEntry<Value, BasicBlock>(a, leftout),
+        new AbstractMap.SimpleEntry<Value, BasicBlock>(b, rightout)
+    };
 
+    returnValue = builder.createPhiNode((AbstractMap.SimpleEntry<Value, BasicBlock>[]) comeFroms);
   }
 
   @Override
   protected void visit(Assign node) {
-    // TODO implement
+    Value value = compile(node.value);
+    builder.emitStore(value, node.var);
   }
 
   @Override
   protected void visit(Block node) {
-    // TODO implement
+    super.visit(node);
   }
 
   @Override
   protected void visit(BooleanLiteral node) {
-    returnValue = compile(node.box());
+    returnValue = new Immediate(node.value ? 1l : 0l);
   }
 
   @Override
   protected void visit(Break node) {
-    // TODO implement
+    assert (currentBreakableExit != null);
+    builder.emitBranch(currentBreakableExit);
   }
 
   @Override
   protected void visit(Continue node) {
-    // TODO implement
+    assert (currentBreakableEntrance != null);
+    builder.emitBranch(currentBreakableEntrance);
   }
 
   @Override
   protected void visit(Die node) {
-    // TODO implement
+    switch (node.exitCode) {
+    case -1:
+      builder.emitBranch(exitM1);
+      break;
+    case -2:
+      builder.emitBranch(exitM2);
+      break;
+    default:
+      builder.prepareArgument(0, new Immediate(node.exitCode));
+      builder.emitBranch(exit);
+    }
   }
 
   @Override
   protected void visit(Div node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
+    Value a = compile(node.left);
+    Value b = compile(node.right);
     returnValue = builder.emitDiv(a, b).getKey(); // dividend
   }
 
   @Override
   protected void visit(Eq node) {
-    // TODO implement
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitCmpToBool(Opcode.SETE, a, b);
   }
 
   @Override
   protected void visit(For node) {
-    // TODO implement
+    BasicBlock pushEntrance = currentBreakableEntrance;
+    BasicBlock pushExit = currentBreakableExit;
+
+    Value init = compile(node.init);
+    Value end = compile(node.end);
+    Immediate increment = new Immediate(node.increment);
+    builder.emitStore(init, node.loopVar);
+
+    BasicBlock cond = builder.createBasicBlock();
+    BasicBlock incr = builder.createBasicBlock();
+    BasicBlock body = builder.createBasicBlock();
+    BasicBlock exit = builder.createBasicBlock();
+
+    currentBreakableEntrance = incr;
+    currentBreakableExit = exit;
+
+    builder.emitBranch(cond);
+
+    builder.insertBasicBlock(cond);
+    builder.setCurrentBasicBlock(cond);
+    Value loopVar = builder.emitLoad(node.loopVar);
+    builder.emitCmp(loopVar, end);
+    builder.emitBranch(Opcode.SETGE, exit);
+
+    builder.insertBasicBlock(body);
+    builder.setCurrentBasicBlock(body);
+    node.body.accept(this);
+    builder.emitBranch(incr);
+
+    builder.insertBasicBlock(incr);
+    builder.setCurrentBasicBlock(incr);
+    builder.emitOp(Opcode.ADD, loopVar, increment);
+    builder.emitBranch(cond);
+
+    builder.insertBasicBlock(exit);
+    builder.setCurrentBasicBlock(exit);
+
+    currentBreakableExit = pushExit;
+    currentBreakableEntrance = pushEntrance;
   }
 
   @Override
   protected void visit(Ge node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
-    Register tmp = builder.emitOp(Opcode.SUB, b, a);
-    returnValue = builder.emitOp(Opcode.CMP, tmp, new Immediate(1));
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitCmpToBool(Opcode.SETGE, a, b);
   }
 
   @Override
   protected void visit(Gt node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
-    Register tmp = builder.emitOp(Opcode.SUB, b, a);
-    returnValue = builder.emitOp(Opcode.CMP, tmp, new Immediate(0));
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitCmpToBool(Opcode.SETG, a, b);
   }
 
   @Override
   protected void visit(If node) {
-    // TODO implement
+    BasicBlock t = builder.createBasicBlock();
+    BasicBlock f = builder.createBasicBlock();
+    BasicBlock exit = builder.createBasicBlock();
+    Value cond = compile(node.cond);
+    builder.emitBranch(cond, t, f);
+
+    builder.insertBasicBlock(t);
+    builder.setCurrentBasicBlock(t);
+    node.trueBlock.accept(this);
+    builder.emitBranch(exit);;
+
+    builder.insertBasicBlock(f);
+    builder.setCurrentBasicBlock(f);
+    node.falseBlock.accept(this);
+    builder.emitBranch(exit);;
+
+    builder.insertBasicBlock(exit);
+    builder.setCurrentBasicBlock(exit);
   }
 
   @Override
   protected void visit(IntLiteral node) {
-    returnValue = compile(node.box());
+    returnValue = new Immediate(node.value);
   }
 
   @Override
   protected void visit(Le node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
-    Register tmp = builder.emitOp(Opcode.SUB, a, b);
-    returnValue = builder.emitOp(Opcode.CMP, tmp, new Immediate(1));
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitCmpToBool(Opcode.SETLE, a, b);
   }
 
   @Override
   protected void visit(Lt node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
-    returnValue = builder.emitOp(Opcode.CMP, a, b);
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitCmpToBool(Opcode.SETL, a, b);
   }
 
   @Override
   protected void visit(Length node) {
-    Register a = compile(node.box());
-    returnValue = Emits.emitLength(a);
+    returnValue = new Immediate(node.array.length);
   }
 
   @Override
   protected void visit(Load node) {
-    // TODO
+    Value index = compile(node.index);
+    if (node.checkBounds) {
+      BasicBlock ok = builder.createBasicBlock();
+      builder.emitCmp(index, new Immediate(0));
+      builder.emitBranch(Opcode.SETL, exitM1);
+      builder.emitCmp(index, new Immediate(node.array.length));
+      builder.emitBranch(Opcode.SETGE, exitM1);
+    }
+    returnValue = builder.emitLoad(node.array, index);
   }
 
   @Override
   protected void visit(Minus node) {
-    Register a = compile(node.box());
-    returnValue = Emits.emitMinus(a);
+    Value a = compile(node.right);
+    returnValue = builder.emitOp(Opcode.SUB, new Immediate(0), a);
   }
 
   @Override
   protected void visit(Mod node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
+    Value a = compile(node.left);
+    Value b = compile(node.right);
     returnValue = builder.emitDiv(a, b).getValue();
   }
 
   @Override
   protected void visit(Mul node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
-    returnValue = builder.emitOp(Opcode.IMUL, a, b);
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitMul(a, b);
   }
 
   @Override
   protected void visit(Ne node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
-    Register l = builder.emitOp(Opcode.CMP, a, b);
-    Register g = builder.emitOp(Opcode.CMP, b, a);
-    returnValue = builder.emitOp(Opcode.NAND, a, b);
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitCmpToBool(Opcode.SETNE, a, b);
   }
 
   @Override
   protected void visit(Not node) {
-    Register b = compile(node.right);
-    returnValue = builder.emitOp(Opcode.XOR, b, new Immediate(0)); // flip bits
+    Value b = compile(node.right);
+    returnValue = new Value();
+    builder.emitInstruction(new Instruction(Opcode.SETE, ));
+    returnValue = builder.emitNot(b);
   }
-
 
   @Override
   protected void visit(Or node) {
-    // TODO implement short circuiting
+    BasicBlock evalRight = builder.createBasicBlock();
+    BasicBlock exit = builder.createBasicBlock();
+
+    Value a = compile(node.left);
+    builder.emitBranch(a, exit, evalRight);
+    BasicBlock leftout = builder.getCurrentBasicBlock();
+
+    builder.insertBasicBlock(evalRight);
+    builder.setCurrentBasicBlock(evalRight);
+    Value b = compile(node.right);
+    builder.emitBranch(exit);
+    BasicBlock rightout = builder.getCurrentBasicBlock();
+
+    builder.insertBasicBlock(exit);
+    builder.setCurrentBasicBlock(exit);
+    AbstractMap.SimpleEntry<?, ?>[] comeFroms = new AbstractMap.SimpleEntry<?, ?>[]{
+        new AbstractMap.SimpleEntry<Value, BasicBlock>(a, leftout),
+        new AbstractMap.SimpleEntry<Value, BasicBlock>(b, rightout)
+    };
+
+    returnValue = builder.createPhiNode((AbstractMap.SimpleEntry<Value, BasicBlock>[]) comeFroms);
   }
 
   @Override
   protected void visit(Pass node) {
-    // TODO pass
+    for (int i = 0; i < node.nop; i++) {
+      builder.emitInstruction(new Instruction(Opcode.NOP, null, null));
+    }
   }
 
   @Override
   protected void visit(Return node) {
-    // TODO pass
+    if (node.value)
   }
 
   @Override
@@ -217,7 +318,7 @@ public class Backend extends Visitor {
 
   @Override
   protected void visit(Ternary node) {
-    Register cond = compile(node.cond); // TODO check over
+    Value cond = compile(node.cond); // TODO check over
 
     if (cond.value == 1) {
       returnValue = compile(node.trueExpr);
@@ -228,8 +329,7 @@ public class Backend extends Visitor {
 
   @Override
   protected void visit(UnparsedIntLiteral node) {
-    Register a = compile(node.box());
-    returnValue = Emits.emitUnparsedIntLiteral(a);
+    throw new RuntimeException("Unparsed Int Literal should not be here in this stage");
   }
 
   @Override
@@ -237,12 +337,34 @@ public class Backend extends Visitor {
     // TODO
   }
 
+  @Override
+  protected void visit(Call node) {
+    // TODO Auto-generated method stub
+    super.visit(node);
+  }
 
+  @Override
+  protected void visit(VarExpr node) {
+    // TODO Auto-generated method stub
+    super.visit(node);
+  }
+
+  @Override
+  protected void visit(CallStmt node) {
+    // TODO Auto-generated method stub
+    super.visit(node);
+  }
+
+  @Override
+  protected void visit(VarDecl node) {
+    // TODO Auto-generated method stub
+    super.visit(node);
+  }
 
   @Override
   protected void visit(Sub node) {
-    Register a = compile(node.left);
-    Register b = compile(node.right);
+    Value a = compile(node.left);
+    Value b = compile(node.right);
     returnValue = Emits.emitSub(a, b);
   }
 

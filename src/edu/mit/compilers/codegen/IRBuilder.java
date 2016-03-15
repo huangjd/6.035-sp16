@@ -2,6 +2,7 @@ package edu.mit.compilers.codegen;
 
 import java.util.*;
 
+import edu.mit.compilers.common.Var;
 import edu.mit.compilers.nodes.Function;
 
 public class IRBuilder {
@@ -53,9 +54,9 @@ public class IRBuilder {
     return currentBB;
   }
 
-  public Register emitOp(Opcode op, Register a, Register b) {
+  public Value emitOp(Opcode op, Value a, Value b) {
     assert(a.type == b.type);
-    Register temp = new Register(b.type);
+    Value temp = new Value(b.type);
     if (a instanceof Immediate || a instanceof Memory) {
       if (b instanceof Immediate || b instanceof Memory) {
         currentBB.add(new Instruction(Opcode.MOV, temp, b));
@@ -69,36 +70,62 @@ public class IRBuilder {
     return temp;
   }
 
-  public AbstractMap.SimpleEntry<Register, Register> emitDiv(Register a, Register b) {
+  public Value emitMul(Value a, Value b) {
 
   }
 
-  public Register emitLoad(Register base, Register index, long offset) {
+  public AbstractMap.SimpleEntry<Value, Value> emitDiv(Value a, Value b) {
 
   }
 
-  public void emitStore(Register value, Register base, Register index, long offset) {
+  public Value emitLoad(Var var) {
 
   }
 
-  public void emitBranch(Register cond, BasicBlock trueBlock, BasicBlock falseBlock) {
+  public Value emitLoad(Var base, Value index) {
 
+  }
+
+  public void emitStore(Value value, Var var) {
+
+  }
+
+  public void emitStore(Value value, Var base, Value index) {
+
+  }
+
+  public void emitBranch(Value cond, BasicBlock trueBlock, BasicBlock falseBlock) {
+
+  }
+
+  public void emitBranch(Opcode type, BasicBlock trueBlock) {
   }
 
   public void emitBranch(BasicBlock br) {
 
   }
 
-  public Register createPhiNode(AbstractMap.SimpleEntry<Register, BasicBlock> comeFrom) {
+  public void emitCmp(Value a, Value b) {
 
   }
 
+  public Value emitCmpToBool(Opcode type, Value a, Value b) {
 
+  }
 
+  public Value createPhiNode(AbstractMap.SimpleEntry<Value, BasicBlock>[] comeFroms) {
 
+  }
 
+  public void prepareArgument(int nth, Value value) {
+  }
 
+  public Value getReturnValue() {
+  }
 
+  public void emitInstruction(Instruction inst) {
+
+  }
 
 
 

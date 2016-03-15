@@ -1,5 +1,7 @@
 package edu.mit.compilers.visitors;
 
+import java.util.ArrayList;
+
 import edu.mit.compilers.common.*;
 import edu.mit.compilers.nodes.*;
 
@@ -11,6 +13,11 @@ public final class SemanticsPostProcess extends Mutator {
   @Override
   protected void visit(Program node) {
     super.visit(node);
+
+    ArrayList<Var> vars = node.globals.asList();
+    for (Var var : vars) {
+      var.bss = true;
+    }
 
     for (FunctionNode function : ((Program) returnNode).functions) {
       Function func = (Function) (function.getNode());

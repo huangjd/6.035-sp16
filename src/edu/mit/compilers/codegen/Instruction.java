@@ -2,28 +2,52 @@ package edu.mit.compilers.codegen;
 
 public class Instruction {
 
+  boolean isa;
   public Opcode op;
-  public int addressingmode;
-  public Register dest, a, b, c;
+  public Value dest, a, b, c;
 
-  public Instruction(Opcode op, Register dest, Register a) {
-    this.op = op;
-    this.dest = dest;
-    this.a = a;
+  public Instruction(Value dest, Opcode op, Value a) {
+    this(dest, op, a, null, null);
   }
 
-  public Instruction(Opcode op, Register dest, Register a, Register b) {
-    this.op = op;
-    this.dest = dest;
-    this.a = a;
-    this.b = b;
+  public Instruction(Value dest, Opcode op, Value a, Value b) {
+    this(dest, op, a, b, null);
   }
 
-  public Instruction(Opcode op, Register dest, Register a, Register b, Register c) {
+  public Instruction(Value dest, Opcode op, Value a, Value b, Value c) {
+    assert (dest instanceof Register || dest instanceof Memory);
+    this.isa = false;
     this.op = op;
     this.dest = dest;
     this.a = a;
     this.b = b;
     this.c = c;
+  }
+
+  public Instruction(int dummy, Opcode op, Value a) {
+    this.isa = false;
+    this.op = op;
+    this.a = a;
+  }
+
+  public Instruction(int dummy, Opcode op, Value a, Value b) {
+    this.isa = false;
+    this.op = op;
+    this.a = a;
+    this.b = b;
+  }
+
+  // ISA form instruction, need explicit check
+  public Instruction(Opcode op) {
+
+  }
+
+  public Instruction(Opcode op, Value a) {
+  }
+
+  public Instruction(Opcode op, Value a, Value b) {
+  }
+
+  public Instruction(Opcode op, Value a, Value b, Value c) {
   }
 }

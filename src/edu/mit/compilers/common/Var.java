@@ -8,6 +8,7 @@ public class Var {
 
   public int stackOffset = 0;
   public int registerIndex = -1;
+  public boolean bss = false;
 
   public Var(String id, Type type) {
     this.id = id;
