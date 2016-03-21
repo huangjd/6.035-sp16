@@ -88,7 +88,9 @@ public class IRPrinter extends Visitor {
     out.print(node.array);
     out.print("[");
     node.index.accept(this);
-    out.print("] = ");
+    out.print("] ");
+    out.print(node.cop.toString());
+    out.print(" ");
     node.value.accept(this);
     out.print(";\n");
   }

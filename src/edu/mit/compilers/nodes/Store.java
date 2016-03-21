@@ -4,16 +4,33 @@ import edu.mit.compilers.common.*;
 
 public class Store extends Statement {
 
+  public enum CoOperand {
+    NONE, PLUS, MINUS;
+
+    @Override
+    public String toString() {
+      if (this == PLUS) {
+        return "+=";
+      } else if (this == MINUS) {
+        return "-=";
+      } else {
+        return "=";
+      }
+    };
+  }
+
   public final Var array;
   public final ExpressionNode index;
   public final ExpressionNode value;
+  public final CoOperand cop;
   public boolean checkBounds = true;
 
-  public Store(Var array, ExpressionNode index, ExpressionNode value, SourcePosition pos) {
+  public Store(Var array, ExpressionNode index, ExpressionNode value, SourcePosition pos, CoOperand cop) {
     super(pos);
     this.array = array;
     this.index = index;
     this.value = value;
+    this.cop = cop;
     hashCache = array.hashCode() * 11 + index.hashCode() * 37 + value.hashCode();
 
     if (!array.isArray()){
@@ -34,6 +51,6 @@ public class Store extends Statement {
 
   @Override
   public String toString() {
-    return array.id + "[" + index.toString() + "]" + " = " + value.toString() + ";\n";
+    return array.id + "[" + index.toString() + "] " + cop.toString() + " " + value.toString() + ";\n";
   }
 }

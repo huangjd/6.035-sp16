@@ -12,6 +12,7 @@ public class Function extends Node {
   public final SymbolTable localSymtab;
   public final StatementNode body;
   public final int nParams;
+  public int stackFrameReserve = 0;
 
   public Function(String name, SourcePosition pos) {
     super(pos);

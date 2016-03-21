@@ -415,15 +415,13 @@ store_stmt returns [StatementNode s = null] {
     ExpressionNode index = kvp.getValue();
     switch (op) {
     case '=':
-      s = new Store(var, index, value, pos).box();
+      s = new Store(var, index, value, pos, Store.CoOperand.NONE).box();
       break;
     case '+':
-      s = new Store(var, index, new Add(new Load(var, index, pos).box(), 
-          value, pos).box(), pos).box();
+      s = new Store(var, index, value, pos, Store.CoOperand.PLUS).box();
       break;
     case '-':
-      s = new Store(var, index, new Sub(new Load(var, index, pos).box(), 
-          value, pos).box(), pos).box();
+      s = new Store(var, index, value, pos, Store.CoOperand.MINUS).box();
       break;
     default:
       throw new NullPointerException();  

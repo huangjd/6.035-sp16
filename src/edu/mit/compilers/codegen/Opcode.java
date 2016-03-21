@@ -46,7 +46,8 @@ public enum Opcode {
   NOR,
 
   //
-  NOP;
+  NOP,
+  SYSCALL;
 	
 	public String toString(Value.OperandType registerType) {
 		switch (this) {
@@ -213,9 +214,11 @@ public enum Opcode {
 				return "XORQ";
 			}			
 			default:
+				return "";
 			break;
 		}
 	}
+  
 }
 
 

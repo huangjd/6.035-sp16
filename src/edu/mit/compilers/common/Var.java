@@ -19,7 +19,7 @@ public class Var {
       size = 8;
       break;
     case BOOLEAN:
-      size = 1;
+      size = 8;
       break;
     default:
       throw new TypeException(type, false, null);
@@ -35,11 +35,18 @@ public class Var {
       size = 8 * length;
       break;
     case BOOLEANARRAY:
-      size = length;
+      size = 8 * length;
       break;
     default:
       throw new TypeException(type, true, null);
     }
+  }
+
+  public Var(String id, String str) {
+    this.id = id;
+    this.type = Type.STRING;
+    this.size = str.length() + 1;
+    this.length = str.length() + 1;
   }
 
   public boolean isArray() {

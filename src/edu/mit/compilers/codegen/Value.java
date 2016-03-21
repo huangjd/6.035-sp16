@@ -1,6 +1,8 @@
 package edu.mit.compilers.codegen;
 
-public abstract class Value {
+import edu.mit.compilers.codegen.Value.OperandType;
+
+public class Value {
   public enum OperandType {
     r8, r16, r32, r64, xmm, ymm;
 
@@ -25,10 +27,22 @@ public abstract class Value {
     };
   }
 
-  protected OperandType type;
+  protected OperandType getType() {
+    return value.type;
+  }
+
+  public ValueImpl value;
+
+  public Value(ValueImpl val) {
+    this.value = val;
+  }
 }
 
-class Immediate extends Value {
+abstract class ValueImpl {
+  public OperandType type;
+}
+
+class Immediate extends ValueImpl {
   long value;
 
   public Immediate(long value) {
@@ -42,7 +56,7 @@ class Immediate extends Value {
   }
 }
 
-class Memory extends Value {
+class Memory extends ValueImpl {
   Register base, index;
   int sizeofelement;
   long offset;
@@ -96,7 +110,7 @@ class Memory extends Value {
   }
 }
 
-class Symbol extends Value {
+class Symbol extends ValueImpl {
   String symbol;
 
   public Symbol(String s) {

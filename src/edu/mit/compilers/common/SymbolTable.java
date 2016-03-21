@@ -4,29 +4,17 @@ import java.util.*;
 
 import edu.mit.compilers.codegen.Register;
 
-public class SymbolTable {
+public class SymbolTable extends ScopedMap<String, Var> {
 
   private int offsetCounter;
-  private HashMap<String, Var> map;
-  private SymbolTable parentScope;
 
   public SymbolTable() {
-    map = new HashMap<>();
-    parentScope = null;
+    super();
   }
 
   public SymbolTable(SymbolTable parentScope) {
-    map = new HashMap<>();
-    this.parentScope = parentScope;
+    super(parentScope);
     this.offsetCounter = parentScope.offsetCounter;
-  }
-
-  public SymbolTable scope() {
-    return new SymbolTable(this);
-  }
-
-  public SymbolTable unscope() {
-    return parentScope;
   }
 
   public void SwapIn(SymbolTable other) {
@@ -48,18 +36,6 @@ public class SymbolTable {
 
   public void setOffset(int value) {
     offsetCounter = value;
-  }
-
-  public Var lookup(String id) {
-    Var result = map.get(id);
-    if (result == null && parentScope != null) {
-      return parentScope.lookup(id);
-    }
-    return result;
-  }
-
-  public Var lookupCurrentScope(String id) {
-    return map.get(id);
   }
 
   public boolean insert(Var var) {

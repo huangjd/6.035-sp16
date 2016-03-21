@@ -1,9 +1,11 @@
 package edu.mit.compilers.codegen;
 
-public class Register extends Value {
+import edu.mit.compilers.codegen.Value.OperandType;
+
+public class Register extends ValueImpl {
 
   public int id;
-  public OperandType type;
+  public int hint;
 
   public Register(int id) {
     this.id = id;
@@ -13,6 +15,11 @@ public class Register extends Value {
   public Register(int id, OperandType type) {
     this.id = id;
     this.type = type;
+  }
+
+  public Register(int id, int placementHint) {
+    this.id = id;
+    this.hint = placementHint;
   }
 
   @Override
@@ -67,6 +74,10 @@ public class Register extends Value {
         }
       }
     }
+  }
+
+  public String toString(OperandType type) {
+    return new Register(this.id, type).toString();
   }
 
   public static final String[][] RegisterNames = {{

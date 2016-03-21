@@ -1,21 +1,62 @@
 package edu.mit.compilers.codegen;
 
-import java.util.AbstractMap;
+import java.util.ArrayList;
 
-import edu.mit.compilers.common.SymbolTable;
+import edu.mit.compilers.common.*;
 import edu.mit.compilers.nodes.*;
 
 public class Backend extends Visitor {
 
   Value returnValue;
   IRBuilder builder;
-  SymbolTable currentSymtab;
-
   BasicBlock currentBreakableEntrance, currentBreakableExit;
+  CallingConvention currentFuncCallingConvention;
+  SymbolTable strtab;
+  ScopedMap<Var, Value> symtab;
 
-  BasicBlock exit, exitM1, exitM2; // INIT
+  public String binName;
 
-  public Backend() {
+  final BasicBlock exit0, exitM1, exitM2; // INIT
+
+  public Backend(String outName) {
+    binName = outName;
+    builder = new IRBuilder();
+    strtab = new SymbolTable();
+    symtab = new ScopedMap();
+
+    strtab.insert(
+        new Var("string@outofboundsmsg", binName + ": %d:%d %s: array index out of bounds\n"));
+    strtab.insert(
+        new Var("string@controlreachesend", binName + ": %d:%d %s: control reaches end of non-void function\n"));
+
+    builder.insertFunction(new Function("@@exit", null));
+
+    exit0 = builder.createBasicBlock();
+    builder.setCurrentBasicBlock(exit0);
+    builder.emitInstruction(
+        new Instruction(Opcode.MOV, new Value(new Immediate(0)), new Value(new Register(Register.rdi))));
+    builder.emitInstruction(new Instruction(Opcode.CALL, new Value(new Symbol("exit"))));
+
+    exitM1 = builder.createBasicBlock();
+    builder.setCurrentBasicBlock(exitM1);
+    builder.emitInstruction(
+        new Instruction(Opcode.MOV, new Value(new Symbol("stderr")), new Value(new Register(Register.rdi))));
+    builder.emitInstruction(new Instruction(Opcode.MOV, new Value(new Symbol("string@outofboundsmsg")),
+        new Value(new Register(Register.rsi))));
+    builder.emitInstruction(new Instruction(Opcode.CALL, new Value(new Symbol("fprintf"))));
+    builder.emitInstruction(
+        new Instruction(Opcode.MOV, new Value(new Immediate(-1)), new Value(new Register(Register.rdi))));
+    builder.emitInstruction(new Instruction(Opcode.CALL, new Value(new Symbol("exit"))));
+
+    exitM2 = builder.createBasicBlock();
+    builder.setCurrentBasicBlock(exitM2);
+    builder.emitInstruction(
+        new Instruction(Opcode.MOV, new Value(new Symbol("stderr")), new Value(new Register(Register.rdi))));
+    builder.emitInstruction(new Instruction(Opcode.MOV, new Value(new Symbol("string@controlreachesend")),
+        new Value(new Register(Register.rsi))));
+    builder.emitInstruction(
+        new Instruction(Opcode.MOV, new Value(new Immediate(-2)), new Value(new Register(Register.rdi))));
+    builder.emitInstruction(new Instruction(Opcode.CALL, new Value(new Symbol("exit"))));
   }
 
   protected Value compile(ExpressionNode node) {
@@ -28,6 +69,30 @@ public class Backend extends Visitor {
   }
 
   @Override
+  protected void visit(Function node) {
+    if (!node.isCallout) {
+      builder.insertFunction(node);
+      BasicBlock first = builder.createBasicBlock();
+      builder.insertBasicBlock(first);
+      builder.setCurrentBasicBlock(first);
+      builder.emitInstruction(new Label(node.id));
+
+      currentFuncCallingConvention = new CallingConventionX86_64Linux();
+
+      symtab = symtab.scope();
+      ArrayList<Var> list = node.localSymtab.asList();
+      for (int i = 0; i < node.nParams; i++) {
+        symtab.insert(list.get(i), currentFuncCallingConvention.getNthArg(i));
+      }
+
+      builder.emitPrologue(currentFuncCallingConvention);
+      node.body.accept(this);
+      symtab = symtab.unscope();
+    }
+  }
+
+
+  @Override
   protected void visit(Add node) {
     Value a = compile(node.left);
     Value b = compile(node.right);
@@ -35,41 +100,88 @@ public class Backend extends Visitor {
   }
 
   @Override
+  protected void visit(Sub node) {
+    Value a = compile(node.left);
+    Value b = compile(node.right);
+    returnValue = builder.emitOp(Opcode.SUB, a, b);
+  }
+
+  @Override
   protected void visit(And node) {
     BasicBlock evalRight = builder.createBasicBlock();
     BasicBlock exit = builder.createBasicBlock();
 
+    Value retr = builder.allocateRegister();
 
     Value a = compile(node.left);
+    builder.emitStore(a, retr);
     builder.emitBranch(a, evalRight, exit);
-    BasicBlock leftout = builder.getCurrentBasicBlock();
 
+    // BasicBlock leftout = builder.getCurrentBasicBlock();
 
     builder.insertBasicBlock(evalRight);
     builder.setCurrentBasicBlock(evalRight);
     Value b = compile(node.right);
+    builder.emitStore(b, retr);
     builder.emitBranch(exit);
-    BasicBlock rightout = builder.getCurrentBasicBlock();
+    // BasicBlock rightout = builder.getCurrentBasicBlock();
 
     builder.insertBasicBlock(exit);
     builder.setCurrentBasicBlock(exit);
-    AbstractMap.SimpleEntry<?, ?>[] comeFroms = new AbstractMap.SimpleEntry<?, ?>[]{
-        new AbstractMap.SimpleEntry<Value, BasicBlock>(a, leftout),
-        new AbstractMap.SimpleEntry<Value, BasicBlock>(b, rightout)
+
+    /*AbstractMap.SimpleEntry<?, ?>[] comeFroms = new AbstractMap.SimpleEntry<?, ?>[]{
+      new AbstractMap.SimpleEntry<Value, BasicBlock>(a, leftout),
+      new AbstractMap.SimpleEntry<Value, BasicBlock>(b, rightout)
     };
 
-    returnValue = builder.createPhiNode((AbstractMap.SimpleEntry<Value, BasicBlock>[]) comeFroms);
+    returnValue = builder.createPhiNode((AbstractMap.SimpleEntry<Value, BasicBlock>[]) comeFroms);*/
+    returnValue = builder.emitLoad(retr);
+  }
+
+  @Override
+  protected void visit(Or node) {
+    BasicBlock evalRight = builder.createBasicBlock();
+    BasicBlock exit = builder.createBasicBlock();
+
+    Value retr = builder.allocateRegister();
+    Value a = compile(node.left);
+    builder.emitStore(a, retr);
+    builder.emitBranch(a, exit, evalRight);
+    // BasicBlock leftout = builder.getCurrentBasicBlock();
+
+    builder.insertBasicBlock(evalRight);
+    builder.setCurrentBasicBlock(evalRight);
+    Value b = compile(node.right);
+    builder.emitStore(b, retr);
+    builder.emitBranch(exit);
+    // BasicBlock rightout = builder.getCurrentBasicBlock();
+
+    builder.insertBasicBlock(exit);
+    builder.setCurrentBasicBlock(exit);
+    /*
+     * AbstractMap.SimpleEntry<?, ?>[] comeFroms = new
+     * AbstractMap.SimpleEntry<?, ?>[]{ new AbstractMap.SimpleEntry<Value,
+     * BasicBlock>(a, leftout), new AbstractMap.SimpleEntry<Value,
+     * BasicBlock>(b, rightout) };
+     *
+     * returnValue = builder.createPhiNode((AbstractMap.SimpleEntry<Value,
+     * BasicBlock>[]) comeFroms);
+     */
+
+    returnValue = builder.emitLoad(retr);
   }
 
   @Override
   protected void visit(Assign node) {
     Value value = compile(node.value);
-    builder.emitStore(value, node.var);
+    builder.emitStore(value, symtab.lookup(node.var));
   }
 
   @Override
   protected void visit(Block node) {
+    symtab = symtab.scope();
     super.visit(node);
+    symtab = symtab.unscope();
   }
 
   @Override
@@ -126,7 +238,7 @@ public class Backend extends Visitor {
     Value init = compile(node.init);
     Value end = compile(node.end);
     Immediate increment = new Immediate(node.increment);
-    builder.emitStore(init, node.loopVar);
+    builder.emitStore(init, symtab.lookup(node.loopVar));
 
     BasicBlock cond = builder.createBasicBlock();
     BasicBlock incr = builder.createBasicBlock();
@@ -140,7 +252,7 @@ public class Backend extends Visitor {
 
     builder.insertBasicBlock(cond);
     builder.setCurrentBasicBlock(cond);
-    Value loopVar = builder.emitLoad(node.loopVar);
+    Value loopVar = builder.emitLoad(symtab.lookup(node.loopVar));
     builder.emitCmp(loopVar, end);
     builder.emitBranch(Opcode.SETGE, exit);
 
@@ -152,6 +264,37 @@ public class Backend extends Visitor {
     builder.insertBasicBlock(incr);
     builder.setCurrentBasicBlock(incr);
     builder.emitOp(Opcode.ADD, loopVar, increment);
+    builder.emitBranch(cond);
+
+    builder.insertBasicBlock(exit);
+    builder.setCurrentBasicBlock(exit);
+
+    currentBreakableExit = pushExit;
+    currentBreakableEntrance = pushEntrance;
+  }
+
+  @Override
+  protected void visit(While node) {
+    BasicBlock pushEntrance = currentBreakableEntrance;
+    BasicBlock pushExit = currentBreakableExit;
+
+    BasicBlock cond = builder.createBasicBlock();
+    BasicBlock body = builder.createBasicBlock();
+    BasicBlock exit = builder.createBasicBlock();
+
+    currentBreakableEntrance = cond;
+    currentBreakableExit = exit;
+
+    builder.emitBranch(cond);
+
+    builder.insertBasicBlock(cond);
+    builder.setCurrentBasicBlock(cond);
+    Value test = compile(node.cond);
+    builder.emitBranch(test, body, exit);
+
+    builder.insertBasicBlock(body);
+    builder.setCurrentBasicBlock(body);
+    node.body.accept(this);
     builder.emitBranch(cond);
 
     builder.insertBasicBlock(exit);
@@ -186,12 +329,12 @@ public class Backend extends Visitor {
     builder.insertBasicBlock(t);
     builder.setCurrentBasicBlock(t);
     node.trueBlock.accept(this);
-    builder.emitBranch(exit);;
+    builder.emitBranch(exit);
 
     builder.insertBasicBlock(f);
     builder.setCurrentBasicBlock(f);
     node.falseBlock.accept(this);
-    builder.emitBranch(exit);;
+    builder.emitBranch(exit);
 
     builder.insertBasicBlock(exit);
     builder.setCurrentBasicBlock(exit);
@@ -225,13 +368,12 @@ public class Backend extends Visitor {
   protected void visit(Load node) {
     Value index = compile(node.index);
     if (node.checkBounds) {
-      BasicBlock ok = builder.createBasicBlock();
       builder.emitCmp(index, new Immediate(0));
       builder.emitBranch(Opcode.SETL, exitM1);
       builder.emitCmp(index, new Immediate(node.array.length));
       builder.emitBranch(Opcode.SETGE, exitM1);
     }
-    returnValue = builder.emitLoad(node.array, index);
+    returnValue = builder.emitLoad(symtab.lookup(node.array), index);
   }
 
   @Override
@@ -264,89 +406,119 @@ public class Backend extends Visitor {
   @Override
   protected void visit(Not node) {
     Value b = compile(node.right);
-    returnValue = new Value();
-    builder.emitInstruction(new Instruction(Opcode.SETE, ));
-    returnValue = builder.emitNot(b);
+    returnValue = builder.allocateRegister();
+    builder.emitInstruction(new Instruction(returnValue, Opcode.SETE, b));
   }
 
-  @Override
-  protected void visit(Or node) {
-    BasicBlock evalRight = builder.createBasicBlock();
-    BasicBlock exit = builder.createBasicBlock();
 
-    Value a = compile(node.left);
-    builder.emitBranch(a, exit, evalRight);
-    BasicBlock leftout = builder.getCurrentBasicBlock();
-
-    builder.insertBasicBlock(evalRight);
-    builder.setCurrentBasicBlock(evalRight);
-    Value b = compile(node.right);
-    builder.emitBranch(exit);
-    BasicBlock rightout = builder.getCurrentBasicBlock();
-
-    builder.insertBasicBlock(exit);
-    builder.setCurrentBasicBlock(exit);
-    AbstractMap.SimpleEntry<?, ?>[] comeFroms = new AbstractMap.SimpleEntry<?, ?>[]{
-        new AbstractMap.SimpleEntry<Value, BasicBlock>(a, leftout),
-        new AbstractMap.SimpleEntry<Value, BasicBlock>(b, rightout)
-    };
-
-    returnValue = builder.createPhiNode((AbstractMap.SimpleEntry<Value, BasicBlock>[]) comeFroms);
-  }
 
   @Override
   protected void visit(Pass node) {
     for (int i = 0; i < node.nop; i++) {
-      builder.emitInstruction(new Instruction(Opcode.NOP, null, null));
+      builder.emitInstruction(new Instruction(Opcode.NOP));
     }
   }
 
   @Override
   protected void visit(Return node) {
-    if (node.value)
+    if (node.value != null) {
+      Value value = compile(node.value);
+      builder.emitStore(value, builder.allocateRegister(currentFuncCallingConvention.getRetReg()));
+    }
+    builder.emitEpilogue(currentFuncCallingConvention);
   }
 
   @Override
   protected void visit(Store node) {
-    // TODO pass
+    Value index = compile(node.index);
+    if (node.checkBounds) {
+      builder.emitCmp(index, new Immediate(0));
+      builder.emitBranch(Opcode.SETL, exitM1);
+      builder.emitCmp(index, new Immediate(node.array.length));
+      builder.emitBranch(Opcode.SETGE, exitM1);
+    }
+    Value value = compile(node.value);
+    switch (node.cop) {
+    case NONE:
+      builder.emitStore(value, symtab.lookup(node.array), index);
+      break;
+    case PLUS:
+      Value old = builder.emitLoad(symtab.lookup(node.array), index);
+      Value newVal = builder.emitOp(Opcode.ADD, old, value);
+      builder.emitStore(newVal, symtab.lookup(node.array), index);
+      break;
+    case MINUS:
+      old = builder.emitLoad(symtab.lookup(node.array), index);
+      newVal = builder.emitOp(Opcode.SUB, old, value);
+      builder.emitStore(newVal, symtab.lookup(node.array), index);
+      break;
+    }
   }
+
+  protected static int strtabID = 0;
 
   @Override
   protected void visit(StringLiteral node) {
-    returnValue = compile(node.box());
+    String symbol = "@string" + Integer.toString(strtabID);
+    strtab.insert(new Var(symbol, node.value));
+    strtabID++;
+    returnValue = new Symbol(symbol);
   }
 
   @Override
   protected void visit(Ternary node) {
-    Value cond = compile(node.cond); // TODO check over
+    BasicBlock t = builder.createBasicBlock();
+    BasicBlock f = builder.createBasicBlock();
+    BasicBlock exit = builder.createBasicBlock();
 
-    if (cond.value == 1) {
-      returnValue = compile(node.trueExpr);
-    } else {
-      returnValue = compile(node.falseExpr);
-    }
+    Value retr = builder.allocateRegister();
+    Value cond = compile(node.cond);
+    builder.emitBranch(cond, t, f);
+
+    builder.insertBasicBlock(t);
+    builder.setCurrentBasicBlock(t);
+    Value tval = compile(node.trueExpr);
+    builder.emitStore(tval, retr);
+    builder.emitBranch(exit);
+
+
+    builder.insertBasicBlock(f);
+    builder.setCurrentBasicBlock(f);
+    Value fval = compile(node.falseExpr);
+    builder.emitStore(fval, retr);
+    builder.emitBranch(exit);
+
+    builder.insertBasicBlock(exit);
+    builder.setCurrentBasicBlock(exit);
+    returnValue = retr;
   }
 
   @Override
   protected void visit(UnparsedIntLiteral node) {
-    throw new RuntimeException("Unparsed Int Literal should not be here in this stage");
-  }
-
-  @Override
-  protected void visit(While node) {
-    // TODO
+    throw new RuntimeException("Unparsed Int Literal is not allowed in this stage");
   }
 
   @Override
   protected void visit(Call node) {
-    // TODO Auto-generated method stub
-    super.visit(node);
+    ArrayList<Value> args = new ArrayList<Value>();
+    for (int i = 0; i < node.args.size(); i++) {
+      args.add(compile(node.args.get(i)));
+    }
+    int s = currentFuncCallingConvention.getNumArgsPassedByReg(); // == 6
+
+    for (int i = 0; i < Math.min(node.args.size(), s); i++) {
+      builder.emitStore(args.get(i), builder.allocateRegister(currentFuncCallingConvention.getNthArg(i)));
+    }
+    for (int i = s; i < node.args.size(); i++) {
+      builder.emitStore(args.get(i), new Memory(Register.RSP, null, 8 * (i - s), 8));
+    }
+    builder.emitInstruction(new Instruction(Opcode.CALL, new Symbol(node.func.id)));
+    returnValue = builder.getReturnValue();
   }
 
   @Override
   protected void visit(VarExpr node) {
-    // TODO Auto-generated method stub
-    super.visit(node);
+    returnValue = builder.emitLoad(symtab.lookup(node.var));
   }
 
   @Override
@@ -359,13 +531,6 @@ public class Backend extends Visitor {
   protected void visit(VarDecl node) {
     // TODO Auto-generated method stub
     super.visit(node);
-  }
-
-  @Override
-  protected void visit(Sub node) {
-    Value a = compile(node.left);
-    Value b = compile(node.right);
-    returnValue = Emits.emitSub(a, b);
   }
 
 }
