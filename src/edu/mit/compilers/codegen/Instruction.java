@@ -50,4 +50,7 @@ public class Instruction {
 
   public Instruction(Opcode op, Value a, Value b, Value c) {
   }
+  
+ 
+  
 }

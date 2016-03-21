@@ -74,7 +74,7 @@ class Main {
         DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
         DecafParser parser = new DecafParser(scanner);
-        parser.setFilename(filaName);
+        parser.setFilename(filaName); 
         ProgramNode program = parser.program();
         ErrorLogger.printErrors();
         if (program == null || ErrorLogger.log.errors.size() > 0 || parser.getError()) {
