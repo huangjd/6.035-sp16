@@ -46,8 +46,8 @@ public enum Opcode {
   NOR,
 
   //
-  NOP;
-
+  NOP,
+  SYSCALL;
 }
 
 

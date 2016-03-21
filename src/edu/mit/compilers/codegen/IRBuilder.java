@@ -2,7 +2,6 @@ package edu.mit.compilers.codegen;
 
 import java.util.*;
 
-import edu.mit.compilers.common.Var;
 import edu.mit.compilers.nodes.Function;
 
 public class IRBuilder {
@@ -17,7 +16,12 @@ public class IRBuilder {
     functions = new ArrayList<>();
   }
 
-  public BasicBlock beginFunction(Function f) {
+  public void insertFunction(Function f) {
+    functions.add(new ArrayList<BasicBlock>());
+    currentFunction = f;
+  }
+
+  /*public BasicBlock beginFunction(Function f) {
     if (currentFunction != null) {
       throw new RuntimeException("Called IRBuilder::beginFunction while compiling a function");
     }
@@ -35,10 +39,11 @@ public class IRBuilder {
       throw new RuntimeException("Called IRBuilder::endFunction while not compiling a function");
     }
     currentFunction = null;
-  }
+  }*/
 
+  static private int bbcounter = 0;
   public BasicBlock createBasicBlock() {
-    BasicBlock bb = new BasicBlock();
+    BasicBlock bb = new BasicBlock("bb@" + Integer.toString(bbcounter++));
     return bb;
   }
 
@@ -54,21 +59,17 @@ public class IRBuilder {
     return currentBB;
   }
 
-  public Value emitOp(Opcode op, Value a, Value b) {
-    assert(a.type == b.type);
-    Value temp = new Value(b.type);
-    if (a instanceof Immediate || a instanceof Memory) {
-      if (b instanceof Immediate || b instanceof Memory) {
-        currentBB.add(new Instruction(Opcode.MOV, temp, b));
-        currentBB.add(new Instruction(op, temp, temp, a));
-      } else {
-        currentBB.add(new Instruction(op, temp, b, a));
-      }
-    } else {
-      currentBB.add(new Instruction(op, temp, a, b));
-    }
-    return temp;
+  public Register allocateRegister() {
+
   }
+
+  public Register allocateRegister(int PlacementHint) {
+
+  }
+
+  public Value emitOp(Opcode op, Value a, Value b) {
+  }
+
 
   public Value emitMul(Value a, Value b) {
 
@@ -78,19 +79,19 @@ public class IRBuilder {
 
   }
 
-  public Value emitLoad(Var var) {
+  public Value emitLoad(Value var) {
 
   }
 
-  public Value emitLoad(Var base, Value index) {
+  public Value emitLoad(Value base, Value index) {
 
   }
 
-  public void emitStore(Value value, Var var) {
+  public void emitStore(Value value, Value var) {
 
   }
 
-  public void emitStore(Value value, Var base, Value index) {
+  public void emitStore(Value value, Value base, Value index) {
 
   }
 
@@ -113,10 +114,12 @@ public class IRBuilder {
 
   }
 
-  public Value createPhiNode(AbstractMap.SimpleEntry<Value, BasicBlock>[] comeFroms) {
-
-  }
-
+  /*
+   * public Value createPhiNode(AbstractMap.SimpleEntry<Value, BasicBlock>[]
+   * comeFroms) {
+   *
+   * }
+   */
   public void prepareArgument(int nth, Value value) {
   }
 
@@ -127,6 +130,13 @@ public class IRBuilder {
 
   }
 
+  public void emitPrologue(CallingConvention c) {
+
+  }
+
+  public void emitEpilogue(CallingConvention c) {
+
+  }
 
 
 

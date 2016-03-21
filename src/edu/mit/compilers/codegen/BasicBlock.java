@@ -5,11 +5,11 @@ import java.util.ArrayList;
 public class BasicBlock {
 
   public ArrayList<Instruction> seq;
+  public String label;
 
-
-
-  public BasicBlock() {
+  public BasicBlock(String label) {
     seq = new ArrayList<>();
+    this.label = label;
   }
 
   public void add(Instruction inst) {
