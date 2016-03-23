@@ -215,7 +215,6 @@ public enum Opcode {
 			}			
 			default:
 				return "";
-			break;
 		}
 	}
   
