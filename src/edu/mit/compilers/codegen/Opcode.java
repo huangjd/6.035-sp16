@@ -49,6 +49,21 @@ public enum Opcode {
   NOP,
   SYSCALL;
 	
+//	private String getAssemblySuffix(Value.OperandType registerType) {
+//		switch (registerType)registerType {
+//		case Value.OperandType.r8:
+//			return "B";
+//			break;
+//		case Value.OperandType.r16:
+//			return "W";
+//			break;
+//		case Value.OperandType.r32:
+//			return "L";
+//			break;
+//		
+//		}
+//	}
+	
 	public String toString(Value.OperandType registerType) {
 		switch (this) {
 		case MOV:
@@ -215,7 +230,7 @@ public enum Opcode {
 			}			
 			default:
 				return "";
-			break;
+
 		}
 	}
   
