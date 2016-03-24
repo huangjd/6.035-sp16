@@ -57,6 +57,8 @@ public class Instruction {
     this.b = b;
     this.c = c;
   }
+  
+  public 
 
   @Override
   public String toString() {
