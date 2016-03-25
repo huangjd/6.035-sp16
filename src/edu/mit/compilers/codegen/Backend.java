@@ -11,8 +11,8 @@ public class Backend extends Visitor {
   IRBuilder builder;
   BasicBlock currentBreakableEntrance, currentBreakableExit;
   CallingConvention currentFuncCallingConvention;
-  SymbolTable strtab;
-  ScopedMap<Var, Value> symtab;
+  public SymbolTable strtab;
+  public ScopedMap<Var, Value> symtab;
   ArrayList<BasicBlock> deferredBlocks;
 
   int stackAdjust;
@@ -46,6 +46,11 @@ public class Backend extends Visitor {
     strtab.insert(new Var(s2, binName + ": %d:%d %s: control reaches end of non-void function\n"));
 
     builder.insertFunction();
+
+    BasicBlock dummy = builder.createBasicBlock();
+    builder.insertBasicBlock(dummy);
+    builder.setCurrentBasicBlock(dummy);
+    builder.emitInstruction(new Instruction(Opcode.NOP));
 
     BasicBlock main = builder.createBasicBlock("\t.text\n" +
         "\t.globl  main\n" +

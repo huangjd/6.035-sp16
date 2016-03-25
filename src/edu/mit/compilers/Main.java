@@ -3,8 +3,6 @@ package edu.mit.compilers;
 import java.io.*;
 
 import antlr.Token;
-import edu.mit.compilers.codegen.*;
-import edu.mit.compilers.codegen.Backend.FunctionContent;
 import edu.mit.compilers.common.ErrorLogger;
 import edu.mit.compilers.grammar.*;
 import edu.mit.compilers.nodes.ProgramNode;
@@ -96,22 +94,8 @@ class Main {
         if (program == null || ErrorLogger.log.errors.size() > 0 || parser.getError()) {
           System.exit(-1);
         }
-        if (CLI.debug) {
-          System.out.println("----------" + " IR " + "----------");
-          IRPrinter p = new IRPrinter();
-          p.enter(program);
-        }
-        Backend backend = new Backend(CLI.outfile);
-        backend.enter(program);
-        if (CLI.debug) {
-          System.out.println("\n----------" + " SSA " + "----------");
-          for (FunctionContent functionContent : backend.functions) {
-            for (BasicBlock bb : functionContent.text) {
-              System.out.print(bb.toString());
-            }
-            System.out.println();
-          }
-        }
+        Compile.compile(program, outputStream, System.out);
+        outputStream.close();
       }
     } catch (Exception e) {
       // print the error:

@@ -1,6 +1,6 @@
 package edu.mit.compilers.common;
 
-import java.util.HashMap;
+import java.util.*;
 
 public class ScopedMap<K, V> {
 
@@ -41,5 +41,9 @@ public class ScopedMap<K, V> {
     V result = map.get(key);
     map.put(key, val);
     return result;
+  }
+
+  public Set<K> keySet() {
+    return map.keySet();
   }
 }

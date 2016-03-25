@@ -46,22 +46,8 @@ public class Value {
 abstract class ValueImpl {
   public OperandType type;
 
-  Value box() {
+  public Value box() {
     return new Value(this);
-  }
-}
-
-class Immediate extends ValueImpl {
-  long value;
-
-  public Immediate(long value) {
-    this.value = value;
-    this.type = OperandType.r64;
-  }
-
-  @Override
-  public String toString() {
-    return "$" + Long.toString(value);
   }
 }
 
