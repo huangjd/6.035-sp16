@@ -147,6 +147,11 @@ public class Register extends ValueImpl {
     }
     return res;
   }
+  
+
+  public boolean equals(Register register) {
+  	return this.id == register.id;
+  }
 }
 
 
