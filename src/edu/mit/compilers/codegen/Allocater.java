@@ -15,7 +15,7 @@ public class Allocater {
 
 	private Allocater() {
 		this.availableRegisters = new LinkedList<Register>();
-		for (int i = 10; i <= 15; i++) {
+		for (int i = 11; i <= 15; i++) {
 			this.availableRegisters.add(new Register(i));
 		}
 		this.availableRegisters.add(new Register(5));
@@ -79,11 +79,14 @@ public class Allocater {
 			// if we push and pop reg, current is now multiple instructions
 			ArrayList<Instruction> currentList = new ArrayList<Instruction>(); 
 			
+			boolean isRaxUsed = false;
+			
 			//allocates destination register
 			if (current.dest != null && current.dest.value instanceof Register) {
 				ValueImpl tmp = registerPass((Register) current.dest.value);
 				if (tmp == null) { // MUST_REG and out of register
-					currentList.addAll(convertInstructionByRestoringRegister(current));
+					currentList.addAll(convertInstructionByRestoringRegister(current, isRaxUsed));
+					isRaxUsed = true;
 				} else {
 					Value newValue = new Value(tmp);
 					current = new Instruction(newValue, current.op, current.a);
@@ -94,7 +97,7 @@ public class Allocater {
 			if (current.a != null && current.a.value instanceof Register) {
 				ValueImpl tmp = registerPass((Register) current.a.value);
 				if (tmp == null) {
-					currentList.addAll(convertInstructionByRestoringRegister(current));
+					currentList.addAll(convertInstructionByRestoringRegister(current, isRaxUsed));
 				} else {
 					Value newValue = new Value(tmp);
 					current = new Instruction(current.dest, current.op, newValue);
@@ -120,7 +123,7 @@ public class Allocater {
 			for (Instruction instruction : intermediate) {
 				if (instruction.dest != null && instruction.a != null && 
 						instruction.dest.value instanceof Memory && instruction.a.value instanceof Memory) {
-					intermediate2.addAll(convertInstructionByRestoringRegister(instruction));
+					intermediate2.addAll(convertInstructionByRestoringRegister(instruction, false));
 				} else {
 					intermediate2.add(instruction);
 				}
@@ -166,9 +169,10 @@ public class Allocater {
 		return result;
 	}
 
-	private ArrayList<Instruction> convertInstructionByRestoringRegister(Instruction instruction) {
+	private ArrayList<Instruction> convertInstructionByRestoringRegister(Instruction instruction, boolean isRaxUsed) {
 		ArrayList<Instruction> result = new ArrayList<Instruction>();
-		Register rax = new Register(0); // 0 => %rax
+		int spareRegister = isRaxUsed ? 10 : 0;
+		Register rax = new Register(spareRegister); // 0 => %rax
 		Value restore = new Value(rax);
 		result.add(new Instruction(restore, Opcode.MOV, instruction.a));
 		result.add(new Instruction(restore, instruction.op, instruction.b));
