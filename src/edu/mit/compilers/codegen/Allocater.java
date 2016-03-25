@@ -3,35 +3,21 @@ package edu.mit.compilers.codegen;
 import java.util.*;
 import java.util.Map.Entry;
 
-public class Allocater {
+public class Allocater implements Allocator{
 
   Queue<Register> availableRegisters;
   Queue<Register> inuseRegisters;
   ArrayList<BasicBlock> basicBlocks;
-  int stackCounter = 0;
+ 
   static final int WORD_SIZE = 8;
 
-  private Allocater instance = new Allocater();
-
-  private Allocater() {
+  public Allocater() {
     this.availableRegisters = new LinkedList<Register>();
     for (int i = 11; i <= 15; i++) {
       this.availableRegisters.add(new Register(i));
     }
     this.availableRegisters.add(new Register(5));
     this.inuseRegisters = new LinkedList<Register>();
-  }
-
-  public Allocater getInstance() {
-    return this.instance;
-  }
-
-  public void transformFunctions(ArrayList<ArrayList<BasicBlock>> functions) {
-    for (ArrayList<BasicBlock> blocks : functions){
-      for (BasicBlock bb : blocks) {
-        transformBasicBlock(bb);
-      }
-    }
   }
 
   public void recycleRegisters(HashMap<Integer, Integer> firstUse,
@@ -60,8 +46,16 @@ public class Allocater {
     }
   }
 
+  @Override
+	public int transform(ArrayList<BasicBlock> basicblocks) {
+		Integer stackCounter = 0;
+		for (BasicBlock bb : basicblocks) {
+			transformBasicBlock(bb, stackCounter);
+		}
+		return stackCounter;
+	}
 
-  public void transformBasicBlock(BasicBlock bb) {
+  public void transformBasicBlock(BasicBlock bb, Integer stackCounter) {
 
     ArrayList<Instruction> result = new ArrayList<Instruction>();
 
@@ -83,7 +77,7 @@ public class Allocater {
 
       //allocates destination register
       if (current.b != null && current.b.value instanceof Register) {
-        ValueImpl tmp = registerPass((Register) current.b.value);
+        ValueImpl tmp = registerPass((Register) current.b.value, stackCounter);
         if (tmp == null) { // MUST_REG and out of register
           currentList.addAll(convertInstructionByRestoringRegister(current, isRaxUsed));
           isRaxUsed = true;
@@ -95,7 +89,7 @@ public class Allocater {
 
       //allocates current.a register
       if (current.a != null && current.a.value instanceof Register) {
-        ValueImpl tmp = registerPass((Register) current.a.value);
+        ValueImpl tmp = registerPass((Register) current.a.value, stackCounter);
         if (tmp == null) {
           currentList.addAll(convertInstructionByRestoringRegister(current, isRaxUsed));
         } else {
@@ -136,7 +130,7 @@ public class Allocater {
 
   // stackCounter = -1 if not MUST_STACK
   // TODO: check if having stackCounter as a field is okay and we can keep incrementing
-  public ValueImpl registerPass(Register register) {
+  public ValueImpl registerPass(Register register, Integer stackCounter) {
     if (register.id > 128) {
       // virtual register
       if (register.hint == Register.MUST_REG) {
@@ -150,14 +144,14 @@ public class Allocater {
 
       } else if (register.hint == Register.MUST_STACK) {
         Memory tmp = new Memory(Register.RSP.box(), null, stackCounter, WORD_SIZE);
-        this.stackCounter += WORD_SIZE;
+        stackCounter += WORD_SIZE;
         return tmp;
       } else {
-        return getAvailableRegisterOrMemory();
+        return getAvailableRegisterOrMemory(stackCounter);
       }
     } else {
       // allocate the rest
-      return getAvailableRegisterOrMemory();
+      return getAvailableRegisterOrMemory(stackCounter);
     }
   }
 
@@ -180,14 +174,14 @@ public class Allocater {
     return result;
   }
 
-  private ValueImpl getAvailableRegisterOrMemory() {
+  private ValueImpl getAvailableRegisterOrMemory(Integer stackCounter) {
     if (!this.availableRegisters.isEmpty()) { // allocate register
       Register tmp = this.availableRegisters.remove();
       this.inuseRegisters.add(tmp);
       return tmp;
     } else { // out of registers
       Memory tmp = new Memory(Register.RSP.box(), null, stackCounter, WORD_SIZE);
-      this.stackCounter += WORD_SIZE;
+      stackCounter += WORD_SIZE;
       return tmp;
     }
   }
@@ -258,6 +252,9 @@ public class Allocater {
     }
     return false;
   }
+
+
+	
 
   //public ArrayList<Instruction> flattenFunctions(ArrayList<ArrayList<BasicBlock>> functions) {
   //ArrayList<Instruction> flattenedInstructions = new ArrayList<Instruction>();
