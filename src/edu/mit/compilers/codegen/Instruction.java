@@ -40,7 +40,7 @@ public class Instruction {
   public String toString() {
     return op.toString() +
         (a != null ? " " + a.toString() : "") +
-        (b != null ? " ," + b.toString() : "") +
-        (c != null ? " ," + c.toString() : "");
+        (b != null ? ", " + b.toString() : "") +
+        (c != null ? ", " + c.toString() : "");
   }
 }

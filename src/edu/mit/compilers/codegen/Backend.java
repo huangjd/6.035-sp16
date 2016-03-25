@@ -19,19 +19,20 @@ public class Backend extends Visitor {
   public String binName;
 
   public class FunctionContent {
-    ArrayList<BasicBlock> text;
-    long baseStackAdjust;
+    public ArrayList<BasicBlock> text;
+    public long baseStackAdjust;
 
     FunctionContent(ArrayList<BasicBlock> text, long baseStackAdjust) {
       this.text = text;
       this.baseStackAdjust = baseStackAdjust;
     }
   }
-  ArrayList<FunctionContent> functions = new ArrayList<>();
+
+  public ArrayList<FunctionContent> functions = new ArrayList<>();
 
   Function currentFunc;
 
-  final BasicBlock exit0, exitM1, exitM2; // INIT
+  final BasicBlock exitM1, exitM2; // INIT
   public Backend(String outName) {
     binName = outName;
     builder = new IRBuilder();
@@ -46,10 +47,14 @@ public class Backend extends Visitor {
 
     builder.insertFunction();
 
-    exit0 = builder.createBasicBlock();
-    builder.setCurrentBasicBlock(exit0);
-    builder.emitInstruction(new Instruction(Opcode.MOV, new Immediate(0).box(), Register.RDI.box()));
-    builder.emitInstruction(new Instruction(Opcode.CALL, new Symbol("exit").box()));
+    BasicBlock main = builder.createBasicBlock("\t.text\n" +
+        "\t.globl  main\n" +
+        "\t.type main, @function\n" +
+        "main");
+    builder.setCurrentBasicBlock(main);
+    builder.emitInstruction(new Instruction(Opcode.CALL, new Symbol(".func.main").box()));
+    builder.emitInstruction(new Instruction(Opcode.XOR, Register.RAX.box(), Register.RAX.box()));
+    builder.emitInstruction(new Instruction(Opcode.RET));
 
     exitM1 = builder.createBasicBlock();
     builder.setCurrentBasicBlock(exitM1);
@@ -67,11 +72,17 @@ public class Backend extends Visitor {
     builder.emitInstruction(new Instruction(Opcode.MOV, new Immediate(-2).box(), Register.RDI.box()));
     builder.emitInstruction(new Instruction(Opcode.CALL, new Symbol("exit").box()));
     builder.emitInstruction(new Instruction(Opcode.RET));
+
+    builder.insertBasicBlock(main);
+    builder.insertBasicBlock(exitM1);
+    builder.insertBasicBlock(exitM2);
+    functions.add(new FunctionContent(builder.basicBlocks, -1));
   }
 
   @Override
   protected void visit(Program node) {
-    for (Var global : node.globals.asList()) {
+    for (StatementNode s : node.varDecls) {
+      Var global = ((VarDecl) s.getNode()).var;
       symtab.insert(global, new Value(new Symbol(".bss." + global.id)));
     }
 
@@ -588,6 +599,12 @@ public class Backend extends Visitor {
 
   @Override
   protected void visit(Call node) {
+    BasicBlock bb1 = builder.createBasicBlock();
+    BasicBlock bb2 = builder.createBasicBlock();
+    builder.emitBranch(bb1);
+    builder.insertBasicBlock(bb1);
+    builder.setCurrentBasicBlock(bb1);
+
     ArrayList<Value> args = new ArrayList<Value>();
     for (int i = 0; i < node.args.size(); i++) {
       args.add(compile(node.args.get(i)));
@@ -599,6 +616,7 @@ public class Backend extends Visitor {
     for (int i : callerSaved) {
       Value v = builder.allocateRegister(Register.MUST_STACK);
       builder.emitMov(new Register(i).box(), v);
+      saved.add(v);
     }
 
     for (int i = s; i < node.args.size(); i++) {
@@ -606,7 +624,7 @@ public class Backend extends Visitor {
           new Immediate(currentFuncCallingConvention.getCallerNthArgOffsetRsp(i)).box());
     }
     for (int i = 0; i < Math.min(node.args.size(), s); i++) {
-      builder.emitStore(args.get(i), builder.allocateRegister(currentFuncCallingConvention.getNthArgRegIndex(i)));
+      builder.emitStore(args.get(i), new Register(currentFuncCallingConvention.getNthArgRegIndex(i)).box());
     }
 
     builder.emitInstruction(new Instruction(Opcode.CALL, new Symbol((node.func.isCallout ? "" : ".func.") + node.func.id).box()));
@@ -614,8 +632,11 @@ public class Backend extends Visitor {
     returnValue = builder.emitMov(new Register(currentFuncCallingConvention.getRetReg()).box(), builder.allocateRegister());
 
     for (int i = 0; i < callerSaved.length; i++) {
-      builder.emitMov(saved.get(i), new Register(i).box());
+      builder.emitMov(saved.get(i), new Register(callerSaved[i]).box());
     }
+    builder.emitBranch(bb2);
+    builder.insertBasicBlock(bb2);
+    builder.setCurrentBasicBlock(bb2);
   }
 
   @Override

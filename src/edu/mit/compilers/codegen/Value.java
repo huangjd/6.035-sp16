@@ -36,6 +36,11 @@ public class Value {
   public Value(ValueImpl val) {
     this.value = val;
   }
+
+  @Override
+  public String toString() {
+    return value.toString();
+  }
 }
 
 abstract class ValueImpl {
@@ -114,9 +119,9 @@ class Memory extends ValueImpl {
 
   @Override
   public String toString() {
-    return (offset != null ? offset.toString() : "") + "(" + base.toString() +
+    return (offset != null ? offset.toString().substring(1) : "") + "(" + base.toString() +
         (index != null ? ", " + index.toString() : "") +
-        (sizeofelement == 1 ? "" : ", " + Integer.toString(sizeofelement)) + ")";
+        (sizeofelement == 8 ? "" : ", " + Integer.toString(sizeofelement)) + ")";
   }
 }
 

@@ -13,7 +13,7 @@ public final class SemanticsPostProcess extends Mutator {
   @Override
   protected void visit(Program node) {
     super.visit(node);
-
+    node = (Program) returnNode;
     ArrayList<Var> vars = node.globals.asList();
     for (Var var : vars) {
       var.bss = true;

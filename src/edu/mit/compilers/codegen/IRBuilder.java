@@ -165,14 +165,14 @@ public class IRBuilder {
   public void emitPrologue(CallingConvention c) {
     int[] regs = c.getCalleeSavedRegs();
     for (int i = 0; i < regs.length; i++) {
-      emitMov(new Register(regs[i]).box(), new Memory(Register.RBP.box(), null, 8 * i + 8, 8).box());
+      emitMov(new Register(regs[i]).box(), new Memory(Register.RBP.box(), null, -(8 * i + 8), 8).box());
     }
   }
 
   public void emitEpilogue(CallingConvention c) {
     int[] regs = c.getCalleeSavedRegs();
     for (int i = 0; i < regs.length; i++) {
-      emitMov(new Memory(Register.RBP.box(), null, 8 * i + 8, 8).box(), new Register(regs[i]).box());
+      emitMov(new Memory(Register.RBP.box(), null, -(8 * i + 8), 8).box(), new Register(regs[i]).box());
     }
   }
 }

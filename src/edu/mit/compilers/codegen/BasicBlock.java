@@ -16,4 +16,14 @@ public class BasicBlock {
     seq.add(inst);
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(label).append(":\n");
+    for (Instruction ins : seq) {
+      sb.append("\t").append(ins.toString()).append('\n');
+    }
+    return sb.toString();
+  }
+
 }
