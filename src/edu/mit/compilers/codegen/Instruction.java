@@ -29,7 +29,7 @@ public class Instruction {
     this.b = b;
     this.c = c;
   }
-
+  
   public Instruction addDependency(Instruction previous, int mode) {
     dependency = previous;
     dependencyMode = mode;

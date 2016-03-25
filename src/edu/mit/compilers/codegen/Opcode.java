@@ -55,6 +55,22 @@ public enum Opcode {
 
   private final String root;
 
+
+  //	private String getAssemblySuffix(Value.OperandType registerType) {
+  //		switch (registerType)registerType {
+  //		case Value.OperandType.r8:
+  //			return "B";
+  //			break;
+  //		case Value.OperandType.r16:
+  //			return "W";
+  //			break;
+  //		case Value.OperandType.r32:
+  //			return "L";
+  //			break;
+  //
+  //		}
+  //	}
+
   Opcode(String op) {
     this.root = op;
   }
@@ -222,5 +238,4 @@ public enum Opcode {
       return "";
     }
   }
-
 }

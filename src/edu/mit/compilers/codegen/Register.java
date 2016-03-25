@@ -35,6 +35,8 @@ public class Register extends ValueImpl {
     this.type = type;
     this.hint = placementHint;
   }
+  
+  
 
   @Override
   public String toString() {
@@ -176,6 +178,11 @@ public class Register extends ValueImpl {
       throw new IllegalArgumentException();
     }
     return res;
+  }
+  
+
+  public boolean equals(Register register) {
+  	return this.id == register.id;
   }
 }
 
