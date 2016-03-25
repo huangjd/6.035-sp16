@@ -42,7 +42,11 @@ public class ErrorLogger {
           process(e.pos, "function declared to return type void but got type \'", e.actual, "\'\n", e.expr);
         }
       } else if (e.var != null) {
-        process(e.pos, "expecting type \'", e.expected, "\', got type \'", e.actual, "\'\n", e.var);
+        if (e.expected == Type.CALL) {
+          process(e.pos, "\'", e.actual, "\' is not callable\n", e.var);
+        } else {
+          process(e.pos, "expecting type \'", e.expected, "\', got type \'", e.actual, "\'\n", e.var);
+        }
       } else {
         process(e.pos, "expecting type \'", e.expected, "\', got type \'", e.actual, "\'");
       }
@@ -95,11 +99,15 @@ public class ErrorLogger {
 
   static public void logError(RedeclaredSymbolException e) {
     if (e.original != null) {
-      if (e.original.type == e.redeclared.type) {
-        process(e.pos, "redeclaration of variable \'", e.original.type, " ", e.redeclared, "\'");
+      if (e.f != null) {
+        process(e.pos, "redeclaration of \'", e.f.id, "\' as a different type of symbol");
       } else {
-        process(e.pos, "redeclaration of variable \'", e.original.type, "\' as a different type of symbol \'",
-            e.redeclared.type, " ", e.redeclared, "\'");
+        if (e.original.type == e.redeclared.type) {
+          process(e.pos, "redeclaration of variable \'", e.original.type, " ", e.redeclared, "\'");
+        } else {
+          process(e.pos, "redeclaration of variable \'", e.original.type, "\' as a different type of symbol \'",
+              e.redeclared.type, " ", e.redeclared, "\'");
+        }
       }
     } else {
       process(e.pos, "redeclaration of function \"", e.f.id, "\"");

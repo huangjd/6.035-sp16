@@ -40,6 +40,10 @@ public class Value {
 
 abstract class ValueImpl {
   public OperandType type;
+
+  Value box() {
+    return new Value(this);
+  }
 }
 
 class Immediate extends ValueImpl {
@@ -57,11 +61,11 @@ class Immediate extends ValueImpl {
 }
 
 class Memory extends ValueImpl {
-  Register base, index;
+  Value base, index, offset;
   int sizeofelement;
-  long offset;
 
-  public Memory(Register base, Register index, long offset, int sizeofelement) {
+  public Memory(Value base, Value index, Value offset, int sizeofelement) {
+    assert (offset == null || offset.value instanceof Immediate || offset.value instanceof Symbol);
     this.base = base;
     this.index = index;
     this.sizeofelement = sizeofelement;
@@ -85,11 +89,13 @@ class Memory extends ValueImpl {
     }
   }
 
-  public Memory(Register base, Register index, long offset, int sizeofelement, OperandType type) {
-    this.base = base;
-    this.index = index;
-    this.sizeofelement = sizeofelement;
-    this.offset = offset;
+  public Memory(Value base, Value index, long offset, int sizeofelement) {
+    this(base, index, new Immediate(offset).box(), sizeofelement);
+  }
+
+  public Memory(Value base, Value index, Value offset, int sizeofelement, OperandType type) {
+    this(base, index, offset, sizeofelement);
+
     this.type = type;
     switch (sizeofelement) {
     case 1:
@@ -102,9 +108,13 @@ class Memory extends ValueImpl {
     }
   }
 
+  public Memory(Value base, Value index, long offset, int sizeofelement, OperandType type) {
+    this(base, index, new Immediate(offset).box(), sizeofelement, type);
+  }
+
   @Override
   public String toString() {
-    return (offset != 0 ? Long.toString(offset) : "") + "(" + base.toString() +
+    return (offset != null ? offset.toString() : "") + "(" + base.toString() +
         (index != null ? ", " + index.toString() : "") +
         (sizeofelement == 1 ? "" : ", " + Integer.toString(sizeofelement)) + ")";
   }

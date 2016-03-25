@@ -21,9 +21,8 @@ public final class SemanticsPostProcess extends Mutator {
 
     for (FunctionNode function : ((Program) returnNode).functions) {
       Function func = (Function) (function.getNode());
-      if (func.id.equals("main") && func.getParams().size() == 0) {
+      if (func.id.equals("main") && func.getParams().size() == 0 && func.returnType == Type.NONE) {
         ((Program) returnNode).main = function;
-        ((Program) returnNode).functions.remove(node.main);
         return;
       }
     }

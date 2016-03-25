@@ -368,10 +368,6 @@ public class IRPrinter extends Visitor {
     for (FunctionNode func : node.functions) {
       func.accept(this);
     }
-
-    if (node.main != null) {
-      node.main.accept(this);
-    }
   }
 
   @Override

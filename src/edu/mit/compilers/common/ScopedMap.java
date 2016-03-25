@@ -37,9 +37,9 @@ public class ScopedMap<K, V> {
     return map.get(key);
   }
 
-  public V insert(K key, V var) {
+  public V insert(K key, V val) {
     V result = map.get(key);
-    map.put(key, var);
+    map.put(key, val);
     return result;
   }
 }

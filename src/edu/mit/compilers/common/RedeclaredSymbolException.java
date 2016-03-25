@@ -17,6 +17,13 @@ public class RedeclaredSymbolException extends RuntimeException {
     this.f = null;
   }
 
+  public RedeclaredSymbolException(Function f, Var var, SourcePosition pos) {
+    this.original = var;
+    this.redeclared = null;
+    this.pos = pos;
+    this.f = f;
+  }
+
   public RedeclaredSymbolException(Function f, SourcePosition pos) {
     this.original = null;
     this.redeclared = null;

@@ -8,19 +8,18 @@ public class Visitor {
   }
 
   protected void visit(Program node) {
-    for (FunctionNode function : node.functions) {
-      function.accept(this);
-    }
-    if (node.main != null) {
-      node.main.accept(this);
-    }
     for (StatementNode varDecl : node.varDecls) {
       varDecl.accept(this);
+    }
+    for (FunctionNode function : node.functions) {
+      function.accept(this);
     }
   }
 
   protected void visit(Function node) {
-    node.body.accept(this);
+    if (!node.isCallout) {
+      node.body.accept(this);
+    }
   }
 
   // ------------ Expressions ----------

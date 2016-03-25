@@ -5,7 +5,14 @@ import edu.mit.compilers.codegen.Value.OperandType;
 public class Register extends ValueImpl {
 
   public int id;
-  public int hint;
+  public int hint = -1;
+
+  public static int MUST_STACK = -2;
+  public static int MUST_REG = -3; // Never RSP; Never RBP unless fomit-frame-pointer
+  public static int PREFER_STACK = -4;
+  public static int PREFER_REG = -5;
+  public static int PREFER_REG_CALLER_SAVED = -6;
+  public static int PREFER_RAX = -16;
 
   public Register(int id) {
     this.id = id;
@@ -19,6 +26,13 @@ public class Register extends ValueImpl {
 
   public Register(int id, int placementHint) {
     this.id = id;
+    this.type = OperandType.r64;
+    this.hint = placementHint;
+  }
+
+  public Register(int id, int placementHint, OperandType type) {
+    this.id = id;
+    this.type = type;
     this.hint = placementHint;
   }
 
@@ -121,8 +135,26 @@ public class Register extends ValueImpl {
   public static final int r14 = 14;
   public static final int r15 = 15;
 
+  public static Register RAX = new Register(rax);
+  public static Register RCX = new Register(rcx);
+  public static Register RDX = new Register(rdx);
+  public static Register RBX = new Register(rbx);
   public static Register RSP = new Register(rsp);
   public static Register RBP = new Register(rbp);
+  public static Register RSI = new Register(rsi);
+  public static Register RDI = new Register(rdi);
+
+  public static Register R8 = new Register(r8);
+  public static Register R9 = new Register(r9);
+  public static Register R10 = new Register(r10);
+  public static Register R11 = new Register(r11);
+  public static Register R12 = new Register(r12);
+  public static Register R13 = new Register(r13);
+  public static Register R14 = new Register(r14);
+  public static Register R15 = new Register(r15);
+
+  public static Register RIP = new Register(-1);
+
   // public static Register RFLAGS = null;
 
   public static int argToReg(int n) {

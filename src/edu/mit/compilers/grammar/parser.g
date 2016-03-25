@@ -98,15 +98,23 @@ program returns [ProgramNode p = null]: {
 	FunctionNode f;
 	boolean ok = true;
 	ArrayList<StatementNode> declarations;
+	SourcePosition pos;
 } (f = callout_decl {
   if (f != null) { 
     program.functions.add(f);
   } else {
     ok = false;
   }
-})* (declarations = field_decl {
+})* ({pos = getPos();} declarations = field_decl {
   if (declarations != null) {
     try {
+      for (StatementNode s : declarations) {
+        Function f1 = methodTable.lookup(((VarDecl)s.getNode()).var.id);  
+        if (f1 != null) {
+          ErrorLogger.logError(new RedeclaredSymbolException(f1, ((VarDecl)s.getNode()).var, pos));
+          ok = false;
+        }
+      }
       program.varDecls.addAll(declarations);
     } catch (Exception e) {
       ok = false;
@@ -114,8 +122,13 @@ program returns [ProgramNode p = null]: {
   } else {
     ok = false;
   }
-})* (f = method_decl {
+})* ({pos = getPos();} f = method_decl {
   if (f != null) {
+    Function func = (Function) f.getNode();
+    if (currentSymtab.lookup(func.id) != null) {
+      ErrorLogger.logError(new RedeclaredSymbolException((Function)f.getNode(), currentSymtab.lookup(func.id), pos));
+      ok = false;
+    }
     program.functions.add(f);
   } else {
     ok = false; 
@@ -191,17 +204,21 @@ method_decl returns [FunctionNode f = null] {
   })*
   RCURLY {
   
-  if (returnType == Type.NONE) {
-    body.add(new Return(f, null).box());
-  } else {
-    body.add(new Die(-2, null).box());
-  }
-  Block b = new Block(currentSymtab, body, pos);
-  oldf = new Function(name, returnType, ok, currentSymtab, b.box(), pos);
-  f.setNode(oldf);
-  methodTable.forceInsert(oldf);
-  currentFunc = null;
-  if (ok < 0) {
+  try {
+    if (returnType == Type.NONE) {
+      body.add(new Return(f, null).box());
+    } else {
+      body.add(new Die(-2, null).box());
+    }
+    Block b = new Block(currentSymtab, body, pos);
+    oldf = new Function(name, returnType, ok, currentSymtab, b.box(), pos);
+    f.setNode(oldf);
+    methodTable.forceInsert(oldf);
+    currentFunc = null;
+    if (ok < 0) {
+      f = null;
+    }
+  } catch (NullPointerException ex) {
     f = null;
   }
 };
@@ -442,24 +459,30 @@ call returns [Call e = null] {
 } : name = id 
     LPAREN (temp = argument {args.add(temp);} 
    (COMMA temp = argument {args.add(temp);})*)? RPAREN {
-  Function f = methodTable.lookup(name);
-  try {
-    if (f == null) {
-      ErrorLogger.logError(new UndeclaredSymbolException(name, methodTable, pos));
-      e = null;
-    } else {
-      e = new Call(f, args, pos);
-      for (ExpressionNode arg: args) {
-        if (arg == null) {
-          e = null;
-        }
-      } 
+  Var v = currentSymtab.lookupCurrentScope(name);
+  if (v != null && v.type != Type.CALL && v.type != Type.CALLOUT) {
+    ErrorLogger.logError(new TypeException(v, Type.CALL, pos));
+    e = null;
+  } else {
+    Function f = methodTable.lookup(name);
+    try {
+      if (f == null) {
+        ErrorLogger.logError(new UndeclaredSymbolException(name, methodTable, pos));
+        e = null;
+      } else {
+        e = new Call(f, args, pos);
+        for (ExpressionNode arg: args) {
+          if (arg == null) {
+            e = null;
+          }
+        } 
+      }
+    } catch (TypeException ex) {
+      ErrorLogger.logError(ex);
+    } catch (ArgumentsException ex) {
+      ErrorLogger.logError(ex);
+    } catch (NullPointerException ex) {
     }
-  } catch (TypeException ex) {
-    ErrorLogger.logError(ex);
-  } catch (ArgumentsException ex) {
-    ErrorLogger.logError(ex);
-  } catch (NullPointerException ex) {
   }
 };
 

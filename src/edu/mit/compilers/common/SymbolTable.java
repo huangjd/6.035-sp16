@@ -17,6 +17,16 @@ public class SymbolTable extends ScopedMap<String, Var> {
     this.offsetCounter = parentScope.offsetCounter;
   }
 
+  @Override
+  public SymbolTable scope() {
+    return new SymbolTable(this);
+  }
+
+  @Override
+  public SymbolTable unscope() {
+    return (SymbolTable) parentScope;
+  }
+
   public void SwapIn(SymbolTable other) {
     SymbolTable that = other;
     HashMap<String, Var> tmp = map;

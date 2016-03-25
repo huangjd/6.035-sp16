@@ -20,8 +20,6 @@ public class Mutator extends Visitor {
 
     boolean replace = false;
 
-    ArrayList<StatementNode> varDecls = new ArrayList<>();
-    ArrayList<FunctionNode> functions = new ArrayList<>();
     for (StatementNode varDecl : node.varDecls) {
       StatementNode n = varDecl.accept(this);
       if (n != varDecl) {
@@ -33,22 +31,20 @@ public class Mutator extends Visitor {
     }
 
     for (FunctionNode function : node.functions) {
+      boolean main = false;
+      if (function == node.main) {
+        main = true;
+      }
+
       FunctionNode f = function.accept(this);
       if (f != function) {
         replace = true;
       }
       if (f != null) {
         p.functions.add(f);
-      }
-    }
-
-    if (node.main != null) {
-      FunctionNode f = node.main.accept(this);
-      if (f != node.main) {
-        replace = true;
-      }
-      if (f != null) {
-        p.main = f;
+        if (main) {
+          p.main = f;
+        }
       }
     }
 
@@ -348,7 +344,7 @@ public class Mutator extends Visitor {
     ExpressionNode index = node.index.accept(this);
     ExpressionNode value = node.value.accept(this);
     if (index != node.index || value != node.value) {
-      returnNode = new Store(node.array, index, value, node.getSourcePosition());
+      returnNode = new Store(node.array, index, value, node.getSourcePosition(), node.cop);
     }
   }
 
