@@ -85,11 +85,50 @@ public class Allocater {
 	
 	public ValueImpl allocatePhysicalMemory(Register register) {
 		// TODO check allocate available register if register.id >= 128??
+		
 		if (!availableRegisters.isEmpty()) {
 			return availableRegisters.remove();
+		} else if (register.hint.equals("MUST_REG")){
+			for (Register reg : inuseRegisters) {
+				if (reg)
+			}
 		} else {
 			return new Memory(Register.RSP, null, 0, 8); // TODO check offset
 		}
 	}
-
+	
+	// TODO: currently using Value to represent a variable. might not be right class.
+	private boolean isLive(ArrayList<Instruction> instructions, int point, Value variable) {
+		for (int i = point; i < instructions.size(); i++) {
+			Instruction current = instructions.get(i); 
+			if (current.a != null && current.a.equals(variable)) {
+				return true;
+			}
+			else if (current.b != null && current.b.equals(variable)) {
+				return true;
+			}
+			else if (current.dest != null && current.dest.equals(variable)) {
+				return false;
+			}
+		}
+		return false;
+	}
+		
+//		int usageIndex = instructions.size();
+//		int definitionIndex = instructions.size();
+//		for (int i = point; i < instructions.size(); i++) {
+//			Instruction current = instructions.get(i); 
+//			if  (current.dest != null && current.dest.equals(variable)){
+//				definitionIndex = i; 
+//			}
+//			if (current.a != null && current.a.equals(variable)) {
+//				usageIndex = i; break;
+//			}
+//			if (current.b != null && current.b.equals(variable)) {
+//				usageIndex = i; break;
+//			}
+//		}
+//		return usageIndex < definitionIndex;
+//	}
+	
 }
