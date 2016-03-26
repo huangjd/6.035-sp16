@@ -8,7 +8,7 @@ public class Allocater implements Allocator{
   Queue<Register> availableRegisters;
   Queue<Register> inuseRegisters;
   ArrayList<BasicBlock> basicBlocks;
- 
+
   static final int WORD_SIZE = 8;
 
   public Allocater() {
@@ -47,13 +47,13 @@ public class Allocater implements Allocator{
   }
 
   @Override
-	public int transform(ArrayList<BasicBlock> basicblocks) {
-		Integer stackCounter = 0;
-		for (BasicBlock bb : basicblocks) {
-			transformBasicBlock(bb, stackCounter);
-		}
-		return stackCounter;
-	}
+  public long transform(ArrayList<BasicBlock> basicblocks, long offset) {
+    Integer stackCounter = 0;
+    for (BasicBlock bb : basicblocks) {
+      transformBasicBlock(bb, stackCounter);
+    }
+    return stackCounter;
+  }
 
   public void transformBasicBlock(BasicBlock bb, Integer stackCounter) {
 
@@ -254,7 +254,7 @@ public class Allocater implements Allocator{
   }
 
 
-	
+
 
   //public ArrayList<Instruction> flattenFunctions(ArrayList<ArrayList<BasicBlock>> functions) {
   //ArrayList<Instruction> flattenedInstructions = new ArrayList<Instruction>();

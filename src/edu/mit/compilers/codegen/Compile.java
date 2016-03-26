@@ -1,8 +1,8 @@
-package edu.mit.compilers;
+package edu.mit.compilers.codegen;
 
 import java.io.*;
+import java.util.HashMap;
 
-import edu.mit.compilers.codegen.*;
 import edu.mit.compilers.codegen.Backend.FunctionContent;
 import edu.mit.compilers.common.*;
 import edu.mit.compilers.nodes.ProgramNode;
@@ -48,19 +48,21 @@ public class Compile {
       debug.append(bssdecl);
     }
 
-    SymbolTable strtab = backend.strtab;
+    HashMap<String, Value> strtab = backend.strtab;
     for (String id : strtab.keySet()) {
-      String strtabdecl = ".globl\t" + id + "\n" +
-          "\t.section\t.rodata" +
-          id + ":\n" +
-          "\t.string\t\"" + strtab.lookup(id) + "\"\n";
+      String name = strtab.get(id).toString().substring(1);
+
+      String strtabdecl = ".globl\t" + name + "\n" +
+          "\t.section\t.rodata\n" +
+          name + ":\n" +
+          "\t.string\t" + id + "\n";
       codeOutput.print(strtabdecl);
       debug.append(strtabdecl);
     }
 
     for (FunctionContent func : backend.functions) {
-      Allocator alloc = new Allocater();
-      int offset = alloc.transform(func.text);
+      Allocator alloc = new UnoptimizedAllocator();
+      long offset = alloc.transform(func.text, func.baseStackAdjust);
       offset += func.baseStackAdjust;
       BasicBlock first = func.text.get(0);
       first.seq.add(Math.max(0, first.seq.size() - 1),

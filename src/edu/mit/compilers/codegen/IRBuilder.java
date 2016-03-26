@@ -37,7 +37,7 @@ public class IRBuilder {
     return currentBB;
   }
 
-  static private int registerID = 128;
+  static private int registerID = Register.VIRT_REG_START;
   public Value allocateRegister() {
     return new Value(new Register(registerID++));
   }
