@@ -48,6 +48,10 @@ public class SymbolTable extends ScopedMap<String, Var> {
     offsetCounter = value;
   }
 
+  public void forcedInsert(Var var) {
+    map.put(var.id, var);
+  }
+
   public boolean insert(Var var) {
     if (map.containsKey(var.id) || !var.isVariable()) {
       return false;

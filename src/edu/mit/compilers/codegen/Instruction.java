@@ -29,7 +29,7 @@ public class Instruction {
     this.b = b;
     this.c = c;
   }
-  
+
   public Instruction addDependency(Instruction previous, int mode) {
     dependency = previous;
     dependencyMode = mode;
@@ -38,7 +38,18 @@ public class Instruction {
 
   @Override
   public String toString() {
-    return op.toString() +
+    String opStr;
+    if (c != null) {
+      opStr = op.toString(c.getType());
+    } else if (b != null) {
+      opStr = op.toString(b.getType());
+    } else if (a != null) {
+      opStr = op.toString(a.getType());
+    } else {
+      opStr = op.toString();
+    }
+
+    return opStr +
         (a != null ? " " + a.toString() : "") +
         (b != null ? ", " + b.toString() : "") +
         (c != null ? ", " + c.toString() : "");

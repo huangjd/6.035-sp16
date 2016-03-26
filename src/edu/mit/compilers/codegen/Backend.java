@@ -1,6 +1,6 @@
 package edu.mit.compilers.codegen;
 
-import java.util.ArrayList;
+import java.util.*;
 
 import edu.mit.compilers.common.*;
 import edu.mit.compilers.nodes.*;
@@ -11,7 +11,9 @@ public class Backend extends Visitor {
   IRBuilder builder;
   BasicBlock currentBreakableEntrance, currentBreakableExit;
   CallingConvention currentFuncCallingConvention;
-  public SymbolTable strtab;
+
+  public HashMap<String, Value> strtab;
+
   public ScopedMap<Var, Value> symtab;
   ArrayList<BasicBlock> deferredBlocks;
 
@@ -36,14 +38,14 @@ public class Backend extends Visitor {
   public Backend(String outName) {
     binName = outName;
     builder = new IRBuilder();
-    strtab = new SymbolTable();
+    strtab = new HashMap<String, Value>();
     symtab = new ScopedMap<Var, Value>();
 
-    String s1 = ".string.outofboundsmsg";
-    String s2 = ".string.controlreachesend";
+    String s1 = "$.string.outofboundsmsg";
+    String s2 = "$.string.controlreachesend";
 
-    strtab.insert(new Var(s1, binName + ": %d:%d %s: array index out of bounds\n"));
-    strtab.insert(new Var(s2, binName + ": %d:%d %s: control reaches end of non-void function\n"));
+    strtab.put("\"" + binName + ": %d:%d %s: array index out of bounds\\n\"", new Symbol(s1).box());
+    strtab.put("\"" + binName + ": %d:%d %s: control reaches end of non-void function\\n\"", new Symbol(s2).box());
 
     builder.insertFunction();
 
@@ -52,14 +54,8 @@ public class Backend extends Visitor {
     builder.setCurrentBasicBlock(dummy);
     builder.emitInstruction(new Instruction(Opcode.NOP));
 
-    BasicBlock main = builder.createBasicBlock("\t.text\n" +
-        "\t.globl  main\n" +
-        "\t.type main, @function\n" +
-        "main");
-    builder.setCurrentBasicBlock(main);
-    builder.emitInstruction(new Instruction(Opcode.CALL, new Symbol(".func.main").box()));
-    builder.emitInstruction(new Instruction(Opcode.XOR, Register.RAX.box(), Register.RAX.box()));
-    builder.emitInstruction(new Instruction(Opcode.RET));
+    BasicBlock main = builder.createBasicBlock();
+
 
     exitM1 = builder.createBasicBlock();
     builder.setCurrentBasicBlock(exitM1);
@@ -78,7 +74,6 @@ public class Backend extends Visitor {
     builder.emitInstruction(new Instruction(Opcode.CALL, new Symbol("exit").box()));
     builder.emitInstruction(new Instruction(Opcode.RET));
 
-    builder.insertBasicBlock(main);
     builder.insertBasicBlock(exitM1);
     builder.insertBasicBlock(exitM2);
     functions.add(new FunctionContent(builder.basicBlocks, -1));
@@ -101,13 +96,21 @@ public class Backend extends Visitor {
     if (!node.isCallout) {
       deferredBlocks = new ArrayList<>();
       currentFuncCallingConvention = new CallingConventionX86_64Linux();
-      stackAdjust = 16 + 8 * currentFuncCallingConvention.getCalleeSavedRegs().length;
+      stackAdjust = 8 + 8 * currentFuncCallingConvention.getCalleeSavedRegs().length;
 
       builder.insertFunction();
       currentFunc = node;
-      strtab.insert(new Var(".func." + node.id, node.id));
+      strtab.put("\"" + node.getSignature() + "\"", new Symbol("$.string." + node.id).box());
 
-      BasicBlock first = builder.createBasicBlock(".func." + node.id);
+      BasicBlock first;
+      if (node.id.equals("main")) {
+        first = builder.createBasicBlock("\t.text\n" +
+            "\t.globl  main\n" +
+            "\t.type main, @function\n" +
+            "main");
+      } else {
+        first = builder.createBasicBlock(".func." + node.id);
+      }
 
       builder.insertBasicBlock(first);
       builder.setCurrentBasicBlock(first);
@@ -563,8 +566,9 @@ public class Backend extends Visitor {
   protected static int strtabID = 0;
   @Override
   protected void visit(StringLiteral node) {
-    String symbol = ".string." + Integer.toString(strtabID);
-    strtab.insert(new Var(symbol, node.value));
+    String symbol = "$.string." + Integer.toString(strtabID);
+    strtab.put(node.value, new Symbol(symbol).box());
+
     strtabID++;
     returnValue = new Symbol(symbol).box();
   }

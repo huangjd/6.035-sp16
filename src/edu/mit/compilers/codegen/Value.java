@@ -41,6 +41,10 @@ public class Value {
   public String toString() {
     return value.toString();
   }
+
+  public boolean isVirtualReg() {
+    return value instanceof Register && ((Register) value).id >= Register.VIRT_REG_START;
+  }
 }
 
 abstract class ValueImpl {

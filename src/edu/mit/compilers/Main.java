@@ -3,6 +3,7 @@ package edu.mit.compilers;
 import java.io.*;
 
 import antlr.Token;
+import edu.mit.compilers.codegen.Compile;
 import edu.mit.compilers.common.ErrorLogger;
 import edu.mit.compilers.grammar.*;
 import edu.mit.compilers.nodes.ProgramNode;

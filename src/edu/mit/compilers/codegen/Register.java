@@ -3,6 +3,7 @@ package edu.mit.compilers.codegen;
 import edu.mit.compilers.codegen.Value.OperandType;
 
 public class Register extends ValueImpl {
+  static public final int VIRT_REG_START = 128;
 
   public int id;
   public int hint = -1;
@@ -35,8 +36,8 @@ public class Register extends ValueImpl {
     this.type = type;
     this.hint = placementHint;
   }
-  
-  
+
+
 
   @Override
   public String toString() {
@@ -179,10 +180,10 @@ public class Register extends ValueImpl {
     }
     return res;
   }
-  
+
 
   public boolean equals(Register register) {
-  	return this.id == register.id;
+    return this.id == register.id;
   }
 }
 

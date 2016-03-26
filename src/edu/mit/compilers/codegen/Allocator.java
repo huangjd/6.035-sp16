@@ -9,7 +9,7 @@ public interface Allocator {
    * @param basicblocks
    *          both input and output.
    *
-   * @return int: amount of stack space used in this function.
+   * @return amount of stack space used in this function.
    */
-  public int transform(ArrayList<BasicBlock> basicblocks);
+  public long transform(ArrayList<BasicBlock> basicblocks, long offset);
 }
