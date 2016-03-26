@@ -96,7 +96,8 @@ public class Backend extends Visitor {
     if (!node.isCallout) {
       deferredBlocks = new ArrayList<>();
       currentFuncCallingConvention = new CallingConventionX86_64Linux();
-      stackAdjust = 8 + 8 * currentFuncCallingConvention.getCalleeSavedRegs().length;
+      stackAdjust = 8 + 8 * currentFuncCallingConvention.getCalleeSavedRegs().length 
+                      + 8 * currentFuncCallingConvention.getCallerSavedRegs().length;
 
       builder.insertFunction();
       currentFunc = node;
@@ -620,13 +621,15 @@ public class Backend extends Visitor {
     }
     int s = currentFuncCallingConvention.getNumArgsPassedByReg(); // == 6
 
-    ArrayList<Value> saved = new ArrayList<Value>();
+    
+    int offset = currentFuncCallingConvention.getCalleeSavedRegs().length * 8 + 8;
     int[] callerSaved = currentFuncCallingConvention.getCallerSavedRegs();
-    for (int i : callerSaved) {
-      Value v = builder.allocateRegister(Register.MUST_STACK);
-      builder.emitMov(new Register(i).box(), v);
-      saved.add(v);
+    
+    for (int i = 0; i < callerSaved.length; i++) {
+      builder.emitMov(new Register(callerSaved[i]).box(), new Memory(Register.RBP.box(), null, -(8 * i + offset), 8).box());
     }
+    
+   
 
     for (int i = s; i < node.args.size(); i++) {
       builder.emitStore(args.get(i), Register.RSP.box(),
@@ -641,8 +644,9 @@ public class Backend extends Visitor {
     returnValue = builder.emitMov(new Register(currentFuncCallingConvention.getRetReg()).box(), builder.allocateRegister());
 
     for (int i = 0; i < callerSaved.length; i++) {
-      builder.emitMov(saved.get(i), new Register(callerSaved[i]).box());
+      builder.emitMov(new Memory(Register.RBP.box(), null, -(8 * i + offset), 8).box(), new Register(callerSaved[i]).box());
     }
+    
     builder.emitBranch(bb2);
     builder.insertBasicBlock(bb2);
     builder.setCurrentBasicBlock(bb2);
