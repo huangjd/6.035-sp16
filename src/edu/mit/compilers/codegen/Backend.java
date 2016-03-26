@@ -96,7 +96,7 @@ public class Backend extends Visitor {
     if (!node.isCallout) {
       deferredBlocks = new ArrayList<>();
       currentFuncCallingConvention = new CallingConventionX86_64Linux();
-      stackAdjust = 16 + 8 * currentFuncCallingConvention.getCalleeSavedRegs().length;
+      stackAdjust = 8 + 8 * currentFuncCallingConvention.getCalleeSavedRegs().length;
 
       builder.insertFunction();
       currentFunc = node;

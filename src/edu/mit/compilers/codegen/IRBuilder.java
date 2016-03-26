@@ -69,10 +69,11 @@ public class IRBuilder {
 
   public Value emitMul(Value a, Value b) {
     Value res = allocateRegister();
-    Value temp = allocateRegister(Register.MUST_REG);
-    currentBB.add(new Instruction(Opcode.MOV, a, temp));
-    currentBB.add(new Instruction(Opcode.IMUL, b, temp));
-    currentBB.add(new Instruction(Opcode.MOV, temp, res));
+    Value saveA = emitMov(Register.RAX.box(), allocateRegister());
+    emitMov(a, Register.RAX.box());
+    currentBB.add(new Instruction(Opcode.IMUL, b, Register.RAX.box()));
+    emitMov(Register.RAX.box(), res);
+    emitMov(saveA, Register.RAX.box());
     return res;
   }
 

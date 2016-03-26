@@ -54,22 +54,40 @@ public class UnoptimizedAllocator implements Allocator {
     for (LinearViewEntry entry : linearView) {
       Instruction inst = entry.inst;
       if (inst.a != null && inst.a.isVirtualReg()) {
-        offset += 8;
         Memory mem = new Memory(Register.RBP.box(), null, -offset, 8);
         inst.a.value = mem;
+        offset += 8;
       }
       if (inst.b != null && inst.b.isVirtualReg()) {
-        offset += 8;
         Memory mem = new Memory(Register.RBP.box(), null, -offset, 8);
         inst.b.value = mem;
+        offset += 8;
       }
       if (inst.c != null && inst.c.isVirtualReg()) {
-        offset += 8;
         Memory mem = new Memory(Register.RBP.box(), null, -offset, 8);
         inst.c.value = mem;
+        offset += 8;
       }
     }
     return offset;
   }
 }
 
+class LowerMemMem implements Allocator {
+
+  @Override
+  public long transform(ArrayList<BasicBlock> basicblocks, long offset) {
+    LinearView linearView = new LinearView(basicblocks);
+    for (int i = linearView.size() - 1; i >= 0; i--) {
+      LinearViewEntry entry = linearView.get(i);
+      Instruction inst = entry.inst;
+      if (inst.a != null && inst.a.value instanceof Memory &&
+          inst.b != null && inst.b.value instanceof Memory) {
+        entry.bb.seq.set(entry.index, new Instruction(inst.op, Register.RAX.box(), inst.b));
+        entry.bb.seq.add(entry.index, new Instruction(Opcode.MOV, inst.a, Register.RAX.box()));
+      }
+    }
+    return offset;
+  }
+
+}

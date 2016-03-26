@@ -33,7 +33,39 @@ public class Compile {
       debug.append('\n');
     }
 
-    debug.append("\n----------" + " ASM " + "----------\n");
+    debug.append("\n----------" + " ASM lower Virtual Reg " + "----------\n");
+
+    for (FunctionContent func : backend.functions) {
+      Allocator alloc = new UnoptimizedAllocator();
+      long offset = alloc.transform(func.text, func.baseStackAdjust);
+      func.baseStackAdjust = offset;
+      BasicBlock first = func.text.get(0);
+      first.seq.add(Math.max(0, first.seq.size() - 1),
+          new Instruction(Opcode.ADD, new Immediate(-offset).box(), Register.RSP.box()));
+
+      for (BasicBlock bb : func.text) {
+        String s = bb.toString();
+        debug.append(s);
+        // codeOutput.print(s);
+      }
+      // codeOutput.print('\n');
+      debug.append('\n');
+    }
+
+    debug.append("\n----------" + " ASM lower Op Mem, Mem " + "----------\n");
+    for (FunctionContent func : backend.functions) {
+      Allocator alloc = new LowerMemMem();
+      long offset = alloc.transform(func.text, func.baseStackAdjust);
+
+      for (BasicBlock bb : func.text) {
+        String s = bb.toString();
+        debug.append(s);
+        codeOutput.print(s);
+      }
+      codeOutput.print('\n');
+      debug.append('\n');
+    }
+
     ScopedMap<Var, Value> symtab = backend.symtab;
     for (Var v : symtab.keySet()) {
       String id = ".bss." + v.id;
@@ -58,23 +90,6 @@ public class Compile {
           "\t.string\t" + id + "\n";
       codeOutput.print(strtabdecl);
       debug.append(strtabdecl);
-    }
-
-    for (FunctionContent func : backend.functions) {
-      Allocator alloc = new UnoptimizedAllocator();
-      long offset = alloc.transform(func.text, func.baseStackAdjust);
-      offset += func.baseStackAdjust;
-      BasicBlock first = func.text.get(0);
-      first.seq.add(Math.max(0, first.seq.size() - 1),
-          new Instruction(Opcode.ADD, new Immediate(-offset).box(), Register.RSP.box()));
-
-      for (BasicBlock bb : func.text) {
-        String s = bb.toString();
-        debug.append(s);
-        codeOutput.print(s);
-      }
-      codeOutput.print('\n');
-      debug.append('\n');
     }
 
     if (CLI.debug) {
