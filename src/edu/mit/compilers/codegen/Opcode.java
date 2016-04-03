@@ -10,6 +10,7 @@ public enum Opcode {
   CMOVGE("cmovge"),
   CMOVL("cmovl"),
   CMOVLE("cmovle"),
+  MOVSX("movsx"),
 
   // stack management
   ENTER("enter"), // do not use
@@ -83,6 +84,7 @@ public enum Opcode {
 
     switch (this) {
     case MOV:
+    case MOVSX:
     case PUSH:
     case POP:
     case ADD:

@@ -157,7 +157,7 @@ public class IRBuilder {
   public Value emitCmpToBool(Opcode type, Value a, Value b) {
     Value res = allocateRegister();
     currentBB.add(new Instruction(Opcode.MOV, new Immediate(0).box(), res));
-    Instruction i1 = new Instruction(Opcode.CMP, a, b);
+    Instruction i1 = new Instruction(Opcode.CMP, b, a);
     currentBB.add(i1);
     currentBB.add(new Instruction(type, res).addDependency(i1, Instruction.NO_RFLAGS_MODIFICATION));
     return res;
