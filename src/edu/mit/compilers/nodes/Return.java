@@ -28,8 +28,10 @@ public class Return extends Statement {
       throw new TypeException(value, false);
     }
 
-    if (((Function) (node.node)).returnType != value.getType()) {
-      throw new TypeException(value, ((Function) (node.node)).returnType);
+    if (!((Function) (node.node)).id.equals("main") && value.getType() == Type.INT) {
+      if (((Function) (node.node)).returnType != value.getType()) {
+        throw new TypeException(value, ((Function) (node.node)).returnType);
+      }
     }
 
     hashCache = node.hashCode() + value.hashCode() * 37;

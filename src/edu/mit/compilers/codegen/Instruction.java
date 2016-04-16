@@ -1,57 +1,89 @@
 package edu.mit.compilers.codegen;
 
+import java.util.ArrayList;
+
+import edu.mit.compilers.common.Util;
+
 public class Instruction {
+  public boolean twoOperand;
+  public Op op;
+  public Operand a, b;
+  public Operand dest;
 
-  public Opcode op;
-  public Value a, b, c;
+  static public class DivInstruction extends Instruction {
+    public boolean mod;
 
-  public Instruction dependency;
-  public int dependencyMode;
-  public static int FOLLOW_IMMEDIATELY = 1;
-  public static int NO_RFLAGS_MODIFICATION = 2;
+    public DivInstruction(Operand dest, Operand a, Operand b, boolean mod) {
+      super(dest, Op.FAKE_DIV, a, b);
+      this.mod = mod;
+    }
 
-  // ISA form instruction, need explicit check
-  public Instruction(Opcode op) {
-    this(op, null, null, null);
+    @Override
+    public String toString() {
+      return super.toString() + "\t(" + (mod ? "mod" : "div") + ")";
+    }
   }
 
-  public Instruction(Opcode op, Value a) {
-    this(op, a, null, null);
+  static public class CallInstruction extends Instruction {
+    public ArrayList<Operand> args;
+    public boolean variadic;
+    public int variadicXMMArgsCount;
+
+    public CallInstruction(Operand dest, Operand symbol, ArrayList<Operand> args, boolean variadic,
+        int variadicXMMArgsCount) {
+      super(dest, Op.FAKE_CALL, symbol);
+      this.args = args;
+      this.variadic = variadic;
+      this.variadicXMMArgsCount = variadicXMMArgsCount;
+    }
+
+    @Override
+    public String toString() {
+      return super.toString() + "\t(" + Util.toCommaSeparatedString(args) + ")"
+          + (variadic ? "\tvariadic with " + String.valueOf(variadicXMMArgsCount) + " XMM args" : "");
+    }
   }
 
-  public Instruction(Opcode op, Value a, Value b) {
-    this(op, a, b, null);
-  }
-
-  public Instruction(Opcode op, Value a, Value b, Value c) {
-    this.op = op;
+  public Instruction(Operand dest, Op op, Operand a, Operand b) {
+    this.twoOperand = false;
     this.a = a;
     this.b = b;
-    this.c = c;
+    this.op = op;
+    this.dest = dest;
   }
 
-  public Instruction addDependency(Instruction previous, int mode) {
-    dependency = previous;
-    dependencyMode = mode;
-    return this;
+  public Instruction(Operand dest, Op op, Operand a) {
+    this(dest, op, a, null);
+  }
+
+  public Instruction(Operand dest, Op op) {
+    this(dest, op, null, null);
+  }
+
+  public Instruction(Op op, Operand a, Operand b) {
+    this(null, op, a, b);
+    twoOperand = true;
+  }
+
+  public Instruction(Op op, Operand a) {
+    this(null, op, a, null);
+    twoOperand = true;
+  }
+
+  public Instruction(Op op) {
+    this(null, op, null);
+    twoOperand = true;
   }
 
   @Override
   public String toString() {
-    String opStr;
-    if (c != null) {
-      opStr = op.toString(c.getType());
-    } else if (b != null) {
-      opStr = op.toString(b.getType());
-    } else if (a != null) {
-      opStr = op.toString(a.getType());
+    if (twoOperand) {
+      return op.toString() + '\t' + (a != null? a.toString() : "")
+          + (b != null ? ", " + b.toString() : "");
     } else {
-      opStr = op.toString();
+      return (dest != null ? dest.toString() + " = " : "\t") +
+          op.toString() + '\t' + (a != null? a.toString() : "")
+          + (b != null ? ", " + b.toString() : "");
     }
-
-    return opStr +
-        (a != null ? " " + a.toString() : "") +
-        (b != null ? ", " + b.toString() : "") +
-        (c != null ? ", " + c.toString() : "");
   }
 }

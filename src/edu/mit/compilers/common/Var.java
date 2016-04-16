@@ -7,7 +7,6 @@ public class Var {
   public final long length;
 
   public int stackOffset = 0;
-  public int registerIndex = -1;
   public boolean bss = false;
 
   public Var(String id, Type type) {

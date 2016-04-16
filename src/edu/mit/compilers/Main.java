@@ -3,7 +3,6 @@ package edu.mit.compilers;
 import java.io.*;
 
 import antlr.Token;
-import edu.mit.compilers.codegen.Compile;
 import edu.mit.compilers.common.ErrorLogger;
 import edu.mit.compilers.grammar.*;
 import edu.mit.compilers.nodes.ProgramNode;
@@ -95,7 +94,7 @@ class Main {
         if (program == null || ErrorLogger.log.errors.size() > 0 || parser.getError()) {
           System.exit(-1);
         }
-        Compile.compile(program, outputStream, System.out);
+
         outputStream.close();
       }
     } catch (Exception e) {

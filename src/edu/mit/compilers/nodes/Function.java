@@ -6,7 +6,7 @@ import edu.mit.compilers.common.*;
 
 public class Function extends Node {
 
-  public final String id;
+  public String id;
   public final Type returnType;
   public final boolean isCallout;
   public final SymbolTable localSymtab;
@@ -80,6 +80,29 @@ public class Function extends Node {
 
       }
       return returnType.toString() + " " + id + "(" + temp + ");";
+    }
+  }
+
+  public String getMangledName() {
+    if (isCallout || id.equals("main")) {
+      return id;
+    } else {
+      String res = "_Z" + String.valueOf(id.length()) + id;
+      if (getParams().size() == 0) {
+        res += "v";
+      } else {
+        for (Var v : getParams()) {
+          switch (v.type) {
+          case INT:
+            res += "l";
+            break;
+          case BOOLEAN:
+            res += "b";
+            break;
+          }
+        }
+      }
+      return res;
     }
   }
 

@@ -10,8 +10,11 @@ public final class SemanticsPostProcess extends Mutator {
   Breakable currentBreakable = null;
   public boolean ok = true;
 
+  Program p;
+
   @Override
   protected void visit(Program node) {
+    p = node;
     super.visit(node);
     node = (Program) returnNode;
     ArrayList<Var> vars = node.globals.asList();
@@ -21,14 +24,25 @@ public final class SemanticsPostProcess extends Mutator {
 
     for (FunctionNode function : ((Program) returnNode).functions) {
       Function func = (Function) (function.getNode());
-      if (func.id.equals("main") && func.getParams().size() == 0 && func.returnType == Type.NONE) {
+      if (func.id.equals("main") && func.getParams().size() == 0 && func.returnType == Type.NONE && !func.isCallout) {
         ((Program) returnNode).main = function;
-        return;
       }
     }
 
+    if (((Program) returnNode).main != null) {
+      return;
+    }
+
     ErrorLogger.logError(new GeneralException("'main()' function is not declared", null));
+
     ok = false;
+  }
+
+  @Override
+  protected void visit(Return node) {
+    if (((Function) (node.context.getNode())).id == "main") {
+      returnNode = new Return(node.context, new IntLiteral(0, null).box(), node.getSourcePosition());
+    }
   }
 
   @Override

@@ -208,9 +208,10 @@ method_decl returns [FunctionNode f = null] {
     if (returnType == Type.NONE) {
       body.add(new Return(f, null).box());
     } else {
-      body.add(new Die(-2, null).box());
+      body.add(new Die(Die.CONTROL_REACHES_END_OF_NON_VOID_FUNCTION, null).box());
     }
-    Block b = new Block(currentSymtab, body, pos);
+    Block b = new Block(currentSymtab, body, pos);    
+    
     oldf = new Function(name, returnType, ok, currentSymtab, b.box(), pos);
     f.setNode(oldf);
     methodTable.forceInsert(oldf);
@@ -235,8 +236,7 @@ parameter_list returns [int ok = 0] {
      Var oldVar = currentSymtab.lookupCurrentScope(name);
      if (oldVar == null) {
        currentSymtab.insert(newVar);
-       newVar.registerIndex = Register.argToReg(0);
-       newVar.stackOffset = 0;
+       newVar.stackOffset = 1;
        count = 1;
      } else {
        ErrorLogger.logError(new RedeclaredSymbolException(oldVar, newVar, pos2));
@@ -259,7 +259,7 @@ parameter_list returns [int ok = 0] {
       case 3:
       case 4:
       case 5:
-        newVar.registerIndex = Register.argToReg(count);
+        newVar.stackOffset = count + 1;
         break;
       default:
         newVar.stackOffset = (count - 4) * 8;
@@ -321,7 +321,7 @@ var_decl [Type type] returns [StatementNode node = null] {
         node = new VarDecl(currentSymtab, newVar, pos).box();
       }
     } else {
-      long length = MathUtil.parseInt(intliteral, new Long(1), null);
+      long length = Util.parseInt(intliteral, new Long(1), null);
       Var newVar = new Var(identifier, type.getArrayType(), length);
       Var oldVar = currentSymtab.lookupCurrentScope(identifier);
       if (oldVar != null) {
@@ -342,8 +342,6 @@ var_decl [Type type] returns [StatementNode node = null] {
     node = null;
   }
 };
-
-//array_decl [Type type = null] returns [StatementNode node = null]: id LSQUARE INTLITERAL RSQUARE;
 
 block returns [StatementNode s = null] {
   SourcePosition pos = getPos();
@@ -530,7 +528,7 @@ for_stmt returns [StatementNode s = null] {
     if (intToken == null) {
       s = new For(var, init, end, body, pos).box();
     } else {
-      long increment = MathUtil.parseInt(intToken, new Long(1), null);
+      long increment = Util.parseInt(intToken, new Long(1), null);
       s = new For(var, init, end, body, pos).box();
     }
   } catch (TypeException ex) {

@@ -236,8 +236,7 @@ public class IRPrinter extends Visitor {
         printindent();
         out.print("// ");
         printVar(local);
-        out.printf("\tLocal offset = %d\t%s\n", local.getStackOffset(),
-            local.registerIndex == -1 ? "" : "register index = " + String.valueOf(local.registerIndex));
+        out.printf("\tLocal offset = %d\t\n", local.getStackOffset());
       }
     }
 

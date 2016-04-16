@@ -42,6 +42,9 @@ public class Store extends Statement {
     if (array.type.getElementType() != value.getType()) {
       throw new TypeException(value, array.type.getElementType());
     }
+    if (cop != CoOperand.NONE && value.getType() != Type.INT) {
+      throw new TypeException(value, Type.BOOLEAN);
+    }
   }
 
   @Override

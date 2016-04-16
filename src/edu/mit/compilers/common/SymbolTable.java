@@ -2,8 +2,6 @@ package edu.mit.compilers.common;
 
 import java.util.*;
 
-import edu.mit.compilers.codegen.Register;
-
 public class SymbolTable extends ScopedMap<String, Var> {
 
   private int offsetCounter;
@@ -59,11 +57,11 @@ public class SymbolTable extends ScopedMap<String, Var> {
       map.put(var.id, var);
       switch (var.type) {
       case INT:
-        offsetCounter = MathUtil.roundUp(offsetCounter, 8);
+        offsetCounter = Util.roundUp(offsetCounter, 8);
         break;
       case BOOLEANARRAY:
       case INTARRAY:
-        offsetCounter = MathUtil.roundUp(offsetCounter, 16);
+        offsetCounter = Util.roundUp(offsetCounter, 16);
       default:
         break;
       }
@@ -79,10 +77,6 @@ public class SymbolTable extends ScopedMap<String, Var> {
       @Override
       public int compare(Var arg0, Var arg1) {
         int i = Integer.compare(arg1.stackOffset, arg0.stackOffset);
-        if (i == 0) {
-          i = Integer.compare(Register.regToArg(arg1.registerIndex),
-              Register.regToArg(arg0.registerIndex));
-        }
         return i;
       }
     });

@@ -2,44 +2,87 @@ package edu.mit.compilers.codegen;
 
 import java.util.ArrayList;
 
-public class BasicBlock {
+public class BasicBlock extends ArrayList<Instruction> {
 
-  public ArrayList<Instruction> seq;
-  public String label;
-  public BasicBlock positive, negative, zero;
-  public BasicBlockInfo info;
+  String label;
+  BasicBlock taken, notTaken;
+  ArrayList<BasicBlock> comefroms = new ArrayList<>();
+  int priority = 0;
 
-  public BasicBlock(String label) {
-    seq = new ArrayList<>();
-    this.label = label;
+  static int id = 0;
+
+  int lastVisitedBasicBlockVisitorID = 0;
+
+  public BasicBlock() {
+    super();
+    label = ".LFB" + Integer.toString(id);
+    id++;
   }
 
-  public void add(Instruction inst) {
-    seq.add(inst);
+  public BasicBlock(String s) {
+    super();
+    label = s;
   }
 
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(label).append(":\n");
-    for (Instruction ins : seq) {
-      sb.append("\t").append(ins.toString()).append('\n');
+  public BasicBlock add(Operand dest, Op op, Operand a, Operand b) {
+    super.add(new Instruction(dest, op, a, b));
+    return this;
+  }
+
+  public BasicBlock add(Operand dest, Op op, Operand a) {
+    super.add(new Instruction(dest, op, a));
+    return this;
+  }
+
+  public BasicBlock add(Operand dest, Op op) {
+    super.add(new Instruction(dest, op));
+    return this;
+  }
+
+  public BasicBlock add(Op op, Operand a, Operand b) {
+    super.add(new Instruction(op, a, b));
+    return this;
+  }
+
+  public BasicBlock add(Op op, Operand a) {
+    super.add(new Instruction(op, a));
+    return this;
+  }
+
+  public BasicBlock add(Op op) {
+    super.add(new Instruction(op));
+    return this;
+  }
+
+  public void setTaken(BasicBlock target) {
+    clearTaken();
+    taken = target;
+    assert (target != null);
+    assert (!target.comefroms.contains(this));
+    target.comefroms.add(this);
+  }
+
+  public void setNotTaken(BasicBlock target) {
+    clearNotTaken();
+    notTaken = target;
+    assert (target != null);
+    assert (!target.comefroms.contains(this));
+    target.comefroms.add(this);
+  }
+
+  public void clearTaken() {
+    if (taken != null) {
+      boolean result = taken.comefroms.remove(this);
+      assert (result);
+      taken = null;
     }
-    if (positive != null) {
-      if (negative != null) {
-        if (zero != null) {
-          sb.append("\tjg\t").append(positive.label).append('\n');
-          sb.append("\tjl\t").append(negative.label).append('\n');
-          sb.append("\tjz\t").append(zero.label).append('\n');
-        } else {
-          sb.append("\tjnz\t").append(positive.label).append('\n');
-          sb.append("\tjz\t").append(negative.label).append('\n');
-        }
-      } else {
-        sb.append("\tjmp\t").append(negative.label).append('\n');
-      }
+  }
+
+  public void clearNotTaken() {
+    if (notTaken != null) {
+      boolean result = notTaken.comefroms.remove(this);
+      assert (result);
+      notTaken = null;
     }
-    return sb.toString();
   }
 }
-
