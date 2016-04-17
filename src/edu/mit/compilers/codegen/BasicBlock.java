@@ -1,6 +1,6 @@
 package edu.mit.compilers.codegen;
 
-import java.util.ArrayList;
+import java.util.*;
 
 public class BasicBlock extends ArrayList<Instruction> {
 
@@ -9,10 +9,9 @@ public class BasicBlock extends ArrayList<Instruction> {
   ArrayList<BasicBlock> comefroms = new ArrayList<>();
   int priority = 0;
 
+  HashSet<BasicBlockVisitor> attachedVisitors = new HashSet<>();
+
   static int id = 0;
-
-  int lastVisitedBasicBlockVisitorID = 0;
-
   public BasicBlock() {
     super();
     label = ".LFB" + Integer.toString(id);
