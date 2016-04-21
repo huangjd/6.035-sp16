@@ -168,7 +168,7 @@ method_decl returns [FunctionNode f = null] {
   StatementNode s;
   
   ArrayList<StatementNode> body = new ArrayList<>(), temps;
-  SourcePosition pos = getPos();
+  SourcePosition pos = getPos(), pos2 = null;
   int ok = 0;
 } : (returnType = type | TK_void {returnType = Type.NONE;}) 
     name = id  
@@ -202,13 +202,13 @@ method_decl returns [FunctionNode f = null] {
       ok = -1;
     }
   })*
-  RCURLY {
+  {pos2 = getPos();} RCURLY {
   
   try {
     if (returnType == Type.NONE) {
-      body.add(new Return(f, null).box());
+      body.add(new Return(f, pos2).box());
     } else {
-      body.add(new Die(Die.CONTROL_REACHES_END_OF_NON_VOID_FUNCTION, null).box());
+      body.add(new Die(Die.CONTROL_REACHES_END_OF_NON_VOID_FUNCTION, pos2).box());
     }
     Block b = new Block(currentSymtab, body, pos);    
     
@@ -529,7 +529,7 @@ for_stmt returns [StatementNode s = null] {
       s = new For(var, init, end, body, pos).box();
     } else {
       long increment = Util.parseInt(intToken, new Long(1), null);
-      s = new For(var, init, end, body, pos).box();
+      s = new For(var, init, end, increment, body, pos).box();
     }
   } catch (TypeException ex) {
     ErrorLogger.logError(ex);
@@ -893,6 +893,7 @@ length returns [ExpressionNode e = null] {
     e = new Length(v, pos).box();
   } catch (TypeException ex) { 
     ErrorLogger.logError(ex); 
+  } catch (NullPointerException ex) {
   }
 };
 

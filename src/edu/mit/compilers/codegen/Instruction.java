@@ -11,16 +11,16 @@ public class Instruction {
   public Operand dest;
 
   static public class DivInstruction extends Instruction {
-    public boolean mod;
+    public Operand dest2;
 
-    public DivInstruction(Operand dest, Operand a, Operand b, boolean mod) {
-      super(dest, Op.FAKE_DIV, a, b);
-      this.mod = mod;
+    public DivInstruction(Operand dest1, Operand dest2, Operand a, Operand b) {
+      super(dest1, Op.FAKE_DIV, a, b);
+      this.dest2 = dest2;
     }
 
     @Override
     public String toString() {
-      return super.toString() + "\t(" + (mod ? "mod" : "div") + ")";
+      return dest.toString() + ", " + dest2.toString() + " = x_div\t" + a.toString() + ",\t" + b.toString();
     }
   }
 
@@ -77,12 +77,13 @@ public class Instruction {
 
   @Override
   public String toString() {
+    Operand.Type opType = (a != null ? a.getType() : Operand.Type.r64);
     if (twoOperand) {
-      return op.toString() + '\t' + (a != null? a.toString() : "")
+      return op.toString(opType) + '\t' + (a != null ? a.toString() : "")
           + (b != null ? ", " + b.toString() : "");
     } else {
       return (dest != null ? dest.toString() + " = " : "\t") +
-          op.toString() + '\t' + (a != null? a.toString() : "")
+          op.toString(opType) + '\t' + (a != null ? a.toString() : "")
           + (b != null ? ", " + b.toString() : "");
     }
   }

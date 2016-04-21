@@ -46,4 +46,8 @@ public class ScopedMap<K, V> {
   public Set<K> keySet() {
     return map.keySet();
   }
+
+  public Collection<V> values() {
+    return map.values();
+  }
 }

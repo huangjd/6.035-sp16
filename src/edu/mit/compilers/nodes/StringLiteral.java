@@ -17,6 +17,11 @@ public class StringLiteral extends Expression {
     return value;
   }
 
+  public String toEscapedString() {
+    String c = value.substring(1, value.length() - 1);
+    return c;
+  }
+
   public String getValue() {
     return value;
   }

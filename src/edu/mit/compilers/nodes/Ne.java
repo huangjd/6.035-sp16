@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Ne extends BinaryOpExpr {
+public class Ne extends BinaryOpExpr implements RelOp {
 
   private static int hashMask = 0b11001001000100010110111101101100;
 

@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Or extends BinaryOpExpr {
+public class Or extends BinaryOpExpr implements BoolOp {
 
   public Or(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);

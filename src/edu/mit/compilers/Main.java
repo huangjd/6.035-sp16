@@ -3,6 +3,7 @@ package edu.mit.compilers;
 import java.io.*;
 
 import antlr.Token;
+import edu.mit.compilers.codegen.*;
 import edu.mit.compilers.common.ErrorLogger;
 import edu.mit.compilers.grammar.*;
 import edu.mit.compilers.nodes.ProgramNode;
@@ -11,6 +12,21 @@ import edu.mit.compilers.tools.CLI.Action;
 import edu.mit.compilers.visitors.IRPrinter;
 
 class Main {
+
+  static CFG backend(CFG ir) {
+    return ir;
+  }
+
+  static CFG midend(ProgramNode program) {
+    Midend visitor = new Midend(CLI.infile);
+    visitor.enter(program);
+    CFG ir = visitor.cfg;
+    if (CLI.debug) {
+      System.out.print(ir.toString());
+    }
+    return ir;
+  }
+
   public static void main(String[] args) {
     try {
       CLI.parse(args, new String[0]);
@@ -94,7 +110,9 @@ class Main {
         if (program == null || ErrorLogger.log.errors.size() > 0 || parser.getError()) {
           System.exit(-1);
         }
-
+        CFG ir = midend(program);
+        CFG done = backend(ir);
+        outputStream.print(done.toString());
         outputStream.close();
       }
     } catch (Exception e) {

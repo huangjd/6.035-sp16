@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Ge extends BinaryOpExpr {
+public class Ge extends BinaryOpExpr implements RelOp {
 
   public Ge(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);

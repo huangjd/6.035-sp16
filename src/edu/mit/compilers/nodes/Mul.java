@@ -1,8 +1,9 @@
 package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
+import edu.mit.compilers.nodes.ArithOp.MulOp;
 
-public class Mul extends BinaryOpExpr {
+public class Mul extends BinaryOpExpr implements MulOp {
 
   private static int hashMask = 0b01011100010100110010000111110101;
 

@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class And extends BinaryOpExpr {
+public class And extends BinaryOpExpr implements BoolOp {
 
   public And(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);

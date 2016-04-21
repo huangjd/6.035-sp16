@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Add extends BinaryOpExpr {
+public class Add extends BinaryOpExpr implements ArithOp {
 
   private static int hashMask = 0b10001000010010111101010110101011;
 
@@ -19,8 +19,8 @@ public class Add extends BinaryOpExpr {
 
   @Override
   public void dispatch(Visitor visitor) {
-    visitor.visit(this); 
-  } 
+    visitor.visit(this);
+  }
 
   @Override
   public String toString() {

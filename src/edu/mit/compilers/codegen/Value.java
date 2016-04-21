@@ -35,7 +35,7 @@ public class Value extends Operand {
   @Override
   public String toString() {
     if (id != dummy.id && id != dummyb.id) {
-      return "r" + String.valueOf(id);
+      return "r" + String.valueOf(id) + " " + type.toString();
     } else {
       return "_";
     }

@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Sub extends BinaryOpExpr {
+public class Sub extends BinaryOpExpr implements ArithOp {
 
   public Sub(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);

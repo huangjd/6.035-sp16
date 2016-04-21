@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Minus extends UnaryOpExpr {
+public class Minus extends UnaryOpExpr implements ArithOp {
 
   public Minus(ExpressionNode right, SourcePosition pos) {
     super(right, pos);

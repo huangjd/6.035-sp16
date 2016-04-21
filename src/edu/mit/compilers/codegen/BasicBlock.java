@@ -1,26 +1,29 @@
 package edu.mit.compilers.codegen;
 
-import java.util.*;
+import java.util.ArrayList;
 
 public class BasicBlock extends ArrayList<Instruction> {
 
   String label;
   BasicBlock taken, notTaken;
   ArrayList<BasicBlock> comefroms = new ArrayList<>();
-  int priority = 0;
+  int priority = priorityCounter++;
 
-  HashSet<BasicBlockVisitor> attachedVisitors = new HashSet<>();
-
+  public static int priorityCounter = 0;
   static int id = 0;
   public BasicBlock() {
     super();
-    label = ".LFB" + Integer.toString(id);
+    label = ".LBB" + Integer.toString(id);
     id++;
   }
 
   public BasicBlock(String s) {
     super();
     label = s;
+  }
+
+  public void deferPriority() {
+    priority = priorityCounter++;
   }
 
   public BasicBlock add(Operand dest, Op op, Operand a, Operand b) {
@@ -39,21 +42,38 @@ public class BasicBlock extends ArrayList<Instruction> {
   }
 
   public BasicBlock add(Op op, Operand a, Operand b) {
-    super.add(new Instruction(op, a, b));
+    super.add(new Instruction(Value.dummy, op, a, b));
     return this;
   }
 
+  public void addJmp(Op op, BasicBlock b1, BasicBlock b2) {
+    assert (op == Op.JG || op == Op.JGE || op == Op.JL || op == Op.JLE || op == Op.JE || op == Op.JNE);
+    super.add(new Instruction(Value.dummy, op, new JumpTarget(b1), new JumpTarget(b2)));
+    setTaken(b1);
+    setNotTaken(b2);
+  }
+
+  public void addJmp(BasicBlock b1) {
+    super.add(new Instruction(Value.dummy, Op.JMP, new JumpTarget(b1)));
+    setTaken(b1);
+  }
+
   public BasicBlock add(Op op, Operand a) {
-    super.add(new Instruction(op, a));
+    super.add(new Instruction(Value.dummy, op, a));
     return this;
   }
 
   public BasicBlock add(Op op) {
-    super.add(new Instruction(op));
+    super.add(new Instruction(Value.dummy, op));
     return this;
   }
 
-  public void setTaken(BasicBlock target) {
+  public BasicBlock addISA(Op op, Operand a, Operand b) {
+    super.add(new Instruction(op, a, b));
+    return this;
+  }
+
+  private void setTaken(BasicBlock target) {
     clearTaken();
     taken = target;
     assert (target != null);
@@ -61,7 +81,7 @@ public class BasicBlock extends ArrayList<Instruction> {
     target.comefroms.add(this);
   }
 
-  public void setNotTaken(BasicBlock target) {
+  private void setNotTaken(BasicBlock target) {
     clearNotTaken();
     notTaken = target;
     assert (target != null);
@@ -83,5 +103,12 @@ public class BasicBlock extends ArrayList<Instruction> {
       assert (result);
       notTaken = null;
     }
+  }
+
+  @Override
+  public String toString() {
+    BasicBlockPrinter p = new BasicBlockPrinter();
+    p.traverse(this);
+    return p.toString();
   }
 }

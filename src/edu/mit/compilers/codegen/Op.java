@@ -49,6 +49,7 @@ public enum Op {
   PROLOGUE("func_prologue", 0),
   GET_ARG("get_arg", 1), // d = var, a = Imm64 (index of arg)
   EPILOGUE("func_epilogue", 0),
+  NO_RETURN("no_ret", 0),
   DELETED("#--deleted--", 0)
   ;
 

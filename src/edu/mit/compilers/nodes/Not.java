@@ -2,7 +2,7 @@ package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
 
-public class Not extends UnaryOpExpr {
+public class Not extends UnaryOpExpr implements BoolOp {
 
   public Not(ExpressionNode right, SourcePosition pos) {
     super(right, pos);

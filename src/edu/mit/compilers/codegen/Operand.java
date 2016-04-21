@@ -2,7 +2,22 @@ package edu.mit.compilers.codegen;
 
 public abstract class Operand {
   public enum Type {
-    r8, r64, xmm, ymm
+    r8, r64, xmm, ymm;
+
+    @Override
+    public String toString() {
+      switch (this) {
+      case r8:
+        return "[r8]";
+      case r64:
+        return "[r64]";
+      case xmm:
+        return "[xmm]";
+      case ymm:
+        return "[ymm]";
+      }
+      return "";
+    }
   }
 
   abstract public Type getType();
@@ -11,6 +26,29 @@ public abstract class Operand {
 
   @Override
   abstract public String toString();
+}
+
+class JumpTarget extends Operand {
+  BasicBlock target;
+
+  public JumpTarget(BasicBlock target) {
+    this.target = target;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.r64;
+  }
+
+  @Override
+  public boolean isPointer() {
+    return false;
+  }
+
+  @Override
+  public String toString() {
+    return target.label;
+  }
 }
 
 class Imm64 extends Operand {
@@ -107,7 +145,7 @@ class Array extends Operand {
 
   @Override
   public String toString() {
-    return "A" + String.valueOf(id) + "[";
+    return "A" + String.valueOf(id);
   }
 
   @Override
@@ -122,17 +160,10 @@ class BSSObject extends Operand {
   boolean isArray;
   long length;
 
-  static int counter;
-
-  public BSSObject(String s) { // for strings
-    symbol = ".LC" + String.valueOf(counter);
-    type = Type.r8;
-    isArray = true;
-    length = s.length();
-    counter++;
-  }
-
   public BSSObject(String symbol, Type type) {
+    if (type != Type.r8 && type != Type.r64) {
+      throw new RuntimeException();
+    }
     this.symbol = symbol;
     this.type = type;
     this.isArray = false;
@@ -140,6 +171,9 @@ class BSSObject extends Operand {
   }
 
   public BSSObject(String symbol, Type type, long length) {
+    if (type != Type.r8 && type != Type.r64) {
+      throw new RuntimeException();
+    }
     this.symbol = symbol;
     this.type = type;
     this.isArray = true;
@@ -156,13 +190,40 @@ class BSSObject extends Operand {
     if (isArray) {
       return "$" + symbol;
     } else {
-      return "($" + symbol + ")";
+      return symbol;
     }
   }
 
   @Override
   public boolean isPointer() {
     return isArray;
+  }
+}
+
+class StringObject extends Operand {
+  String symbol;
+  String content;
+  static int counter;
+
+  public StringObject(String s) { // for strings
+    symbol = ".LC" + String.valueOf(counter);
+    content = s;
+    counter++;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.r8;
+  }
+
+  @Override
+  public boolean isPointer() {
+    return true;
+  }
+
+  @Override
+  public String toString() {
+    return "$" + symbol;
   }
 }
 
@@ -207,7 +268,7 @@ class Memory extends Operand {
       throw new RuntimeException();
     }
     return (offset != 0 ? String.valueOf(offset) : "") + "(" + base.toString()
-        + (index != null ? ", " + index.toString() : "") + mult + ")";
+    + (index != null ? ", " + index.toString() : "") + mult + ")";
   }
 
   @Override

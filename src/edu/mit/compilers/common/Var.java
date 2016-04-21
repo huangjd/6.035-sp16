@@ -70,6 +70,14 @@ public class Var {
     return id.hashCode();
   }
 
+  public String getMangledName() {
+    if (id.equals("printf") || id.equals("exit")) {
+      return "_G." + id;
+    } else {
+      return id;
+    }
+  }
+
   public int getStackOffset() {
     return stackOffset;
   }

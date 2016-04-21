@@ -13,6 +13,8 @@ public class Midend extends Visitor {
   BasicBlock currentBB;
   BasicBlock breakBB, continueBB;
   Operand currentAssignDest;
+  BasicBlock trueTarget, falseTarget;
+  HashSet<BasicBlock> funcExits;
 
   // Function data
   ScopedMap<Var, Operand> symtab;
@@ -29,23 +31,38 @@ public class Midend extends Visitor {
 
   // Output
   public CFG cfg;
+  String fileName;
 
-  public Midend() {
+  public Midend(String filename) {
+    this.fileName = filename;
+  }
+
+  Operand compile(ExpressionNode e) {
+    Operand pushReturnValue = returnValue;
+    returnValue = null;
+    e.accept(this);
+    Operand temp = returnValue;
+    returnValue = pushReturnValue;
+    return temp;
   }
 
   @Override
   protected void visit(Program node) {
+    BasicBlock.priorityCounter = 0;
+
     strtab = new HashMap<>();
 
     outOfBounds = new BasicBlock();
-    Operand s1 = compile(new StringLiteral("%s(): %s:%s: Array index out of bounds\n", null).box());
+    Operand s1 = compile(new StringLiteral("\"%s(): %s:%s: Array index out of bounds\\n\"", null).box());
     outOfBounds.add(new Instruction.CallInstruction(Value.dummy, new Symbol("printf"), new ArrayList<Operand>(){{add(s1);}}, true, 0));
-    outOfBounds.add(Op.RET);
+    outOfBounds.add(new Instruction.CallInstruction(Value.dummy, new Symbol("exit"), new ArrayList<Operand>(){{add(new Imm64(-1));}}, false, 0));
+    outOfBounds.add(Op.NO_RETURN);
 
     controlReachesEnd = new BasicBlock();
-    Operand s2 = compile(new StringLiteral("%s(): %s:%s: Control reaches end of non-void function\n", null).box());
+    Operand s2 = compile(new StringLiteral("\"%s(): %s:%s: Control reaches end of non-void function\\n\"", null).box());
     controlReachesEnd.add(new Instruction.CallInstruction(Value.dummy, new Symbol("printf"), new ArrayList<Operand>(){{add(s2);}}, true, 0));
-    outOfBounds.add(Op.RET);
+    controlReachesEnd.add(new Instruction.CallInstruction(Value.dummy, new Symbol("exit"), new ArrayList<Operand>(){{add(new Imm64(-2));}}, false, 0));
+    controlReachesEnd.add(Op.NO_RETURN);
 
     currentBB = new BasicBlock(); // dummy, because var decl automatic emits initialization code,
     // but .bss segment is set to 0 anyway
@@ -57,31 +74,35 @@ public class Midend extends Visitor {
     }
     bssMode = false;
 
-    ArrayList<BasicBlock> entries = new ArrayList<>();
+    ArrayList<CFG.CFGDesc> entries = new ArrayList<>();
     for (FunctionNode f : node.functions) {
       if (!((Function)(f.getNode())).isCallout) {
-        currentBB = null;
-        funcEntryBB = null;
         f.accept(this);
         assert(funcEntryBB != null);
-        entries.add(funcEntryBB);
+        entries.add(new CFG.CFGDesc(funcEntryBB, funcExits));
       }
     }
-    entries.add(outOfBounds);
-    entries.add(controlReachesEnd);
+    entries.add(new CFG.CFGDesc(outOfBounds, new HashSet<BasicBlock>(){{add(outOfBounds);}}));
+    entries.add(new CFG.CFGDesc(controlReachesEnd, new HashSet<BasicBlock>(){{add(controlReachesEnd);}}));
 
     cfg = new CFG(entries, symtab, strtab);
+    cfg.fileName = fileName;
   }
 
   @Override
   protected void visit(Function node) {
     if (!node.isCallout) {
-      currentFunctionName = compile(new StringLiteral(node.getMangledName(), null).box());
+      currentBB = null;
+      funcEntryBB = null;
+      funcExits = new HashSet<>();
+      BasicBlock.priorityCounter = 0;
+
+      currentFunctionName = compile(new StringLiteral("\"" + node.getMangledName() + "\"", null).box());
 
       currentBB = new BasicBlock(node.getMangledName());
       funcEntryBB = currentBB;
-      symtab.scope();
-      currentBB.add(Value.dummy, Op.PROLOGUE);
+      symtab = symtab.scope();
+      currentBB.add(Op.PROLOGUE);
       int i = 0;
       for (Var v : node.getParams()) {
         Operand arg = null;
@@ -96,19 +117,12 @@ public class Midend extends Visitor {
           throw new TypeException(v.type, false, null);
         }
         currentBB.add(arg, Op.GET_ARG, new Imm64(i));
+        symtab.insert(v, arg);
         i++;
       }
       node.body.accept(this);
-      symtab.unscope();
+      symtab = symtab.unscope();
     }
-  }
-
-  Operand compile(ExpressionNode e) {
-    returnValue = null;
-    e.accept(this);
-    Operand temp = returnValue;
-    returnValue = null;
-    return temp;
   }
 
   @Override
@@ -151,7 +165,6 @@ public class Midend extends Visitor {
     Operand a = compile(node.left);
     Operand b = compile(node.right);
     currentBB.add(returnValue, Op.IMUL, a, b);
-    currentBB.add(Value.dummy, Op.TEST, returnValue, returnValue);
   }
 
   @Override
@@ -164,8 +177,7 @@ public class Midend extends Visitor {
     }
     Operand a = compile(node.left);
     Operand b = compile(node.right);
-    currentBB.add(new Instruction.DivInstruction(returnValue, a, b, false));
-    currentBB.add(Value.dummy, Op.TEST, returnValue, returnValue);
+    currentBB.add(new Instruction.DivInstruction(returnValue, Value.dummy, a, b));
   }
 
   @Override
@@ -178,8 +190,7 @@ public class Midend extends Visitor {
     }
     Operand a = compile(node.left);
     Operand b = compile(node.right);
-    currentBB.add(new Instruction.DivInstruction(returnValue, a, b, true));
-    currentBB.add(Value.dummy, Op.TEST, returnValue, returnValue);
+    currentBB.add(new Instruction.DivInstruction(Value.dummy, returnValue, a, b));
   }
 
   @Override
@@ -197,205 +208,440 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(IntLiteral node) {
-    returnValue = new Imm64(node.value);
+    if (currentAssignDest != null) {
+      returnValue = currentAssignDest;
+      currentAssignDest = null;
+      currentBB.add(returnValue, Op.MOV, new Imm64(node.value));
+    } else {
+      returnValue = new Imm64(node.value);
+    }
   }
 
   @Override
   protected void visit(BooleanLiteral node) {
-    returnValue = new Imm8(node.value);
-    currentBB.add(Value.dummy, Op.TEST, returnValue, returnValue);
+    if (trueTarget != null) {
+      if (node.value == true) {
+        currentBB.addJmp(trueTarget);
+      } else {
+        currentBB.addJmp(falseTarget);
+      }
+    } else {
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+        currentBB.add(returnValue, Op.MOV, new Imm8(node.value));
+      } else {
+        returnValue = new Imm8(node.value);
+      }
+    }
   }
 
   @Override
   protected void visit(Eq node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
+    if (trueTarget != null) {
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      trueTarget = null;
+      falseTarget = null;
+      Operand a = compile(node.left);
+      trueTarget = null;
+      falseTarget = null;
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .addJmp(Op.JE, pushTrue, pushFalse);
     } else {
-      returnValue = new Value(false);
-    }
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
 
-    Operand a = compile(node.left);
-    Operand b = compile(node.right);
-    currentBB.add(Value.dummy, Op.CMP, a, b)
-    .add(returnValue, Op.SETE);
+      Operand a = compile(node.left);
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .add(returnValue, Op.SETE);
+    }
   }
 
   @Override
   protected void visit(Ne node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
+    if (trueTarget != null) {
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      trueTarget = null;
+      falseTarget = null;
+      Operand a = compile(node.left);
+      trueTarget = null;
+      falseTarget = null;
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .addJmp(Op.JNE, pushTrue, pushFalse);
     } else {
-      returnValue = new Value(false);
-    }
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
 
-    Operand a = compile(node.left);
-    Operand b = compile(node.right);
-    currentBB.add(Value.dummy, Op.CMP, a, b)
-    .add(returnValue, Op.SETNE);
+      Operand a = compile(node.left);
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .add(returnValue, Op.SETNE);
+    }
   }
 
   @Override
   protected void visit(Gt node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
+    if (trueTarget != null) {
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      trueTarget = null;
+      falseTarget = null;
+      Operand a = compile(node.left);
+      trueTarget = null;
+      falseTarget = null;
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .addJmp(Op.JG, pushTrue, pushFalse);
     } else {
-      returnValue = new Value(false);
-    }
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
 
-    Operand a = compile(node.left);
-    Operand b = compile(node.right);
-    currentBB.add(Value.dummy, Op.CMP, a, b)
-    .add(returnValue, Op.SETG);
+      Operand a = compile(node.left);
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .add(returnValue, Op.SETG);
+    }
   }
 
   @Override
   protected void visit(Ge node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
+    if (trueTarget != null) {
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      trueTarget = null;
+      falseTarget = null;
+      Operand a = compile(node.left);
+      trueTarget = null;
+      falseTarget = null;
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .addJmp(Op.JGE, pushTrue, pushFalse);
     } else {
-      returnValue = new Value(false);
-    }
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
 
-    Operand a = compile(node.left);
-    Operand b = compile(node.right);
-    currentBB.add(Value.dummy, Op.CMP, a, b)
-    .add(returnValue, Op.SETGE);
+      Operand a = compile(node.left);
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .add(returnValue, Op.SETGE);
+    }
   }
 
   @Override
   protected void visit(Lt node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
+    if (trueTarget != null) {
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      trueTarget = null;
+      falseTarget = null;
+      Operand a = compile(node.left);
+      trueTarget = null;
+      falseTarget = null;
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .addJmp(Op.JL, pushTrue, pushFalse);
     } else {
-      returnValue = new Value(false);
-    }
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
 
-    Operand a = compile(node.left);
-    Operand b = compile(node.right);
-    currentBB.add(Value.dummy, Op.CMP, a, b)
-    .add(returnValue, Op.SETL);
+      Operand a = compile(node.left);
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .add(returnValue, Op.SETL);
+    }
   }
 
   @Override
   protected void visit(Le node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
+    if (trueTarget != null) {
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      trueTarget = null;
+      falseTarget = null;
+      Operand a = compile(node.left);
+      trueTarget = null;
+      falseTarget = null;
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .addJmp(Op.JLE, pushTrue, pushFalse);
     } else {
-      returnValue = new Value(false);
-    }
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
 
-    Operand a = compile(node.left);
-    Operand b = compile(node.right);
-    currentBB.add(Value.dummy, Op.CMP, a, b)
-    .add(returnValue, Op.SETLE);
+      Operand a = compile(node.left);
+      Operand b = compile(node.right);
+      currentBB.add(Op.CMP, a, b)
+      .add(returnValue, Op.SETLE);
+    }
   }
 
   @Override
   protected void visit(And node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
+    if (trueTarget != null) {
+      BasicBlock right = new BasicBlock();
+
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      trueTarget = right;
+      compile(node.left);
+
+      currentBB = right;
+      trueTarget = pushTrue;
+      falseTarget = pushFalse;
+      compile(node.right);
     } else {
-      returnValue = new Value(false);
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
+
+      BasicBlock right = new BasicBlock();
+      BasicBlock mov0 = new BasicBlock();
+      BasicBlock mov1 = new BasicBlock();
+      BasicBlock exit = new BasicBlock();
+
+      mov0.add(returnValue, Op.MOV, new Imm8(false));
+      mov0.addJmp(exit);
+
+      mov1.add(returnValue, Op.MOV, new Imm8(true));
+      mov1.addJmp(exit);
+
+      trueTarget = right;
+      falseTarget = mov0;
+      compile(node.left);
+
+      currentBB = right;
+      trueTarget = mov1;
+      falseTarget = mov0;
+      compile(node.right);
+      trueTarget = null;
+      falseTarget = null;
+
+      currentBB = exit;
     }
-
-    BasicBlock falseBlock = new BasicBlock();
-    BasicBlock exit = new BasicBlock();
-
-    Operand a = compile(node.left);
-    currentBB.add(returnValue, Op.MOV, a)
-    .add(Op.JE);
-
-    currentBB.setTaken(exit);
-    currentBB.setNotTaken(falseBlock);
-
-    currentBB = falseBlock;
-    Operand b = compile(node.right);
-    currentBB.add(returnValue, Op.MOV, b)
-    .add(Op.JMP);
-    currentBB.setTaken(exit);
-
-    currentBB = exit;
   }
 
   @Override
   protected void visit(Or node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
-    } else {
-      returnValue = new Value(false);
-    }
+    if (trueTarget != null) {
+      BasicBlock right = new BasicBlock();
 
-    BasicBlock falseBlock = new BasicBlock();
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+      falseTarget = right;
+      compile(node.left);
+
+      currentBB = right;
+      trueTarget = pushTrue;
+      falseTarget = pushFalse;
+      compile(node.right);
+    } else {
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
+
+      BasicBlock right = new BasicBlock();
+      BasicBlock mov0 = new BasicBlock();
+      BasicBlock mov1 = new BasicBlock();
+      BasicBlock exit = new BasicBlock();
+
+      mov0.add(returnValue, Op.MOV, new Imm8(false));
+      mov0.addJmp(exit);
+
+      mov1.add(returnValue, Op.MOV, new Imm8(true));
+      mov1.addJmp(exit);
+
+      trueTarget = mov1;
+      falseTarget = right;
+      compile(node.left);
+
+      currentBB = right;
+      trueTarget = mov1;
+      falseTarget = mov0;
+      compile(node.right);
+      trueTarget = null;
+      falseTarget = null;
+
+      currentBB = exit;
+    }
+  }
+
+  @Override
+  protected void visit(Not node) {
+    if (trueTarget != null) {
+      BasicBlock pushTrue = trueTarget;
+      BasicBlock pushFalse = falseTarget;
+
+      trueTarget = pushFalse;
+      falseTarget = pushTrue;
+      compile(node.right);
+
+    } else {
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = new Value(false);
+      }
+      Operand b = compile(node.right);
+      currentBB.add(returnValue, Op.XOR, new Imm8(true), b);
+    }
+  }
+
+  @Override
+  protected void visit(If node) {
+    BasicBlock t = new BasicBlock();
+    BasicBlock f = new BasicBlock();
     BasicBlock exit = new BasicBlock();
 
-    Operand a = compile(node.left);
-    currentBB.add(returnValue, Op.MOV, a)
-    .add(Op.JNE);
+    trueTarget = t;
+    falseTarget = f;
+    compile(node.cond);
+    trueTarget = null;
+    falseTarget = null;
 
-    currentBB.setTaken(exit);
-    currentBB.setNotTaken(falseBlock);
+    t.deferPriority();
+    f.deferPriority();
+    exit.deferPriority();
 
-    currentBB = falseBlock;
-    Operand b = compile(node.right);
-    currentBB.add(returnValue, Op.MOV, b)
-    .add(Op.JMP);
-    currentBB.setTaken(exit);
+    currentBB = t;
+    node.trueBlock.accept(this);
+    currentBB.addJmp(exit);
+
+    currentBB = f;
+    node.falseBlock.accept(this);
+    currentBB.addJmp(exit);
 
     currentBB = exit;
   }
 
   @Override
-  protected void visit(Not node) {
-    if (currentAssignDest != null) {
-      returnValue = currentAssignDest;
-      currentAssignDest = null;
-    } else {
-      returnValue = new Value(false);
-    }
+  protected void visit(Ternary node) {
+    BasicBlock t = new BasicBlock();
+    BasicBlock f = new BasicBlock();
 
-    Operand b = compile(node.right);
-    currentBB.add(returnValue, Op.XOR, new Imm8(true), b);
+    if (trueTarget != null) {
+      assert (node.getType() == Type.BOOLEAN);
+
+      BasicBlock pushTrueTarget = trueTarget;
+      BasicBlock pushFalseTarget = falseTarget;
+
+      trueTarget = t;
+      falseTarget = f;
+      compile(node.cond);
+
+      t.deferPriority();
+      f.deferPriority();
+
+      currentBB = t;
+      trueTarget = pushTrueTarget;
+      falseTarget = pushFalseTarget;
+      compile(node.trueExpr);
+
+      currentBB = f;
+      trueTarget = pushTrueTarget;
+      falseTarget = pushFalseTarget;
+      compile(node.falseExpr);
+    } else {
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+      } else {
+        returnValue = node.trueExpr.getType() == Type.INT ? new Value() : new Value(false);
+      }
+
+      BasicBlock exit = new BasicBlock();
+
+      trueTarget = t;
+      falseTarget = f;
+      compile(node.cond);
+
+      t.deferPriority();
+      f.deferPriority();
+      exit.deferPriority();
+
+      currentBB = t;
+      currentAssignDest = returnValue;
+      compile(node.trueExpr);
+      currentBB.addJmp(exit);
+
+      currentBB = f;
+      currentAssignDest = returnValue;
+      compile(node.falseExpr);
+      currentBB.addJmp(exit);
+
+      currentBB = exit;
+    }
   }
 
   @Override
   protected void visit(VarDecl node) {
     if (bssMode) {
+      String mangled = node.var.getMangledName();
       switch (node.var.type) {
       case INT:
-        symtab.insert(node.var, new BSSObject(node.var.id, Operand.Type.r64));
+        symtab.insert(node.var, new BSSObject(mangled, Operand.Type.r64));
         return;
       case BOOLEAN:
-        symtab.insert(node.var, new BSSObject(node.var.id, Operand.Type.r8));
+        symtab.insert(node.var, new BSSObject(mangled, Operand.Type.r8));
         return;
       case INTARRAY:
-        symtab.insert(node.var, new BSSObject(node.var.id, Operand.Type.r64, node.var.length));
+        symtab.insert(node.var, new BSSObject(mangled, Operand.Type.r64, node.var.length));
         return;
       case BOOLEANARRAY:
-        symtab.insert(node.var, new BSSObject(node.var.id, Operand.Type.r8, node.var.length));
+        symtab.insert(node.var, new BSSObject(mangled, Operand.Type.r8, node.var.length));
         return;
       default:
         throw new TypeException(node.var, new SourcePosition());
       }
     } else {
+      Operand zero = (node.var.type == Type.INT || node.var.type == Type.INTARRAY ? new Imm64(0) : new Imm8(false));
+
       Operand temp = null;
       switch (node.var.type) {
       case INT:
         temp = new Value();
         symtab.insert(node.var, temp);
-        currentBB.add(Op.MOV, new Imm64(0), temp);
+        currentBB.add(temp, Op.MOV, zero);
         return;
       case BOOLEAN:
         temp = new Value(false);
         symtab.insert(node.var, temp);
-        currentBB.add(Op.MOV, new Imm64(0), temp);
+        currentBB.add(temp, Op.MOV, zero);
         return;
       case INTARRAY:
         temp = new Array(Operand.Type.r64, node.var.length);
@@ -412,16 +658,13 @@ public class Midend extends Visitor {
       BasicBlock exit = new BasicBlock();
 
       Operand i = new Value();
-      currentBB.add(Op.MOV, new Imm64(node.var.length - 1), i)
-      .add(Op.JMP);
-      currentBB.setTaken(loop);
+      currentBB.add(i, Op.MOV, new Imm64(node.var.length - 1))
+      .addJmp(loop);
 
       currentBB = loop;
-      currentBB.add(new Imm64(0), Op.STORE, temp, i)
-      .add(Op.DEC, i)
-      .add(Op.JGE);
-      currentBB.setTaken(loop);
-      currentBB.setNotTaken(exit);
+      currentBB.add(zero, Op.STORE, temp, i)
+      .add(i, Op.DEC, i)
+      .addJmp(Op.JGE, loop, exit);
 
       currentBB = exit;
     }
@@ -429,20 +672,26 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(VarExpr node) {
-    returnValue = symtab.lookup(node.var);
+    if (trueTarget != null) {
+      currentBB.add(Op.TEST, symtab.lookup(node.var), symtab.lookup(node.var));
+      currentBB.addJmp(Op.JNE, trueTarget, falseTarget);
+    } else {
+      if (currentAssignDest != null) {
+        returnValue = currentAssignDest;
+        currentAssignDest = null;
+        currentBB.add(returnValue, Op.MOV, symtab.lookup(node.var));
+      } else {
+        returnValue = symtab.lookup(node.var);
+      }
+    }
   }
 
   @Override
   protected void visit(Assign node) {
     currentAssignDest = symtab.lookup(node.var);
-
+    Operand pushCurrent = currentAssignDest;
     Operand value = compile(node.value);
-    Operand dest = symtab.lookup(node.var);
-
-    if (value != dest) {
-      currentBB.add(dest, Op.MOV, value);
-    }
-
+    assert (value == pushCurrent);
     currentAssignDest = null;
   }
 
@@ -462,16 +711,12 @@ public class Midend extends Visitor {
       BasicBlock ok = new BasicBlock();
       BasicBlock die = new BasicBlock();
 
-      currentBB.add(Value.dummy, Op.CMP, index, new Imm64(0))
-      .add(Op.JL);
-      currentBB.setTaken(die);
-      currentBB.setNotTaken(check1);
+      currentBB.add(Op.CMP, index, new Imm64(0))
+      .addJmp(Op.JL, die, check1);
 
       currentBB = check1;
-      currentBB.add(Value.dummy, Op.CMP, index, new Imm64(length))
-      .add(Op.JGE);
-      currentBB.setTaken(die);
-      currentBB.setNotTaken(ok);
+      currentBB.add(Op.CMP, index, new Imm64(length))
+      .addJmp(Op.JGE, die, ok);
 
       currentBB = die;
       currentBB.priority = 1000000000;
@@ -479,10 +724,9 @@ public class Midend extends Visitor {
       if (pos == null) {
         pos = new SourcePosition();
       }
-      String l = pos.lineNum == 0 ? "??" : String.valueOf(pos.lineNum);
-      String c = pos.colNum == 0 ? "??" : String.valueOf(pos.colNum);
-      currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new Imm64(Util.strToBytes(l)), new Imm64(Util.strToBytes(c)))
-      .add(Op.RET);
+      currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new Imm64(pos.lineNum), new Imm64(pos.colNum))
+      .add(Op.NO_RETURN);
+      funcExits.add(currentBB);
 
       currentBB = ok;
     }
@@ -499,16 +743,12 @@ public class Midend extends Visitor {
       BasicBlock ok = new BasicBlock();
       BasicBlock die = new BasicBlock();
 
-      currentBB.add(Value.dummy, Op.CMP, index, new Imm64(0))
-      .add(Op.JL);
-      currentBB.setTaken(die);
-      currentBB.setNotTaken(check1);
+      currentBB.add(Op.CMP, index, new Imm64(0))
+      .addJmp(Op.JL, die, check1);
 
       currentBB = check1;
-      currentBB.add(Value.dummy, Op.CMP, index, new Imm64(length))
-      .add(Op.JGE);
-      currentBB.setTaken(die);
-      currentBB.setNotTaken(ok);
+      currentBB.add(Op.CMP, index, new Imm64(length))
+      .addJmp(Op.JGE, die, ok);
 
       currentBB = die;
       currentBB.priority = 1000000000;
@@ -516,10 +756,9 @@ public class Midend extends Visitor {
       if (pos == null) {
         pos = new SourcePosition();
       }
-      String l = pos.lineNum == 0 ? "??" : String.valueOf(pos.lineNum);
-      String c = pos.colNum == 0 ? "??" : String.valueOf(pos.colNum);
-      currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new Imm64(Util.strToBytes(l)), new Imm64(Util.strToBytes(c)))
-      .add(Op.RET);
+      currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new Imm64(pos.lineNum), new Imm64(pos.colNum))
+      .add(Op.NO_RETURN);
+      funcExits.add(currentBB);
 
       currentBB = ok;
     }
@@ -548,14 +787,14 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(Break node) {
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(breakBB);
+    currentBB.addJmp(breakBB);
+    currentBB = new BasicBlock("");
   }
 
   @Override
   protected void visit(Continue node) {
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(continueBB);
+    currentBB.addJmp(continueBB);
+    currentBB = new BasicBlock("");
   }
 
   @Override
@@ -565,17 +804,15 @@ public class Midend extends Visitor {
       if (pos == null) {
         pos = new SourcePosition();
       }
-      String l = pos.lineNum == 0 ? "??" : String.valueOf(pos.lineNum);
-      String c = pos.colNum == 0 ? "??" : String.valueOf(pos.colNum);
-      currentBB.add(currentFunctionName, Op.CONTROL_REACHES_END, new Imm64(Util.strToBytes(l)),
-          new Imm64(Util.strToBytes(c)))
-      .add(Op.RET);
+      currentBB.add(currentFunctionName, Op.CONTROL_REACHES_END, new Imm64(pos.lineNum), new Imm64(pos.colNum))
+      .add(Op.NO_RETURN);
     } else {
-      ArrayList<Operand> args = new ArrayList<>();
-      args.add(new Imm64(node.exitCode));
-      currentBB.add(new Instruction.CallInstruction(Value.dummy, new Symbol("exit"), args, false, 0));
-      currentBB.add(Op.RET);
+      currentBB.add(new Instruction.CallInstruction(Value.dummy, new Symbol("exit"),
+          new ArrayList<Operand>(){{add(new Imm64(node.exitCode));}}, false, 0));
+      currentBB.add(Op.NO_RETURN);
     }
+    funcExits.add(currentBB);
+    currentBB = new BasicBlock("");
   }
 
   @Override
@@ -585,23 +822,37 @@ public class Midend extends Visitor {
         returnValue = currentAssignDest;
         currentAssignDest = null;
       } else {
-        returnValue = node.func.returnType == Type.INT ? new Value() : new Value(false);
+        returnValue = node.func.returnType == Type.BOOLEAN ? new Value(false) : new Value();
       }
-      currentBB.add(Op.MOV, Register.rax, returnValue);
     }
 
-    // final int offset = (Math.max(6, node.args.size()) - 6) * 8;
-    currentBB.add(Value.dummy, Op.ALLOCATE, new Imm64(9 + Math.max(6, node.args.size()) - 6));
+    BasicBlock pushTrueTarget = trueTarget;
+    BasicBlock pushFalseTarget = falseTarget;
+
+    currentBB.add(Op.ALLOCATE, new Imm64(9 + Math.max(6, node.args.size()) - 6));
     ArrayList<Operand> args = new ArrayList<>();
     for (ExpressionNode e : node.args) {
       args.add(compile(e));
     }
 
+    // final int offset = (Math.max(6, node.args.size()) - 6) * 8;
+    /*BasicBlock next = new BasicBlock();
+    currentBB.add(Op.JMP);
+    currentBB.taken = next;
+
+    currentBB = next;*/
+
 
     boolean variadic = node.func.isCallout && (node.func.id.contains("printf") || node.func.id.contains("scanf"));
-    currentBB
-    .add(new Instruction.CallInstruction(returnValue, new Symbol(node.func.getMangledName()), args, variadic, 0));
+    currentBB.add(new Instruction.CallInstruction(returnValue, new Symbol(node.func.getMangledName()), args, variadic, 0));
 
+    trueTarget = pushTrueTarget;
+    falseTarget = pushFalseTarget;
+
+    if (trueTarget != null) {
+      currentBB.add(Op.TEST, returnValue, returnValue)
+      .addJmp(Op.JNE, trueTarget, falseTarget);
+    }
 
     /*.add(Op.MOV, Register.rax, new Memory(Register.rsp, offset, Operand.Type.r64))
     .add(Op.MOV, Register.rcx, new Memory(Register.rsp, offset + 8, Operand.Type.r64))
@@ -663,6 +914,7 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(CallStmt node) {
+    currentAssignDest = Value.dummy;
     visit(node.call);
   }
 
@@ -684,31 +936,28 @@ public class Midend extends Visitor {
     Operand i = symtab.lookup(node.loopVar);
 
     currentBB.add(i, Op.MOV, init)
-    .add(Op.JMP);
-    currentBB.setTaken(cond);
+    .addJmp(cond);
 
     currentBB = cond;
-    currentBB.add(Value.dummy, Op.CMP, i, end)
-    .add(Op.JGE);
-    currentBB.setTaken(exit);
-    currentBB.setNotTaken(body);
+    currentBB.add(Op.CMP, i, end)
+    .addJmp(Op.JGE, exit, body);
 
     currentBB = body;
+    body.deferPriority();
     node.body.accept(this);
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(incr);
+    currentBB.addJmp(incr);
 
     currentBB = incr;
+    incr.deferPriority();
     if (node.increment == 1) {
-      currentBB.add(Op.INC, i);
+      currentBB.add(i, Op.INC, i);
     } else {
       currentBB.add(i, Op.ADD, new Imm64(node.increment), i);
     }
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(cond);
+    currentBB.addJmp(cond);
 
     currentBB = exit;
-
+    exit.deferPriority();
     breakBB = pushBreak;
     continueBB = pushContinue;
   }
@@ -725,19 +974,21 @@ public class Midend extends Visitor {
     breakBB = exit;
     continueBB = cond;
 
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(cond);
+    currentBB.addJmp(cond);
 
     currentBB = cond;
+    trueTarget = body;
+    falseTarget = exit;
     compile(node.cond);
-    currentBB.add(Op.JE);
-    currentBB.setTaken(exit);
-    currentBB.setNotTaken(body);
+    trueTarget = null;
+    falseTarget = null;
+
+    body.deferPriority();
+    exit.deferPriority();
 
     currentBB = body;
     node.body.accept(this);
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(cond);
+    currentBB.addJmp(cond);
 
     currentBB = exit;
 
@@ -746,65 +997,14 @@ public class Midend extends Visitor {
   }
 
   @Override
-  protected void visit(If node) {
-    BasicBlock t = new BasicBlock();
-    BasicBlock f = new BasicBlock();
-    BasicBlock exit = new BasicBlock();
-
-    compile(node.cond);
-    currentBB.add(Op.JE);
-    currentBB.setTaken(f);
-    currentBB.setNotTaken(t);
-
-    currentBB = t;
-    node.trueBlock.accept(this);
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(exit);
-
-    currentBB = f;
-    node.falseBlock.accept(this);
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(exit);
-
-    currentBB = exit;
-  }
-
-  @Override
-  protected void visit(Ternary node) {
+  protected void visit(Length node) {
     if (currentAssignDest != null) {
       returnValue = currentAssignDest;
       currentAssignDest = null;
+      currentBB.add(returnValue, Op.MOV, new Imm64(node.array.length));
     } else {
-      returnValue = node.trueExpr.getType() == Type.INT ? new Value() : new Value(false);
+      returnValue = new Imm64(node.array.length);
     }
-
-    BasicBlock t = new BasicBlock();
-    BasicBlock f = new BasicBlock();
-    BasicBlock exit = new BasicBlock();
-
-    compile(node.cond);
-    currentBB.add(Op.JE);
-    currentBB.setTaken(f);
-    currentBB.setNotTaken(t);
-
-    currentBB = t;
-    Operand trueVal = compile(node.trueExpr);
-    currentBB.add(returnValue, Op.MOV, trueVal);
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(exit);
-
-    currentBB = f;
-    Operand falseVal = compile(node.falseExpr);
-    currentBB.add(returnValue, Op.MOV, falseVal);
-    currentBB.add(Op.JMP);
-    currentBB.setTaken(exit);
-
-    currentBB = exit;
-  }
-
-  @Override
-  protected void visit(Length node) {
-    returnValue = new Imm64(node.array.length);
   }
 
   @Override
@@ -819,13 +1019,16 @@ public class Midend extends Visitor {
     }
     currentBB.add(Value.dummy, Op.EPILOGUE)
     .add(Op.RET);
+    funcExits.add(currentBB);
+
+    currentBB = new BasicBlock("");
   }
 
   @Override
   protected void visit(StringLiteral node) {
-    returnValue = strtab.get(node.value);
+    returnValue = strtab.get(node.toEscapedString());
     if (returnValue == null) {
-      returnValue = new BSSObject(node.value);
+      returnValue = new StringObject(node.toEscapedString());
       strtab.put(node.value, returnValue);
     }
   }

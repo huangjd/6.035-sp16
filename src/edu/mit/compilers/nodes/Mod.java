@@ -1,8 +1,9 @@
 package edu.mit.compilers.nodes;
 
 import edu.mit.compilers.common.*;
+import edu.mit.compilers.nodes.ArithOp.DivOp;
 
-public class Mod extends BinaryOpExpr {
+public class Mod extends BinaryOpExpr implements DivOp {
 
   public Mod(ExpressionNode left, ExpressionNode right, SourcePosition pos) {
     super(left, right, pos);

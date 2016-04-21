@@ -84,6 +84,13 @@ public class Function extends Node {
   }
 
   public String getMangledName() {
+    if (!isCallout && (id.equals("printf") || id.equals("exit"))) {
+      return "_F." + id;
+    } else {
+      return id;
+    }
+  }
+  /*
     if (isCallout || id.equals("main")) {
       return id;
     } else {
@@ -104,7 +111,7 @@ public class Function extends Node {
       }
       return res;
     }
-  }
+  }*/
 
   public FunctionNode box() {
     return new FunctionNode(this);

@@ -74,7 +74,7 @@ public final class SemanticsPostProcess extends Mutator {
   @Override
   protected void visit(Break node) {
     if (currentBreakable != null) {
-      returnNode = new Continue(currentBreakable, node.getSourcePosition());
+      returnNode = new Break(currentBreakable, node.getSourcePosition());
     } else {
       ErrorLogger.logError(new InvalidBreakStatementException(false, node.getSourcePosition()));
       ok = false;
