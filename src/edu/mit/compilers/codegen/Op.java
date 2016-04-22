@@ -1,64 +1,84 @@
 package edu.mit.compilers.codegen;
 
 public enum Op {
-  ADD("add", 1),
-  SUB("sub", 1),
-  IMUL("imul", 1),
-  IDIV("idiv", 1),
-  NOT("not", 1),
-  NEG("neg", 1),
-  XOR("xor", 1),
-  INC("inc", 1),
-  DEC("dec", 1),
 
-  MOV("mov", 1),
-  PUSH("push", 1),
-  POP("pop", 1),
+  ADD("add",    1,  0,  1,  1),
+  SUB("sub",    1,  0,  1,  1),
+  IMUL("imul",  1,  0,  0,  1),
+  IDIV("idiv",  1,  0,  0,  1),
+  NOT("not",    1,  0,  1,  1),
+  NEG("neg",    1,  0,  1,  1),
+  XOR("xor",    1,  0,  1,  1),
+  INC("inc",    1,  0,  1,  1),
+  DEC("dec",    1,  0,  1,  1),
 
-  CMP("cmp", 1),
-  TEST("test", 1),
+  MOV("mov",    1,  0,  0,  0),
+  PUSH("push",  1,  0,  0,  0),
+  POP("pop",    1,  0,  0,  0),
 
-  SETE("sete", 0),
-  SETNE("setne", 0),
-  SETG("setg", 0),
-  SETGE("setge", 0),
-  SETL("setl", 0),
-  SETLE("setle", 0),
+  CMP("cmp",    1,  0,  1,  1),
+  TEST("test",  1,  0,  1,  1),
 
-  JE("je", 0),
-  JNE("jne", 0),
-  JG("jg", 0),
-  JGE("jge", 0),
-  JL("jl", 0),
-  JLE("jle", 0),
+  SETE("sete",  0,  0,  0,  0),
+  SETNE("setne",0,  0,  0,  0),
+  SETG("setg",  0,  0,  0,  0),
+  SETGE("setge",0,  0,  0,  0),
+  SETL("setl",  0,  0,  0,  0),
+  SETLE("setle",0,  0,  0,  0),
 
-  JMP("jmp", 0),
-  CALL("call", 0),
-  RET("ret", 0),
+  JE("je",      0,  1,  0,  0),
+  JNE("jne",    0,  1,  0,  0),
+  JG("jg",      0,  1,  0,  0),
+  JGE("jge",    0,  1,  0,  0),
+  JL("jl",      0,  1,  0,  0),
+  JLE("jle",    0,  1,  0,  0),
 
-  NOP("nop", 0),
+  JMP("jmp",    0,  2,  0,  0),
+  CALL("call",  0,  0,  0,  1),
+  RET("ret",    0,  4,  0,  1),
+
+  NOP("nop",    0,  0,  0,  0),
 
   // Pseudo ops from midend, need to be lowered in backend
-  FAKE_DIV("xdiv", 1), // d = a / b (div|mod)
+  FAKE_DIV("xdiv",1,0,  0,  1), // d = a / b (div|mod)
   LOAD("load", 1), // d = a[b]
   STORE("store", 1), // a[b] = d
-  FAKE_CALL("xcall", 0), // d = call $a (args...) #xmm used
+  FAKE_CALL("xcall",0,0, 0, 1), // d = call $a (args...) #xmm used
   OUT_OF_BOUNDS("out_of_bounds", 0), // d = funcName a = line, b = col
   CONTROL_REACHES_END("control_reaches_end", 0), // d = funcName a = line, b = col
   ALLOCATE("allocate", 0), // a = Imm64 (set up for func call)
+  SAVE_REG("save_reg", 0),
+  SAVE_REG_DIV("save_reg_div", 0),
+  RESTORE_REG("restore_reg", 0),
+  RELOCATE("relocate", 0),
   PROLOGUE("func_prologue", 0),
   GET_ARG("get_arg", 1), // d = var, a = Imm64 (index of arg)
   EPILOGUE("func_epilogue", 0),
-  NO_RETURN("no_ret", 0),
-  DELETED("#--deleted--", 0)
+  NO_RETURN("#no_ret",0,0,0,0),
+  DELETED("", 0)
   ;
 
   String mnemonics;
   int hasSuffix;
-
+  int ctrlx = 0;
+  int clearflag = 0;
+  int setflag = 0;
+  
+  public static int CTRLXjcc = 1;
+  public static int CTRLXjmp = 2;
+  public static int CTRLXret = 4;
+  
   Op(String s, int hasPrefix) {
     mnemonics = s;
     this.hasSuffix = hasPrefix;
+  }
+  
+  Op(String s, int hasPrefix, int ctrlx, int setflag, int clearflag) {
+    mnemonics = s;
+    this.hasSuffix = hasPrefix;
+    this.ctrlx = ctrlx;
+    this.setflag = setflag;
+    this.clearflag = clearflag;
   }
 
   @Override

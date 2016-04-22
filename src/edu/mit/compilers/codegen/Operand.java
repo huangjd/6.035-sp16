@@ -249,6 +249,13 @@ class Memory extends Operand {
     assert (multiplier == Type.r8 || multiplier == Type.r64);
   }
 
+  public Memory(Register base, int offset) {
+    this.base = base;
+    this.index = null;
+    this.offset = offset;
+    this.multiplier = Type.r8;
+  }
+
   @Override
   public Type getType() {
     return multiplier;

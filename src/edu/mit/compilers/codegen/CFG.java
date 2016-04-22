@@ -70,6 +70,7 @@ public class CFG extends ArrayList<CFG.CFGDesc> {
       sb.append("\t.type\t").append(desc.entry.label).append(", @function\n");
       sb.append(desc.entry.toString());
     }
+    sb.append("\n");
     return sb.toString();
   }
 }

@@ -10,14 +10,13 @@ public class BasicBlockPrinter extends BasicBlockTraverser {
   }
 
   @Override
-  public T visit(BasicBlock b, T in) {
+  public void visit(BasicBlock b) {
     builder.append(b.label).append(":");
     for (Instruction i : b) {
       builder.append("\n\t").append(i.toString());
     }
 
     builder.append('\n');
-    return in;
   }
 
   @Override

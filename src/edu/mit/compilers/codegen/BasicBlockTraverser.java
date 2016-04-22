@@ -9,7 +9,16 @@ public abstract class BasicBlockTraverser extends BasicBlockVisitor<BasicBlockTr
     }
   }
 
-  public void traverse(BasicBlock entry) {
-    super.traverse(entry, new T());
+  @Override
+  public T visit(BasicBlock b, T in) {
+    visit(b);
+    return in;
   }
+
+  @Override
+  public T getInitValue() {
+    return new T();
+  }
+
+  protected abstract void visit(BasicBlock b);
 }

@@ -93,6 +93,10 @@ public class BasicBlock extends ArrayList<Instruction> {
     if (taken != null) {
       boolean result = taken.comefroms.remove(this);
       assert (result);
+      if (taken.comefroms.size() == 0) {
+        taken.clearTaken();
+        taken.clearNotTaken();
+      }
       taken = null;
     }
   }
@@ -101,6 +105,10 @@ public class BasicBlock extends ArrayList<Instruction> {
     if (notTaken != null) {
       boolean result = notTaken.comefroms.remove(this);
       assert (result);
+      if (notTaken.comefroms.size() == 0) {
+        notTaken.clearTaken();
+        notTaken.clearNotTaken();
+      }
       notTaken = null;
     }
   }

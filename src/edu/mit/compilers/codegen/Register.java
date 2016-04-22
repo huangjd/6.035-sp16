@@ -7,6 +7,7 @@ public class Register extends Operand {
   public final String name;
 
   public static final Register
+  orbp = new Register(-2, Type.r64, "rbp"), // used for omit-frame-pointer
   rip = new Register(-1, Type.r64, "rip"),
   rax = new Register(0, Type.r64, "rax"),
   rcx = new Register(1, Type.r64, "rcx"),

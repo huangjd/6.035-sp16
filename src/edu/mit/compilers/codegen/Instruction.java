@@ -44,6 +44,20 @@ public class Instruction {
     }
   }
 
+  static public class HardCode extends Instruction {
+    String content;
+
+    public HardCode(String s) {
+      super(null);
+      content = s;
+    }
+
+    @Override
+    public String toString() {
+      return content;
+    };
+  }
+
   public Instruction(Operand dest, Op op, Operand a, Operand b) {
     this.twoOperand = false;
     this.a = a;

@@ -54,15 +54,21 @@ public class Midend extends Visitor {
 
     outOfBounds = new BasicBlock();
     Operand s1 = compile(new StringLiteral("\"%s(): %s:%s: Array index out of bounds\\n\"", null).box());
-    outOfBounds.add(new Instruction.CallInstruction(Value.dummy, new Symbol("printf"), new ArrayList<Operand>(){{add(s1);}}, true, 0));
-    outOfBounds.add(new Instruction.CallInstruction(Value.dummy, new Symbol("exit"), new ArrayList<Operand>(){{add(new Imm64(-1));}}, false, 0));
-    outOfBounds.add(Op.NO_RETURN);
+    outOfBounds.add(new Instruction(Op.MOV, s1, Register.rdi));
+    outOfBounds.add(new Instruction(Op.XOR, Register.rax, Register.rax));
+    outOfBounds.add(new Instruction(Op.CALL, new Symbol("printf")));
+    outOfBounds.add(new Instruction(Op.MOV, new Imm64(-1), Register.rax));
+    outOfBounds.add(new Instruction(Op.CALL, new Symbol("exit")));
+    outOfBounds.add(new Instruction(Op.NO_RETURN));
 
     controlReachesEnd = new BasicBlock();
     Operand s2 = compile(new StringLiteral("\"%s(): %s:%s: Control reaches end of non-void function\\n\"", null).box());
-    controlReachesEnd.add(new Instruction.CallInstruction(Value.dummy, new Symbol("printf"), new ArrayList<Operand>(){{add(s2);}}, true, 0));
-    controlReachesEnd.add(new Instruction.CallInstruction(Value.dummy, new Symbol("exit"), new ArrayList<Operand>(){{add(new Imm64(-2));}}, false, 0));
-    controlReachesEnd.add(Op.NO_RETURN);
+    controlReachesEnd.add(new Instruction(Op.MOV, s1, Register.rdi));
+    controlReachesEnd.add(new Instruction(Op.XOR, Register.rax, Register.rax));
+    controlReachesEnd.add(new Instruction(Op.CALL, new Symbol("printf")));
+    controlReachesEnd.add(new Instruction(Op.MOV, new Imm64(-2), Register.rax));
+    controlReachesEnd.add(new Instruction(Op.CALL, new Symbol("exit")));
+    controlReachesEnd.add(new Instruction(Op.NO_RETURN));
 
     currentBB = new BasicBlock(); // dummy, because var decl automatic emits initialization code,
     // but .bss segment is set to 0 anyway
@@ -829,7 +835,7 @@ public class Midend extends Visitor {
     BasicBlock pushTrueTarget = trueTarget;
     BasicBlock pushFalseTarget = falseTarget;
 
-    currentBB.add(Op.ALLOCATE, new Imm64(9 + Math.max(6, node.args.size()) - 6));
+    currentBB.add(Op.ALLOCATE, new Imm64(Math.max(6, node.args.size()) - 6));
     ArrayList<Operand> args = new ArrayList<>();
     for (ExpressionNode e : node.args) {
       args.add(compile(e));
@@ -1018,7 +1024,7 @@ public class Midend extends Visitor {
       compile(node.value);
     }
     currentBB.add(Value.dummy, Op.EPILOGUE)
-    .add(Op.RET);
+    .add(new Instruction(Op.RET));
     funcExits.add(currentBB);
 
     currentBB = new BasicBlock("");

@@ -2,6 +2,8 @@ package edu.mit.compilers.codegen;
 
 import java.util.*;
 
+import edu.mit.compilers.codegen.CFG.CFGDesc;
+
 public abstract class BasicBlockVisitor<T extends Transformable<T>>
 extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
 
@@ -32,8 +34,21 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
     }
   });
 
-  public void traverse(BasicBlock entry, T init) {
-    queue.add(new QueueNode(entry, init));
+  public void traverse(CFG cfg) {
+    for (CFGDesc b : cfg) {
+      traverse(b.entry);
+    }
+  }
+
+  public void reverseTraverse(CFG cfg) {
+    for (CFGDesc b : cfg) {
+      reverseTraverse(b.exits);
+    }
+  }
+
+  public void traverse(BasicBlock entry) {
+    init(entry);
+    queue.add(new QueueNode(entry, getInitValue()));
     QueueNode node;
 
     while ((node = queue.poll()) != null) {
@@ -63,9 +78,10 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
     }
   }
 
-  public void reverseTraverse(HashSet<BasicBlock> exits, T init) {
+  public void reverseTraverse(HashSet<BasicBlock> exits) {
+    init(exits);
     for (BasicBlock exit : exits) {
-      queue.add(new QueueNode(exit, init));
+      queue.add(new QueueNode(exit, getInitValue()));
     }
     QueueNode node;
 
@@ -92,6 +108,14 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
       }
     }
   }
+
+  public void init(BasicBlock entry) {
+  }
+
+  public void init(HashSet<BasicBlock> exits) {
+  }
+
+  public abstract T getInitValue();
 
   public abstract T visit(BasicBlock b, T in);
 }

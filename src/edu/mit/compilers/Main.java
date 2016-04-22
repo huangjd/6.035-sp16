@@ -14,6 +14,13 @@ import edu.mit.compilers.visitors.IRPrinter;
 class Main {
 
   static CFG backend(CFG ir) {
+    new LowerPseudoOp1().traverse(ir);
+    if (CLI.debug) {
+      System.out.println("----- IR lower pseudo op I -----");
+      System.out.print(ir.toString());
+    }
+
+    new Linearizer().traverse(ir);
     return ir;
   }
 
@@ -22,6 +29,7 @@ class Main {
     visitor.enter(program);
     CFG ir = visitor.cfg;
     if (CLI.debug) {
+      System.out.println("----- low level IR -----");
       System.out.print(ir.toString());
     }
     return ir;
@@ -109,6 +117,12 @@ class Main {
         ErrorLogger.printErrors();
         if (program == null || ErrorLogger.log.errors.size() > 0 || parser.getError()) {
           System.exit(-1);
+        }
+        if (CLI.debug) {
+          System.out.println("----- AST IR ------");
+          IRPrinter p = new IRPrinter();
+          p.printSymtab = true;
+          p.enter(program);
         }
         CFG ir = midend(program);
         CFG done = backend(ir);
