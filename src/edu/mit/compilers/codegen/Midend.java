@@ -856,8 +856,8 @@ public class Midend extends Visitor {
     falseTarget = pushFalseTarget;
 
     if (trueTarget != null) {
-      currentBB.add(Op.TEST, returnValue, returnValue)
-      .addJmp(Op.JNE, trueTarget, falseTarget);
+      currentBB.add(new Instruction(Op.TEST, Register.rax, Register.rax));
+      currentBB.addJmp(Op.JNE, trueTarget, falseTarget);
     }
 
     /*.add(Op.MOV, Register.rax, new Memory(Register.rsp, offset, Operand.Type.r64))

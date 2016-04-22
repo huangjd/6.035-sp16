@@ -89,6 +89,19 @@ public class Instruction {
     twoOperand = true;
   }
 
+  public Operand[] getDest() {
+    if (twoOperand) {
+      if (op.hasDest == 1) {
+        return new Operand[]{a};
+      } else if (op.hasDest == 2) {
+        return new Operand[]{b};
+      }
+    } else {
+      return new Operand[]{dest};
+    }
+    return new Operand[]{};
+  }
+
   @Override
   public String toString() {
     Operand.Type opType = (a != null ? a.getType() : Operand.Type.r64);

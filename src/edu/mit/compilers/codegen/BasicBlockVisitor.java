@@ -76,6 +76,7 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
         }
       }
     }
+    fini(entry);
   }
 
   public void reverseTraverse(HashSet<BasicBlock> exits) {
@@ -107,12 +108,19 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
         }
       }
     }
+    fini(exits);
   }
 
   public void init(BasicBlock entry) {
   }
 
   public void init(HashSet<BasicBlock> exits) {
+  }
+
+  public void fini(BasicBlock entry) {
+  }
+
+  public void fini(HashSet<BasicBlock> exits) {
   }
 
   public abstract T getInitValue();

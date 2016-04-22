@@ -7,7 +7,7 @@ public class Register extends Operand {
   public final String name;
 
   public static final Register
-  orbp = new Register(-2, Type.r64, "rbp"), // used for omit-frame-pointer
+  orbp = new Register(4, Type.r64, "rbp"), // used for omit-frame-pointer
   rip = new Register(-1, Type.r64, "rip"),
   rax = new Register(0, Type.r64, "rax"),
   rcx = new Register(1, Type.r64, "rcx"),
@@ -47,6 +47,26 @@ public class Register extends Operand {
     this.id = id;
     this.type = type;
     this.name = name;
+  }
+
+  public static Register[] getRegistersReferedByOperand(Operand op) { // except rip, because you don't do analysis on rip
+    if (op instanceof Register && op != rip) {
+      return new Register[]{(Register) op};
+    } else if (op instanceof Memory) {
+      Memory mem = (Memory) op;
+      if (mem.base != rip) {
+        if (mem.index != null && mem.index != rip) {
+          return new Register[]{mem.base, mem.index};
+        } else {
+          return new Register[]{mem.base};
+        }
+      } else {
+        if (mem.index != null && mem.index != rip) {
+          return new Register[]{mem.index};
+        }
+      }
+    }
+    return new Register[]{};
   }
 
   @Override

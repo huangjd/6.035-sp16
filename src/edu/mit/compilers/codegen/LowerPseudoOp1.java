@@ -12,10 +12,11 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
       if (ins instanceof DivInstruction) {
         Operand div = ins.dest;
         Operand mod = ((DivInstruction) ins).dest2;
-        b.set(j, new Instruction(Register.rdx, Op.SAVE_REG_DIV));
-        b.add(++j, new Instruction(Register.rax, Op.SAVE_REG_DIV));
+        b.set(j, new Instruction(Op.DELETED));
+
+        //b.set(j, new Instruction(Register.rdx, Op.SAVE_REG_DIV));
         if (ins.b instanceof Imm64 || ins.b instanceof Imm8) {
-          b.add(++j, new Instruction(Register.r11, Op.SAVE_REG_DIV));
+          //b.add(++j, new Instruction(Register.r11, Op.SAVE_REG_DIV));
           b.add(++j, new Instruction(Op.XOR, Register.rdx, Register.rdx));
           b.add(++j, new Instruction(Op.MOV, ins.a, Register.rax));
           b.add(++j, new Instruction(Op.MOV, ins.b, Register.r11));
@@ -26,7 +27,7 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
           if (div != Value.dummy && div != null) {
             b.add(++j, new Instruction(Op.MOV, Register.rax, div));
           }
-          b.add(++j, new Instruction(Register.r11, Op.RESTORE_REG));
+          //b.add(++j, new Instruction(Register.r11, Op.RESTORE_REG));
         } else {
           b.add(++j, new Instruction(Op.XOR, Register.rdx, Register.rdx));
           b.add(++j, new Instruction(Op.MOV, ins.a, Register.rax));
@@ -38,20 +39,24 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
             b.add(++j, new Instruction(Op.MOV, Register.rax, div));
           }
         }
-        b.add(++j, new Instruction(Register.rax, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.rdx, Op.RESTORE_REG));
+        b.add(++j, new Instruction(Op.END_XDIV));
+        //b.add(++j, new Instruction(Register.rdx, Op.RESTORE_REG));
 
       } else if (ins instanceof CallInstruction) {
         CallInstruction call = (CallInstruction) ins;
-        b.set(j, new Instruction(Register.rax, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.rcx, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.rdx, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.rdi, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.rsi, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.r8, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.r9, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.r10, Op.SAVE_REG));
-        b.add(++j, new Instruction(Register.r11, Op.SAVE_REG));
+
+        boolean nextInsIsTest = b.get(j + 1).op == Op.TEST && b.get(j + 1).a == Register.rax
+            && b.get(j + 1).b == Register.rax;
+
+        // b.add(++j, new Instruction(Register.rcx, Op.SAVE_REG));
+        //b.add(++j, new Instruction(Register.rdx, Op.SAVE_REG));
+        //b.add(++j, new Instruction(Register.rdi, Op.SAVE_REG));
+        //b.add(++j, new Instruction(Register.rsi, Op.SAVE_REG));
+        //b.add(++j, new Instruction(Register.r8, Op.SAVE_REG));
+        //b.add(++j, new Instruction(Register.r9, Op.SAVE_REG));
+        //b.add(++j, new Instruction(Register.r10, Op.SAVE_REG));
+        //b.add(++j, new Instruction(Register.r11, Op.SAVE_REG));
+        b.set(j, new Instruction(Op.DELETED));
         switch (call.args.size()) { // fallthrough
         default:
           for (int k = 6; k < call.args.size() - 6; k++) {
@@ -79,15 +84,18 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         if (ins.dest != null && ins.dest != Value.dummy) {
           b.add(++j, new Instruction(Op.MOV, Register.rax, ins.dest));
         }
-        b.add(++j, new Instruction(Register.r11, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.r10, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.r9, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.r8, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.rsi, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.rdi, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.rdx, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.rcx, Op.RESTORE_REG));
-        b.add(++j, new Instruction(Register.rax, Op.RESTORE_REG));
+        if (nextInsIsTest) {
+          ++j;
+        }
+        b.add(++j, new Instruction(Op.END_XCALL));
+        //b.add(++j, new Instruction(Register.r11, Op.RESTORE_REG));
+        //b.add(++j, new Instruction(Register.r10, Op.RESTORE_REG));
+        //b.add(++j, new Instruction(Register.r9, Op.RESTORE_REG));
+        //b.add(++j, new Instruction(Register.r8, Op.RESTORE_REG));
+        //b.add(++j, new Instruction(Register.rsi, Op.RESTORE_REG));
+        //b.add(++j, new Instruction(Register.rdi, Op.RESTORE_REG));
+        //b.add(++j, new Instruction(Register.rdx, Op.RESTORE_REG));
+        //b.add(++j, new Instruction(Register.rcx, Op.RESTORE_REG));
 
       } else if (ins.op == Op.GET_ARG) {
         assert(ins.b instanceof Imm64);
@@ -120,7 +128,6 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
       } else if (ins.op.ctrlx == Op.CTRLXjmp) {
         b.set(j, new Instruction(Op.JMP, ins.a));
       }
-
       i = j;
     }
   }
