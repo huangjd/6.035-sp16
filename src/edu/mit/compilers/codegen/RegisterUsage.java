@@ -2,11 +2,11 @@ package edu.mit.compilers.codegen;
 
 import java.util.HashSet;
 
-public class ResolveSaveRegOp extends BasicBlockVisitor<ResolveSaveRegOp.T> {
+public class RegisterUsage extends BasicBlockVisitor<RegisterUsage.T> {
 
   boolean omitrbp;
 
-  public ResolveSaveRegOp(boolean omitrbp) {
+  public RegisterUsage(boolean omitrbp) {
     this.omitrbp = omitrbp;
   }
 

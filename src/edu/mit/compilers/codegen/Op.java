@@ -40,6 +40,7 @@ public enum Op {
   NOP("nop",    0,  0,  0,  0,  0),
 
   // Pseudo ops from midend, need to be lowered in backend
+  LOCAL_ARRAY_DECL("local_array", 0), 
   FAKE_DIV("xdiv",1,0,  0,  1,  0), // d = a / b (div|mod)
   LOAD("load", 1), // d = a[b]
   STORE("store", 1), // a[b] = d
@@ -47,9 +48,11 @@ public enum Op {
   OUT_OF_BOUNDS("out_of_bounds", 0), // d = funcName a = line, b = col
   CONTROL_REACHES_END("control_reaches_end", 0), // d = funcName a = line, b = col
   ALLOCATE("allocate", 0), // a = Imm64 (set up for func call)
-  SAVE_REG("save_reg", 0),
-  SAVE_REG_DIV("save_reg_div", 0),
-  RESTORE_REG("restore_reg", 0),
+  //SAVE_REG("save_reg", 0),
+  //SAVE_REG_DIV("save_reg_div", 0),
+  //RESTORE_REG("restore_reg", 0),
+  BEGIN_XCALL("begin_xcall", 0),
+  BEGIN_XDIV("begin_xdiv", 0),
   END_XCALL("end_xcall", 0),
   END_XDIV("end_xdiv", 0),
   PROLOGUE("func_prologue", 0),
@@ -65,16 +68,16 @@ public enum Op {
   int clearflag = 0;
   int setflag = 0;
   int hasDest = 0;
-  
+
   public static int CTRLXjcc = 1;
   public static int CTRLXjmp = 2;
   public static int CTRLXret = 4;
-  
+
   Op(String s, int hasPrefix) {
     mnemonics = s;
     this.hasSuffix = hasPrefix;
   }
-  
+
   Op(String s, int hasPrefix, int ctrlx, int setflag, int clearflag, int hasDest) {
     mnemonics = s;
     this.hasSuffix = hasPrefix;

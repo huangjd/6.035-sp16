@@ -42,6 +42,8 @@ public final class SemanticsPostProcess extends Mutator {
   protected void visit(Return node) {
     if (((Function) (node.context.getNode())).id == "main") {
       returnNode = new Return(node.context, new IntLiteral(0, null).box(), node.getSourcePosition());
+    } else {
+      super.visit(node);
     }
   }
 

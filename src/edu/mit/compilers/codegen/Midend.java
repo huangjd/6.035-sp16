@@ -26,8 +26,6 @@ public class Midend extends Visitor {
   boolean bssMode = false;
 
   // Const
-  BasicBlock outOfBounds;
-  BasicBlock controlReachesEnd;
 
   // Output
   public CFG cfg;
@@ -46,29 +44,60 @@ public class Midend extends Visitor {
     return temp;
   }
 
+  CFG.CFGDesc getExitBlock() {
+    Operand s0 = compile(new StringLiteral("\"rip=0x%x: %d:%d: Array index out of bounds\\n\"", null).box());
+    Operand s1 = compile(new StringLiteral("\"rip=0x%x: Control reaches end of non-void function\\n\"", null).box());
+    Operand s2 = compile(new StringLiteral("\"%s(): %d:%d: Array index out of bounds\\n\"", null).box());
+    Operand s3 = compile(new StringLiteral("\"%s(): %d:%d: Control reaches end of non-void function\\n\"", null).box());
+    BasicBlock dummy0 = new BasicBlock();
+    BasicBlock dummy1 = new BasicBlock();
+    BasicBlock dummy2 = new BasicBlock();
+    BasicBlock exit0 = new BasicBlock("_exit.0");
+    BasicBlock exit1 = new BasicBlock("_exit.1");
+    BasicBlock exit2 = new BasicBlock("_exit.2");
+    BasicBlock exit3 = new BasicBlock("_exit.3");
+    BasicBlock exit = new BasicBlock("_exit.4");
+    exit0.add(new Instruction(Op.MOV, s0, Register.rdi));
+    exit0.add(new Instruction(Op.MOV, new Imm64(-1), Register.rbx));
+    exit0.add(new Instruction(Op.MOV, new Memory(Register.rsp, 0), Register.rsi));
+    exit0.addJmp(exit);
+
+    exit1.add(new Instruction(Op.MOV, s1, Register.rdi));
+    exit1.add(new Instruction(Op.MOV, new Imm64(-2), Register.rbx));
+    exit1.add(new Instruction(Op.MOV, new Memory(Register.rsp, 0), Register.rsi));
+    exit1.addJmp(exit);
+
+    exit2.add(new Instruction(Op.MOV, s2, Register.rdi));
+    exit2.add(new Instruction(Op.MOV, new Imm64(-1), Register.rbx));
+    exit2.addJmp(exit);
+
+    exit3.add(new Instruction(Op.MOV, s3, Register.rdi));
+    exit3.add(new Instruction(Op.MOV, new Imm64(-2), Register.rbx));
+    exit3.addJmp(exit);
+
+    exit.add(new Instruction(Op.XOR, Register.rax, Register.rax));
+    exit.add(new Instruction(Op.CALL, new Symbol("printf")));
+    exit.add(new Instruction(Op.MOV, Register.rbx, Register.rdi));
+    exit.add(new Instruction(Op.CALL, new Symbol("exit")));
+    exit.add(new Instruction(Op.NO_RETURN));
+
+    dummy0.addJmp(Op.JE, dummy1, dummy2);
+    dummy1.addJmp(Op.JE, exit0, exit1);
+    dummy2.addJmp(Op.JE, exit2, exit3);
+    return new CFG.CFGDesc(dummy0, new HashSet<BasicBlock>() {
+      {
+        add(dummy0);
+      }
+    });
+  }
+
   @Override
   protected void visit(Program node) {
     BasicBlock.priorityCounter = 0;
 
     strtab = new HashMap<>();
 
-    outOfBounds = new BasicBlock();
-    Operand s1 = compile(new StringLiteral("\"%s(): %s:%s: Array index out of bounds\\n\"", null).box());
-    outOfBounds.add(new Instruction(Op.MOV, s1, Register.rdi));
-    outOfBounds.add(new Instruction(Op.XOR, Register.rax, Register.rax));
-    outOfBounds.add(new Instruction(Op.CALL, new Symbol("printf")));
-    outOfBounds.add(new Instruction(Op.MOV, new Imm64(-1), Register.rax));
-    outOfBounds.add(new Instruction(Op.CALL, new Symbol("exit")));
-    outOfBounds.add(new Instruction(Op.NO_RETURN));
 
-    controlReachesEnd = new BasicBlock();
-    Operand s2 = compile(new StringLiteral("\"%s(): %s:%s: Control reaches end of non-void function\\n\"", null).box());
-    controlReachesEnd.add(new Instruction(Op.MOV, s1, Register.rdi));
-    controlReachesEnd.add(new Instruction(Op.XOR, Register.rax, Register.rax));
-    controlReachesEnd.add(new Instruction(Op.CALL, new Symbol("printf")));
-    controlReachesEnd.add(new Instruction(Op.MOV, new Imm64(-2), Register.rax));
-    controlReachesEnd.add(new Instruction(Op.CALL, new Symbol("exit")));
-    controlReachesEnd.add(new Instruction(Op.NO_RETURN));
 
     currentBB = new BasicBlock(); // dummy, because var decl automatic emits initialization code,
     // but .bss segment is set to 0 anyway
@@ -88,8 +117,7 @@ public class Midend extends Visitor {
         entries.add(new CFG.CFGDesc(funcEntryBB, funcExits));
       }
     }
-    entries.add(new CFG.CFGDesc(outOfBounds, new HashSet<BasicBlock>(){{add(outOfBounds);}}));
-    entries.add(new CFG.CFGDesc(controlReachesEnd, new HashSet<BasicBlock>(){{add(controlReachesEnd);}}));
+    entries.add(getExitBlock());
 
     cfg = new CFG(entries, symtab, strtab);
     cfg.fileName = fileName;
@@ -664,6 +692,7 @@ public class Midend extends Visitor {
       BasicBlock exit = new BasicBlock();
 
       Operand i = new Value();
+      currentBB.add(temp, Op.LOCAL_ARRAY_DECL, new Imm64(node.var.length));
       currentBB.add(i, Op.MOV, new Imm64(node.var.length - 1))
       .addJmp(loop);
 

@@ -19,6 +19,11 @@ class Main {
       System.out.println("----- IR lower pseudo op I -----");
       System.out.print(ir.toString());
     }
+    new BasicStackAllocator().traverse(ir);
+    if (CLI.debug) {
+      System.out.println("----- IR lower stack vars -----");
+      System.out.print(ir.toString());
+    }
 
     new Linearizer().traverse(ir);
     return ir;

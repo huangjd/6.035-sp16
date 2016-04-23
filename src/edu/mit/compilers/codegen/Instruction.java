@@ -106,6 +106,7 @@ public class Instruction {
   public String toString() {
     Operand.Type opType = (a != null ? a.getType() : Operand.Type.r64);
     if (twoOperand) {
+      opType = (b != null ? b.getType() : opType);
       return op.toString(opType) + '\t' + (a != null ? a.toString() : "")
           + (b != null ? ", " + b.toString() : "");
     } else {

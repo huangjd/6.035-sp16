@@ -12,15 +12,15 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
       if (ins instanceof DivInstruction) {
         Operand div = ins.dest;
         Operand mod = ((DivInstruction) ins).dest2;
-        b.set(j, new Instruction(Op.DELETED));
+        b.set(j, new Instruction(Op.BEGIN_XDIV));
 
         //b.set(j, new Instruction(Register.rdx, Op.SAVE_REG_DIV));
         if (ins.b instanceof Imm64 || ins.b instanceof Imm8) {
           //b.add(++j, new Instruction(Register.r11, Op.SAVE_REG_DIV));
           b.add(++j, new Instruction(Op.XOR, Register.rdx, Register.rdx));
           b.add(++j, new Instruction(Op.MOV, ins.a, Register.rax));
-          b.add(++j, new Instruction(Op.MOV, ins.b, Register.r11));
-          b.add(++j, new Instruction(Op.IDIV, Register.r11));
+          b.add(++j, new Instruction(Op.MOV, ins.b, Register.rcx));
+          b.add(++j, new Instruction(Op.IDIV, Register.rcx));
           if (mod != Value.dummy && mod != null) {
             b.add(++j, new Instruction(Op.MOV, Register.rdx, mod));
           }
@@ -56,7 +56,7 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         //b.add(++j, new Instruction(Register.r9, Op.SAVE_REG));
         //b.add(++j, new Instruction(Register.r10, Op.SAVE_REG));
         //b.add(++j, new Instruction(Register.r11, Op.SAVE_REG));
-        b.set(j, new Instruction(Op.DELETED));
+        b.set(j, new Instruction(Op.BEGIN_XCALL));
         switch (call.args.size()) { // fallthrough
         default:
           for (int k = 6; k < call.args.size() - 6; k++) {

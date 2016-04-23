@@ -213,7 +213,7 @@ class StringObject extends Operand {
 
   @Override
   public Type getType() {
-    return Type.r8;
+    return Type.r64;
   }
 
   @Override
