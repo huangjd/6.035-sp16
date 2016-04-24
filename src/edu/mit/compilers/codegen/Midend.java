@@ -59,12 +59,12 @@ public class Midend extends Visitor {
     BasicBlock exit = new BasicBlock("_exit.4");
     exit0.add(new Instruction(Op.MOV, s0, Register.rdi));
     exit0.add(new Instruction(Op.MOV, new Imm64(-1), Register.rbx));
-    exit0.add(new Instruction(Op.MOV, new Memory(Register.rsp, 0), Register.rsi));
+    exit0.add(new Instruction(Op.MOV, new Memory(Register.rsp, 0, Operand.Type.r64), Register.rsi));
     exit0.addJmp(exit);
 
     exit1.add(new Instruction(Op.MOV, s1, Register.rdi));
     exit1.add(new Instruction(Op.MOV, new Imm64(-2), Register.rbx));
-    exit1.add(new Instruction(Op.MOV, new Memory(Register.rsp, 0), Register.rsi));
+    exit1.add(new Instruction(Op.MOV, new Memory(Register.rsp, 0, Operand.Type.r64), Register.rsi));
     exit1.addJmp(exit);
 
     exit2.add(new Instruction(Op.MOV, s2, Register.rdi));
@@ -96,8 +96,6 @@ public class Midend extends Visitor {
     BasicBlock.priorityCounter = 0;
 
     strtab = new HashMap<>();
-
-
 
     currentBB = new BasicBlock(); // dummy, because var decl automatic emits initialization code,
     // but .bss segment is set to 0 anyway
@@ -698,7 +696,7 @@ public class Midend extends Visitor {
 
       currentBB = loop;
       currentBB.add(zero, Op.STORE, temp, i)
-      .add(i, Op.DEC, i)
+      .add(i, Op.ADD, new Imm64(1), i)
       .addJmp(Op.JGE, loop, exit);
 
       currentBB = exit;
@@ -984,11 +982,9 @@ public class Midend extends Visitor {
 
     currentBB = incr;
     incr.deferPriority();
-    if (node.increment == 1) {
-      currentBB.add(i, Op.INC, i);
-    } else {
-      currentBB.add(i, Op.ADD, new Imm64(node.increment), i);
-    }
+
+    currentBB.add(i, Op.ADD, new Imm64(node.increment), i);
+
     currentBB.addJmp(cond);
 
     currentBB = exit;

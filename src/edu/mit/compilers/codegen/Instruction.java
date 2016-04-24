@@ -15,6 +15,7 @@ public class Instruction {
 
     public DivInstruction(Operand dest1, Operand dest2, Operand a, Operand b) {
       super(dest1, Op.FAKE_DIV, a, b);
+      assert (dest2 != null);
       this.dest2 = dest2;
     }
 
@@ -48,7 +49,7 @@ public class Instruction {
     String content;
 
     public HardCode(String s) {
-      super(null);
+      super(Op.NOP);
       content = s;
     }
 
@@ -59,6 +60,32 @@ public class Instruction {
   }
 
   public Instruction(Operand dest, Op op, Operand a, Operand b) {
+    assert (op.pseudoOp());
+    assert (dest != null);
+    if (!op.special()) {
+      if (op.pseudoOpDestMustBeDummy()) {
+        assert (dest == Value.dummy);
+      } else {
+        assert (dest != Value.dummy);
+      }
+    }
+    assert (a != Value.dummy && b != Value.dummy);
+    int operandNum = op.pseudoOpOperandNun();
+    switch (operandNum) {
+    case 0:
+      assert (a == null && b == null);
+      break;
+    case 1:
+      assert (a != null && b == null);
+      break;
+    case 2:
+      assert (a != null && b != null);
+      break;
+    case 3:
+    default:
+      throw new RuntimeException();
+    }
+
     this.twoOperand = false;
     this.a = a;
     this.b = b;
@@ -75,44 +102,68 @@ public class Instruction {
   }
 
   public Instruction(Op op, Operand a, Operand b) {
-    this(null, op, a, b);
+    assert (op.isa());
+    assert (a != Value.dummy && b != Value.dummy);
+    int operandNum = op.isaOerandNum();
+    switch (operandNum) {
+    case 0:
+      assert (a == null && b == null);
+      break;
+    case 1:
+      assert (a != null && b == null);
+      break;
+    case 2:
+      assert (a != null && b != null);
+      break;
+    case 3:
+    default:
+      throw new RuntimeException();
+    }
+    assert (!op.hasSuffix() || operandNum > 0);
+
+    this.a = a;
+    this.b = b;
+    this.op = op;
+    this.dest = null;
     twoOperand = true;
   }
 
   public Instruction(Op op, Operand a) {
-    this(null, op, a, null);
-    twoOperand = true;
+    this(op, a, null);
   }
 
   public Instruction(Op op) {
-    this(null, op, null);
-    twoOperand = true;
+    this(op, null, null);
   }
 
   public Operand[] getDest() {
-    if (twoOperand) {
-      if (op.hasDest == 1) {
-        return new Operand[]{a};
-      } else if (op.hasDest == 2) {
-        return new Operand[]{b};
-      }
-    } else {
-      return new Operand[]{dest};
+    ArrayList<Operand> dests = new ArrayList<>();
+    int dest = op.isaWriteDest();
+    if (dest == 1) {
+      dests.add(a);
     }
-    return new Operand[]{};
+    if (dest == 2) {
+      dests.add(b);
+    }
+    return (Operand[]) dests.toArray();
   }
 
   @Override
   public String toString() {
-    Operand.Type opType = (a != null ? a.getType() : Operand.Type.r64);
     if (twoOperand) {
-      opType = (b != null ? b.getType() : opType);
+      Operand.Type opType = Operand.Type.r64;
+      if (b != null) {
+        opType = b.getType();
+      } else if (a != null) {
+        opType = a.getType();
+      }
       return op.toString(opType) + '\t' + (a != null ? a.toString() : "")
           + (b != null ? ", " + b.toString() : "");
     } else {
-      return (dest != null ? dest.toString() + " = " : "\t") +
-          op.toString(opType) + '\t' + (a != null ? a.toString() : "")
-          + (b != null ? ", " + b.toString() : "");
+      Operand.Type opType = dest.getType();
+      return dest.toString() + " =\t" + op.toString(opType) +
+          '\t' + (a != null ? a.toString() : "") +
+          (b != null ? ", " + b.toString() : "");
     }
   }
 }

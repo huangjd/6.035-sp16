@@ -11,6 +11,10 @@ public class Util {
     return (value + alignment - 1) / alignment * alignment;
   }
 
+  public static int extractNBit(int value, int startBit, int n) {
+    return value >>> startBit & ((1 << n) - 1);
+  }
+
   public static long parseInt(String value, Long lowerBound, Long upperBound) throws IllegalArgumentException {
     long v;
     if (value.length() > 2 && value.charAt(0) == '0' && value.charAt(1) == 'x') {
