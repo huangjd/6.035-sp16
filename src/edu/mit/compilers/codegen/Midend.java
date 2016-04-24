@@ -850,14 +850,15 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(Call node) {
-    if (node.func.returnType != Type.NONE) {
-      if (currentAssignDest != null) {
-        returnValue = currentAssignDest;
-        currentAssignDest = null;
-      } else {
-        returnValue = node.func.returnType == Type.BOOLEAN ? new Value(false) : new Value();
-      }
+    if (currentAssignDest != null) {
+      returnValue = currentAssignDest;
+      currentAssignDest = null;
+    } else {
+      returnValue = node.func.returnType == Type.BOOLEAN ? new Value(false) : new Value();
     }
+
+
+    Operand pushReturnValue = returnValue;
 
     BasicBlock pushTrueTarget = trueTarget;
     BasicBlock pushFalseTarget = falseTarget;
@@ -865,7 +866,11 @@ public class Midend extends Visitor {
     currentBB.add(Op.ALLOCATE, new Imm64(Math.max(6, node.args.size()) - 6));
     ArrayList<Operand> args = new ArrayList<>();
     for (ExpressionNode e : node.args) {
-      args.add(compile(e));
+      trueTarget = null;
+      falseTarget = null;
+      Operand value = compile(e);
+      assert (value != null);
+      args.add(value);
     }
 
     // final int offset = (Math.max(6, node.args.size()) - 6) * 8;
@@ -875,6 +880,7 @@ public class Midend extends Visitor {
 
     currentBB = next;*/
 
+    returnValue = pushReturnValue;
 
     boolean variadic = node.func.isCallout && (node.func.id.contains("printf") || node.func.id.contains("scanf"));
     currentBB.add(new Instruction.CallInstruction(returnValue, new Symbol(node.func.getMangledName()), args, variadic, 0));
@@ -947,7 +953,7 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(CallStmt node) {
-    currentAssignDest = Value.dummy;
+    currentAssignDest = node.call.getType() == Type.BOOLEAN ? new Value(false) : new Value();
     visit(node.call);
   }
 

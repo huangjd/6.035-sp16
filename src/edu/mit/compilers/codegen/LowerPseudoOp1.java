@@ -70,7 +70,7 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         }
         b.add(++j, new Instruction(Value.dummy, Op.END_XCALL));
       } else if (ins.op == Op.GET_ARG) {
-        assert(ins.b instanceof Imm64);
+        assert (ins.a instanceof Imm64);
         switch ((int) ((Imm64) ins.a).val) {
         case 0:
           b.set(j, new Instruction(Op.MOV, Register.rdi, ins.dest));
@@ -92,7 +92,7 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
           break;
         default:
           b.set(j, new Instruction(ins.dest, Op.MOV,
-              new Memory(Register.orbp, ((int) ((Imm64) ins.b).val - 4) * 8, Type.r64)));
+              new Memory(Register.orbp, ((int) ((Imm64) ins.a).val - 4) * 8, Type.r64)));
           break;
         }
       } else if (ins.op.jcc()) {

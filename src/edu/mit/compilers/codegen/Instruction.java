@@ -36,6 +36,9 @@ public class Instruction {
       this.args = args;
       this.variadic = variadic;
       this.variadicXMMArgsCount = variadicXMMArgsCount;
+      for (Operand op : args) {
+        assert (op != null);
+      }
     }
 
     @Override

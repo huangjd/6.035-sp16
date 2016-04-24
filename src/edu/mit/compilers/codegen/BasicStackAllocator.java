@@ -16,7 +16,7 @@ public class BasicStackAllocator extends BasicBlockTraverser {
   @Override
   protected void visit(BasicBlock b) {
     for (Instruction ins : b) {
-      assert (!ins.op.pseudoOp() || ins.op.stage() >= stage);
+      assert (ins.twoOperand || ins.op.stage() >= stage);
 
       //Memory a, b1, dest;
       if (ins.op == Op.LOCAL_ARRAY_DECL) {
