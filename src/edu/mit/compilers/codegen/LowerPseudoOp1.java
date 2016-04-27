@@ -15,9 +15,10 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         Operand mod = ((DivInstruction) ins).dest2;
         b.set(j, new Instruction(Value.dummy, Op.BEGIN_XDIV));
 
-        if (ins.b instanceof Imm64 || ins.b instanceof Imm8) {
-          b.add(++j, new Instruction(Op.MOV, ins.b, Register.rcx));
-          ins.b = Register.rcx;
+        boolean isImm = ins.b.isImm();
+        if (isImm) {
+          b.add(++j, new Instruction(Register.rxx, Op.TEMP_REG));
+          ins.b = Register.rxx;
         }
         b.add(++j, new Instruction(Op.XOR, Register.rdx, Register.rdx));
         b.add(++j, new Instruction(Op.MOV, ins.a, Register.rax));
@@ -28,7 +29,9 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         if (div != Value.dummy && div != null) {
           b.add(++j, new Instruction(Op.MOV, Register.rax, div));
         }
-
+        if (isImm) {
+          b.add(++j, new Instruction(Value.dummy, Op.END_TEMP_REG));
+        }
         b.add(++j, new Instruction(Value.dummy, Op.END_XDIV));
 
       } else if (ins instanceof CallInstruction) {
@@ -100,6 +103,8 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         b.add(++j, new Instruction(Op.JMP, ins.b));
       } else if (ins.op == Op.JMP) {
         b.set(j, new Instruction(Op.JMP, ins.a));
+      } else if (ins.op == Op.RET) {
+        b.set(j, new Instruction(Op.RET));
       }
       i = j;
     }

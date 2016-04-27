@@ -15,6 +15,10 @@ public class Util {
     return value >>> startBit & ((1 << n) - 1);
   }
 
+  public static boolean isImm32(long value) {
+    return value <= Integer.MAX_VALUE && value >= Integer.MIN_VALUE;
+  }
+
   public static long parseInt(String value, Long lowerBound, Long upperBound) throws IllegalArgumentException {
     long v;
     if (value.length() > 2 && value.charAt(0) == '0' && value.charAt(1) == 'x') {

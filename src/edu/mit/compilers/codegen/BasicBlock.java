@@ -46,6 +46,16 @@ public class BasicBlock extends ArrayList<Instruction> {
     return this;
   }
 
+  public BasicBlock add(Op op, Operand a) {
+    super.add(new Instruction(Value.dummy, op, a));
+    return this;
+  }
+
+  public BasicBlock add(Op op) {
+    super.add(new Instruction(Value.dummy, op));
+    return this;
+  }
+
   public void addJmp(Op op, BasicBlock b1, BasicBlock b2) {
     assert (op == Op.JG || op == Op.JGE || op == Op.JL || op == Op.JLE || op == Op.JE || op == Op.JNE);
     super.add(new Instruction(Value.dummy, op, new JumpTarget(b1), new JumpTarget(b2)));
@@ -56,16 +66,6 @@ public class BasicBlock extends ArrayList<Instruction> {
   public void addJmp(BasicBlock b1) {
     super.add(new Instruction(Value.dummy, Op.JMP, new JumpTarget(b1)));
     setTaken(b1);
-  }
-
-  public BasicBlock add(Op op, Operand a) {
-    super.add(new Instruction(Value.dummy, op, a));
-    return this;
-  }
-
-  public BasicBlock add(Op op) {
-    super.add(new Instruction(Value.dummy, op));
-    return this;
   }
 
   public BasicBlock addISA(Op op, Operand a, Operand b) {

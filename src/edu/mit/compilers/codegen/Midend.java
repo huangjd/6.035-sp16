@@ -168,7 +168,7 @@ public class Midend extends Visitor {
 
     Operand a = compile(node.left);
     Operand b = compile(node.right);
-    currentBB.add(returnValue, Op.ADD, a, b);
+    currentBB.add(returnValue, Op.ADD, b, a);
   }
 
   @Override
@@ -182,7 +182,7 @@ public class Midend extends Visitor {
 
     Operand a = compile(node.left);
     Operand b = compile(node.right);
-    currentBB.add(returnValue, Op.SUB, a, b);
+    currentBB.add(returnValue, Op.SUB, b, a);
   }
 
   @Override
@@ -196,7 +196,7 @@ public class Midend extends Visitor {
 
     Operand a = compile(node.left);
     Operand b = compile(node.right);
-    currentBB.add(returnValue, Op.IMUL, a, b);
+    currentBB.add(returnValue, Op.IMUL, b, a);
   }
 
   @Override
@@ -279,7 +279,7 @@ public class Midend extends Visitor {
       trueTarget = null;
       falseTarget = null;
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .addJmp(Op.JE, pushTrue, pushFalse);
     } else {
       if (currentAssignDest != null) {
@@ -291,7 +291,7 @@ public class Midend extends Visitor {
 
       Operand a = compile(node.left);
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .add(returnValue, Op.SETE);
     }
   }
@@ -307,7 +307,7 @@ public class Midend extends Visitor {
       trueTarget = null;
       falseTarget = null;
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .addJmp(Op.JNE, pushTrue, pushFalse);
     } else {
       if (currentAssignDest != null) {
@@ -319,7 +319,7 @@ public class Midend extends Visitor {
 
       Operand a = compile(node.left);
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .add(returnValue, Op.SETNE);
     }
   }
@@ -335,7 +335,7 @@ public class Midend extends Visitor {
       trueTarget = null;
       falseTarget = null;
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .addJmp(Op.JG, pushTrue, pushFalse);
     } else {
       if (currentAssignDest != null) {
@@ -347,7 +347,7 @@ public class Midend extends Visitor {
 
       Operand a = compile(node.left);
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .add(returnValue, Op.SETG);
     }
   }
@@ -363,7 +363,7 @@ public class Midend extends Visitor {
       trueTarget = null;
       falseTarget = null;
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .addJmp(Op.JGE, pushTrue, pushFalse);
     } else {
       if (currentAssignDest != null) {
@@ -375,7 +375,7 @@ public class Midend extends Visitor {
 
       Operand a = compile(node.left);
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .add(returnValue, Op.SETGE);
     }
   }
@@ -391,7 +391,7 @@ public class Midend extends Visitor {
       trueTarget = null;
       falseTarget = null;
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .addJmp(Op.JL, pushTrue, pushFalse);
     } else {
       if (currentAssignDest != null) {
@@ -403,7 +403,7 @@ public class Midend extends Visitor {
 
       Operand a = compile(node.left);
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .add(returnValue, Op.SETL);
     }
   }
@@ -419,7 +419,7 @@ public class Midend extends Visitor {
       trueTarget = null;
       falseTarget = null;
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .addJmp(Op.JLE, pushTrue, pushFalse);
     } else {
       if (currentAssignDest != null) {
@@ -431,7 +431,7 @@ public class Midend extends Visitor {
 
       Operand a = compile(node.left);
       Operand b = compile(node.right);
-      currentBB.add(Op.CMP, a, b)
+      currentBB.add(Op.CMP, b, a)
       .add(returnValue, Op.SETLE);
     }
   }
@@ -744,11 +744,11 @@ public class Midend extends Visitor {
       BasicBlock ok = new BasicBlock();
       BasicBlock die = new BasicBlock();
 
-      currentBB.add(Op.CMP, index, new Imm64(0))
+      currentBB.add(Op.CMP, new Imm64(0), index)
       .addJmp(Op.JL, die, check1);
 
       currentBB = check1;
-      currentBB.add(Op.CMP, index, new Imm64(length))
+      currentBB.add(Op.CMP, new Imm64(length), index)
       .addJmp(Op.JGE, die, ok);
 
       currentBB = die;
@@ -776,11 +776,11 @@ public class Midend extends Visitor {
       BasicBlock ok = new BasicBlock();
       BasicBlock die = new BasicBlock();
 
-      currentBB.add(Op.CMP, index, new Imm64(0))
+      currentBB.add(Op.CMP, new Imm64(0), index)
       .addJmp(Op.JL, die, check1);
 
       currentBB = check1;
-      currentBB.add(Op.CMP, index, new Imm64(length))
+      currentBB.add(Op.CMP, new Imm64(length), index)
       .addJmp(Op.JGE, die, ok);
 
       currentBB = die;
@@ -801,10 +801,10 @@ public class Midend extends Visitor {
     Operand newValue = node.array.type.getElementType() == Type.INT ? new Value() : new Value(false);
     if (node.cop == CoOperand.PLUS) {
       currentBB.add(oldValue, Op.LOAD, base, index)
-      .add(newValue, Op.ADD, oldValue, value);
+          .add(newValue, Op.ADD, value, oldValue);
     } else if (node.cop == CoOperand.MINUS) {
       currentBB.add(oldValue, Op.LOAD, base, index)
-      .add(newValue, Op.SUB, oldValue, value);
+          .add(newValue, Op.SUB, value, oldValue);
     } else {
       newValue = value;
     }
@@ -978,7 +978,7 @@ public class Midend extends Visitor {
     .addJmp(cond);
 
     currentBB = cond;
-    currentBB.add(Op.CMP, i, end)
+    currentBB.add(Op.CMP, end, i)
     .addJmp(Op.JGE, exit, body);
 
     currentBB = body;

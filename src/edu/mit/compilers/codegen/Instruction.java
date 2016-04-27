@@ -72,6 +72,12 @@ public class Instruction {
         assert (dest != Value.dummy);
       }
     }
+    assert (!(dest instanceof Imm8 || dest instanceof Imm64 || dest instanceof StringObject || dest instanceof Symbol
+        || dest instanceof Array)
+        || (dest instanceof StringObject && (op == Op.CONTROL_REACHES_END || op == Op.OUT_OF_BOUNDS))
+        || (dest instanceof Array && op == Op.LOCAL_ARRAY_DECL)
+        || ((op == Op.LOAD || op == Op.STORE) && (a instanceof Array || a instanceof BSSObject)
+            && !(b instanceof Array)));
     assert (a != Value.dummy && b != Value.dummy);
     int operandNum = op.pseudoOpOperandNun();
     switch (operandNum) {
@@ -124,6 +130,32 @@ public class Instruction {
     }
     assert (!op.hasSuffix() || operandNum > 0);
 
+    switch (op) {
+    case IDIV:
+      assert (a.isReg() || a.isMem());
+      break;
+    case MOV:
+      if (a.isMem()) {
+        assert (b.isReg());
+      }
+      if (b.isMem()) {
+        assert (a.isReg() || a.isImm32());
+      }
+      break;
+    case CALL:
+      break;
+    default:
+      if (op.isaOerandNum() == 2) {
+        assert (!a.isImm64N32() && !b.isImm() && !(a.isMem() && b.isMem()));
+      } else if (op.isaOerandNum() == 1) {
+        if (op.ctrlx() == 1 || op.ctrlx() == 2) {
+          assert (a instanceof JumpTarget);
+        } else {
+          assert (a.isMem() || a.isReg());
+        }
+      }
+    }
+
     this.a = a;
     this.b = b;
     this.op = op;
@@ -157,6 +189,9 @@ public class Instruction {
       Operand.Type opType = Operand.Type.r64;
       if (b != null) {
         opType = b.getType();
+        if (opType == Operand.Type.r8 && a.getType() == Operand.Type.r64) {
+          opType = Operand.Type.r64;
+        }
       } else if (a != null) {
         opType = a.getType();
       }

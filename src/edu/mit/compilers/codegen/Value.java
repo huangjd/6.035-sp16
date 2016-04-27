@@ -4,7 +4,6 @@ public class Value extends Operand {
 
   static int counter = 130;
   public static final Value dummy = new Value(128, Type.r64);
-  public static final Value dummyb = new Value(129, Type.r8);
 
   public final int id;
   public final Type type;
@@ -34,7 +33,7 @@ public class Value extends Operand {
 
   @Override
   public String toString() {
-    if (id != dummy.id && id != dummyb.id) {
+    if (id != dummy.id) {
       return "r" + String.valueOf(id) + " " + type.toString();
     } else {
       return "_";
@@ -49,5 +48,10 @@ public class Value extends Operand {
   @Override
   public boolean isPointer() {
     return false;
+  }
+
+  @Override
+  public boolean equals(Object arg0) {
+    return arg0 instanceof Value && ((Value) arg0).id == id;
   }
 }

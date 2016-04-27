@@ -7,6 +7,7 @@ public class Register extends Operand {
   public final String name;
 
   public static final Register
+  rxx = new Register(-2, Type.r64, "r?? [temp]"),
   orbp = new Register(4, Type.r64, "rbp"), // used for omit-frame-pointer
   rip = new Register(-1, Type.r64, "rip"),
   rax = new Register(0, Type.r64, "rax"),
@@ -43,7 +44,7 @@ public class Register extends Operand {
   r14b = new Register(14, Type.r8, "r14b"),
   r15b = new Register(15, Type.r8, "r15b");
 
-  Register(int id, Type type, String name) {
+  private Register(int id, Type type, String name) {
     this.id = id;
     this.type = type;
     this.name = name;
@@ -82,5 +83,10 @@ public class Register extends Operand {
   @Override
   public boolean isPointer() {
     return false;
+  }
+
+  @Override
+  public boolean equals(Object arg0) {
+    return arg0 == this;
   }
 }

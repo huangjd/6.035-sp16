@@ -25,6 +25,7 @@ public class BasicStackAllocator extends BasicBlockTraverser {
         Memory stack = new Memory(Register.orbp, -bssoffset, Type.r64);
         bssoffset += ((Imm64) ins.a).val * (ins.dest.getType() == Operand.Type.r64 ? 8 : 1);
         relocationTable.put(ins.dest, stack);
+        ins.dest = stack;
       }
 
       if (ins.a instanceof Array) {

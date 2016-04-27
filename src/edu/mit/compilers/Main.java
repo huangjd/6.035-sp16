@@ -24,6 +24,11 @@ class Main {
       System.out.println("----- IR lower stack vars -----");
       System.out.print(ir.toString());
     }
+    new Lower3Operand().traverse(ir);
+    if (CLI.debug) {
+      System.out.println("----- IR lower 3 operands -----");
+      System.out.print(ir.toString());
+    }
 
     new Linearizer().traverse(ir);
     return ir;
