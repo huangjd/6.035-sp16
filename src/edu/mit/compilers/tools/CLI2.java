@@ -11,35 +11,35 @@ import java.util.Vector;
  *
  * @author  6.035 Staff (<tt>6.035-staff@mit.edu</tt>)
  */
-public class CLI {
+public class CLI2 {
 
-  public static void printUsage(String message) {
+  public void printUsage(String message) {
     System.err.println(message);
     System.err.println("Usage: run.sh [options] <filename>\n" +
-"Summary of options:\n" +
-"  -t <stage>              --target=<stage>           compile to the given stage\n" +
-"  -o <outfile>            --output=<outfile>         write output to <outfile>\n" +
-"  -O <(opt|-opt|all)...>  --opt=<(opt|-opt|all)...>  perform the listed optimizations\n" +
-"  -d                      --debug                    print debugging information\n" +
-"\n" +
-"Long description of options:\n" +
-"  -t <stage>          <stage> is one of \"scan\", \"parse\", \"inter\", or \"assembly\".\n" +
-"  --target=<stage>    Compilation will proceed to the given stage and halt there.\n" +
-"\n" +
-"  -d                  Print debugging information.  If this option is not given,\n" +
-"  --debug             then there will be no output to the screen on successful\n" +
-"                      compilation.\n" +
-"\n" +
-"  -O <optspec>        Perform the listed optimizations.  <optspec> is a comma-\n" +
-"  --opt=<optspec>     separated list of optimization names, or the special symbol\n" +
-"                      \"all\", meaning all possible optimizations.  You may\n" +
-"                      explicitly disable an optimization by prefixing its name\n" +
-"                      with '-'.\n" +
-"\n" +
-"  -o <outfile>        Write output to <outfile>.  If this option is not given,\n" +
-"  --output=<outfile>  output will be written to a file with the same base name as\n" +
-"                      the input file and the extension changed according to the\n" +
-"                      final stage executed.\n");
+        "Summary of options:\n" +
+        "  -t <stage>              --target=<stage>           compile to the given stage\n" +
+        "  -o <outfile>            --output=<outfile>         write output to <outfile>\n" +
+        "  -O <(opt|-opt|all)...>  --opt=<(opt|-opt|all)...>  perform the listed optimizations\n" +
+        "  -d                      --debug                    print debugging information\n" +
+        "\n" +
+        "Long description of options:\n" +
+        "  -t <stage>          <stage> is one of \"scan\", \"parse\", \"inter\", or \"assembly\".\n" +
+        "  --target=<stage>    Compilation will proceed to the given stage and halt there.\n" +
+        "\n" +
+        "  -d                  Print debugging information.  If this option is not given,\n" +
+        "  --debug             then there will be no output to the screen on successful\n" +
+        "                      compilation.\n" +
+        "\n" +
+        "  -O <optspec>        Perform the listed optimizations.  <optspec> is a comma-\n" +
+        "  --opt=<optspec>     separated list of optimization names, or the special symbol\n" +
+        "                      \"all\", meaning all possible optimizations.  You may\n" +
+        "                      explicitly disable an optimization by prefixing its name\n" +
+        "                      with '-'.\n" +
+        "\n" +
+        "  -o <outfile>        Write output to <outfile>.  If this option is not given,\n" +
+        "  --output=<outfile>  output will be written to a file with the same base name as\n" +
+        "                      the input file and the extension changed according to the\n" +
+        "                      final stage executed.\n");
   }
 
   /**
@@ -51,7 +51,40 @@ public class CLI {
    *        but you may wish to use it for your own purposes.
    * ASSEMBLY: produce assembly from the input.
    */
-    public enum Action {DEFAULT, ABOUT, SCAN, PARSE, INTER, ASSEMBLY};
+  public enum Action {DEFAULT, ABOUT, SCAN, PARSE, INTER, ASSEMBLY};
+
+  public enum Optimization {
+    CSE           (false,0, "cse"),
+    CP            (false,1, "cp"),
+    CF            (false,2, "cf"),
+    DSE           (false,3, "dse"),
+    DCE           (false,4, "dce"),
+    REGALLOC      (false,5, "regalloc"),
+    STACKALLOC    (false,6, "stackalloc"),
+    OMITRBP       (false,7, "omit_frame_pointer"),
+    PEEPHOLE      (false,8, "peephole"),
+    MOV           (false,9, "mov_elim"),
+    INLINE        (false,10, "inline"),
+    BRANCH        (false,11, "branch"),
+    LINEARIZED    (false,12, "jmp_target"),
+    TAILCALL      (false,13, "tailcall"),
+    GDSE          (false,14, "gdse"),
+    BOUNDCHECK    (false,15, "elim_boundcheck"),
+    END           (false,16, "\0")
+    ;
+
+    public final int index;
+    public final String name;
+    public final boolean online;
+
+    private Optimization(boolean online, int index, String name) {
+      this.index = index;
+      this.name = name;
+      this.online = online;
+    }
+  };
+
+  static int optcount = Optimization.END.index;
 
   /**
    * Array indicating which optimizations should be performed.  If
@@ -59,36 +92,36 @@ public class CLI {
    * named in the optnames[] parameter to parse with the same index
    * should be performed.
    */
-  public static boolean opts[];
+  public boolean opts[];
 
   /**
    * Vector of String containing the command-line arguments which could
    * not otherwise be parsed.
    */
-  public static Vector<String> extras;
+  public Vector<String> extras;
 
   /**
    * Name of the file to put the output in.
    */
-  public static String outfile;
+  public String outfile;
 
   /**
    * Name of the file to get input from.  This is null if the user didn't
    * provide a file name.
    */
-  public static String infile;
+  public String infile;
 
   /**
    * The target stage.  This should be one of the integer constants
    * defined elsewhere in this package.
    */
-  public static Action target;
+  public Action target;
 
   /**
    * The debug flag.  This is true if <tt>-debug</tt> was passed on
    * the command line, requesting debugging output.
    */
-  public static boolean debug;
+  public boolean debug;
 
   /**
    * Sets up default values for all of the
@@ -96,7 +129,7 @@ public class CLI {
    * to null, the target to DEFAULT, and the extra array to a new
    * empty Vector.
    */
-  static {
+  public CLI2() {
     outfile = null;
     infile = null;
     target = Action.DEFAULT;
@@ -121,17 +154,17 @@ public class CLI {
    * @param args Array of arguments passed in to the program's Main
    *   function.
    * @param optnames Ordered array of recognized optimization names.  */
-  public static void parse(String args[], String optnames[]) {
+  public void parse(String args[], String optnames[]) {
     String ext = ".out";
     String targetStr = "";
 
-    opts = new boolean[optnames.length];
+    opts = new boolean[optcount];
 
     for (int i = 0; i < args.length; i++) {
       if (args[i].equals("--debug") || args[i].equals("-d")) {
         debug = true;
       } else if (args[i].startsWith("--outfile=")) {
-          outfile = args[i].substring(10);
+        outfile = args[i].substring(10);
       } else if (args[i].equals("-o")) {
         if (i < (args.length - 1)) {
           outfile = args[i + 1];
@@ -163,19 +196,32 @@ public class CLI {
         } else {
           optsList = args[i].substring(6).split(",");
         }
-        for (int j = 0; j < optsList.length; j++) {
-          if (optsList[j].equals("all")) {
+        for (String element : optsList) {
+          if (element.equals("all")) {
             for (int k = 0; k < opts.length; k++) {
               opts[k] = true;
             }
-          } else {
-            for (int k = 0; k < optnames.length; k++) {
-              if (optsList[j].equals(optnames[k])) {
+          }
+        }
+
+        for (int j = 0; j < optsList.length; j++) {
+          if (!optsList[j].equals("all")) {
+            boolean ok = false;
+            for (Optimization opt : Optimization.values()) {
+              if (optsList[j].equals(opt.name)) {
                 opts[j] = true;
-              } else if (optsList[j].charAt(0) == '-' || 
-                         optsList[j].substring(1).equals(optnames[k])) {
+                ok = true;
+                break;
+              } else if (optsList[j].charAt(0) == '-' &&
+                  optsList[j].substring(1).equals(opt.name)) {
                 opts[j] = false;
+                ok = true;
+                break;
               }
+            }
+            if (!ok) {
+              printUsage("No such optimization " + optsList[j]);
+              throw new IllegalArgumentException(optsList[j]);
             }
           }
         }
@@ -191,20 +237,20 @@ public class CLI {
       else if (targetStr.equals("inter")) target = Action.INTER;
       else if (targetStr.equals("assembly")) target = Action.ASSEMBLY;
       else if (targetStr.equals("about")) {
-	  printUsage("Test run successful. Command line parameters: ");
-	  System.exit(0);
+        printUsage("Test run successful. Command line parameters: ");
+        System.exit(0);
       }
- 
+
       else {
         printUsage("Invalid target: " + targetStr);
         throw new IllegalArgumentException(targetStr);
       }
     }
-  
+
     // grab infile and lose extra args
     int i = 0;
     while (infile == null && i < extras.size()) {
-      String fn = (String) extras.elementAt(i);
+      String fn = extras.elementAt(i);
       if (fn.charAt(0) != '-') {
         infile = fn;
         extras.removeElementAt(i);

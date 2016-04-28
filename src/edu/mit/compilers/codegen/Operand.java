@@ -363,8 +363,8 @@ class Memory extends Operand {
         return bssoffset.toString() + "+" + String.valueOf(offset) + "*" + mult;
       }
     } else {
-      return (offset != 0 ? String.valueOf(offset) : "") + "(" + base.toString() + ","
-          + (index != null ? index.toString() : "") + "," + mult + ")";
+      return (offset != 0 ? String.valueOf(offset) : "") + "(" + base.toString()
+          + (index != null ? "," + index.toString() + "," + mult : "") + ")";
     }
   }
 

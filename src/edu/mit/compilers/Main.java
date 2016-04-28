@@ -7,11 +7,12 @@ import edu.mit.compilers.codegen.*;
 import edu.mit.compilers.common.ErrorLogger;
 import edu.mit.compilers.grammar.*;
 import edu.mit.compilers.nodes.ProgramNode;
-import edu.mit.compilers.tools.CLI;
-import edu.mit.compilers.tools.CLI.Action;
+import edu.mit.compilers.tools.CLI2;
 import edu.mit.compilers.visitors.IRPrinter;
 
 class Main {
+
+  static CLI2 CLI = new CLI2();
 
   static CFG backend(CFG ir) {
     new LowerPseudoOp1().traverse(ir);
@@ -34,7 +35,16 @@ class Main {
       System.out.println("----- IR resolve temp regs -----");
       System.out.print(ir.toString());
     }
-
+    new StackFrameSetup(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir);
+    if (CLI.debug) {
+      System.out.println("----- IR set up stack frame -----");
+      System.out.print(ir.toString());
+    }
+    new LowerPseudoOp2(CLI.opts[CLI2.Optimization.PEEPHOLE.index]).traverse(ir);
+    if (CLI.debug) {
+      System.out.println("----- IR lower pseudo op II -----");
+      System.out.print(ir.toString());
+    }
     new Linearizer().traverse(ir);
     return ir;
   }
@@ -58,7 +68,7 @@ class Main {
       PrintStream outputStream = CLI.outfile == null ? System.out : new java.io.PrintStream(new java.io.FileOutputStream(CLI.outfile));
 
       String filaName = CLI.infile.substring(CLI.infile.lastIndexOf('/') + 1);
-      if (CLI.target == Action.SCAN) {
+      if (CLI.target == CLI2.Action.SCAN) {
         DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
         scanner.setTrace(CLI.debug);
@@ -99,8 +109,8 @@ class Main {
             scanner.consume();
           }
         }
-      } else if (CLI.target == Action.PARSE ||
-          CLI.target == Action.DEFAULT) {
+      } else if (CLI.target == CLI2.Action.PARSE ||
+          CLI.target == CLI2.Action.DEFAULT) {
         DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
         DecafParser parser = new DecafParser(scanner);
@@ -109,7 +119,7 @@ class Main {
         if(parser.getError()) {
           System.exit(1);
         }
-      } else if (CLI.target == Action.INTER) {
+      } else if (CLI.target == CLI2.Action.INTER) {
         DecafScanner scanner =
             new DecafScanner(new DataInputStream(inputStream));
         DecafParser parser = new DecafParser(scanner);
@@ -124,7 +134,7 @@ class Main {
           p.printSymtab = true;
           p.enter(program);
         }
-      } else if (CLI.target == Action.ASSEMBLY) {
+      } else if (CLI.target == CLI2.Action.ASSEMBLY) {
         DecafScanner scanner = new DecafScanner(new DataInputStream(inputStream));
         DecafParser parser = new DecafParser(scanner);
         parser.setFilename(filaName);
