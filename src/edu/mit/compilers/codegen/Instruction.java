@@ -113,7 +113,7 @@ public class Instruction {
   public Instruction(Op op, Operand a, Operand b) {
     assert (op.isa());
     assert (a != Value.dummy && b != Value.dummy);
-    int operandNum = op.isaOerandNum();
+    int operandNum = op.isaOperandNum();
     switch (operandNum) {
     case 0:
       assert (a == null && b == null);
@@ -145,15 +145,27 @@ public class Instruction {
     case CALL:
       break;
     default:
-      if (op.isaOerandNum() == 2) {
+      if (op.isaOperandNum() == 2) {
         assert (!a.isImm64N32() && !b.isImm() && !(a.isMem() && b.isMem()));
-      } else if (op.isaOerandNum() == 1) {
+      } else if (op.isaOperandNum() == 1) {
         if (op.ctrlx() == 1 || op.ctrlx() == 2) {
           assert (a instanceof JumpTarget);
         } else {
           assert (a.isMem() || a.isReg());
         }
       }
+    }
+
+    int destWrite = op.isaWriteDest();
+    switch (destWrite) {
+    case 0:
+      break;
+    case 1:
+      assert (a.isReg() || a.isMem() || a instanceof Value);
+      break;
+    case 2:
+      assert (b.isReg() || b.isMem() || b instanceof Value);
+      break;
     }
 
     this.a = a;
@@ -171,16 +183,46 @@ public class Instruction {
     this(op, null, null);
   }
 
-  public Operand[] getDest() {
-    ArrayList<Operand> dests = new ArrayList<>();
-    int dest = op.isaWriteDest();
-    if (dest == 1) {
-      dests.add(a);
+  public Register[] getRegRead() {
+    if ((op == Op.SUB || op == Op.XOR) && a instanceof Register && a.equals(b) && a != Register.rxx) {
+      return new Register[]{};
     }
-    if (dest == 2) {
-      dests.add(b);
+    ArrayList<Register> regs = new ArrayList<Register>();
+    int readsrc = op.isaReadSrc();
+    if ((readsrc & 1) != 0 || a != null && a.isMem()) {
+      for (Register reg : a.getInvolvedRegs()) {
+        regs.add(reg);
+      }
     }
-    return (Operand[]) dests.toArray();
+    if ((readsrc & 2) != 0 || b != null && b.isMem()) {
+      for (Register reg : b.getInvolvedRegs()) {
+        regs.add(reg);
+      }
+    }
+
+    return regs.toArray(new Register[]{});
+  }
+
+  public Register[] getRegWrite() {
+    switch (op.isaWriteDest()) {
+    case 0:
+      return new Register[]{};
+    case 1:
+      if (a.isReg()) {
+        return a.getInvolvedRegs();
+      } else {
+        return new Register[]{};
+      }
+    case 2:
+      if (b.isReg()) {
+        return b.getInvolvedRegs();
+      } else {
+        return new Register[]{};
+      }
+    case 3:
+    default:
+      throw new RuntimeException();
+    }
   }
 
   @Override

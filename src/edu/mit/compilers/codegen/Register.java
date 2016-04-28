@@ -44,6 +44,9 @@ public class Register extends Operand {
   r14b = new Register(14, Type.r8, "r14b"),
   r15b = new Register(15, Type.r8, "r15b");
 
+  public static int calleeSavedRegs = 0b1111000000111000;
+  public static int callerSavedRegs = 0b0000111111000111;
+
   private Register(int id, Type type, String name) {
     this.id = id;
     this.type = type;
@@ -70,6 +73,27 @@ public class Register extends Operand {
     return new Register[]{};
   }
 
+  public static int[] regsToIndices(Register[] regs) {
+    int[] res = new int[regs.length];
+    for (int i = 0; i < regs.length; i++) {
+      res[i] = regs[i].id;
+    }
+    return res;
+  }
+
+  static Register[] regs = {rax, rcx, rdx, rbx, rbp, rsp, rdi, rsi, r8, r9, r10, r11, r12, r13, r14, r15};
+
+  public static Register[] indicesToRegs(int indices) {
+    Register[] res = new Register[Integer.bitCount(indices)];
+    int count = 0;
+    for (int i = 0; i < 16; i++) {
+      if ((indices & (1 << i)) != 0) {
+        res[count++] = regs[i];
+      }
+    }
+    return res;
+  }
+
   @Override
   public Type getType() {
     return type;
@@ -83,6 +107,15 @@ public class Register extends Operand {
   @Override
   public boolean isPointer() {
     return false;
+  }
+
+  @Override
+  Register[] getInvolvedRegs() {
+    if (this != rip) {
+      return new Register[]{this};
+    } else {
+      return new Register[]{};
+    }
   }
 
   @Override

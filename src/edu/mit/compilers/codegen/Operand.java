@@ -50,6 +50,10 @@ public abstract class Operand {
     return this instanceof Imm64 && !Util.isImm32(((Imm64) this).val);
   }
 
+  Register[] getInvolvedRegs() {
+    return new Register[]{};
+  }
+
   @Override
   public abstract boolean equals(Object arg0);
 }
@@ -367,6 +371,23 @@ class Memory extends Operand {
   @Override
   public boolean isPointer() {
     return true;
+  }
+
+  @Override
+  Register[] getInvolvedRegs() {
+    if (base != null) {
+      if (index != null) {
+        return new Register[]{base, index};
+      } else {
+        return new Register[]{base};
+      }
+    } else {
+      if (index != null) {
+        return new Register[]{index};
+      } else {
+        return new Register[]{};
+      }
+    }
   }
 
   @Override

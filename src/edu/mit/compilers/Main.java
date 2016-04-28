@@ -21,12 +21,17 @@ class Main {
     }
     new BasicStackAllocator().traverse(ir);
     if (CLI.debug) {
-      System.out.println("----- IR lower stack vars -----");
+      System.out.println("----- IR allocate stack vars -----");
       System.out.print(ir.toString());
     }
     new Lower3Operand().traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR lower 3 operands -----");
+      System.out.print(ir.toString());
+    }
+    new ResolveTempReg().reverseTraverse(ir);
+    if (CLI.debug) {
+      System.out.println("----- IR resolve temp regs -----");
       System.out.print(ir.toString());
     }
 

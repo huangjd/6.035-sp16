@@ -3,8 +3,20 @@ package edu.mit.compilers.common;
 import java.util.Iterator;
 
 public class Util {
+  public static boolean implies(boolean condition, boolean consequence) {
+    return (!condition || consequence);
+  }
+
   public static int roundUp(int value, int alignment) {
     return (value + alignment - 1) / alignment * alignment;
+  }
+
+  public static int roundDown(int value, int alignment) {
+    int remainder = value % alignment;
+    if (remainder < 0) {
+      remainder += alignment;
+    }
+    return value - remainder;
   }
 
   public static long roundUp(long value, long alignment) {

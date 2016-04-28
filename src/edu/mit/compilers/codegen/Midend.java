@@ -45,7 +45,7 @@ public class Midend extends Visitor {
   }
 
   CFG.CFGDesc getExitBlock() {
-    Operand s0 = compile(new StringLiteral("\"rip=0x%x: %d:%d: Array index out of bounds\\n\"", null).box());
+    Operand s0 = compile(new StringLiteral("\"rip=0x%x: Array index out of bounds\\n\"", null).box());
     Operand s1 = compile(new StringLiteral("\"rip=0x%x: Control reaches end of non-void function\\n\"", null).box());
     Operand s2 = compile(new StringLiteral("\"%s(): %d:%d: Array index out of bounds\\n\"", null).box());
     Operand s3 = compile(new StringLiteral("\"%s(): %d:%d: Control reaches end of non-void function\\n\"", null).box());
@@ -566,19 +566,20 @@ public class Midend extends Visitor {
     trueTarget = null;
     falseTarget = null;
 
-    t.deferPriority();
-    f.deferPriority();
-    exit.deferPriority();
-
     currentBB = t;
+    t.deferPriority();
+
     node.trueBlock.accept(this);
     currentBB.addJmp(exit);
 
     currentBB = f;
+    f.deferPriority();
+
     node.falseBlock.accept(this);
     currentBB.addJmp(exit);
 
     currentBB = exit;
+    exit.deferPriority();
   }
 
   @Override
@@ -596,15 +597,14 @@ public class Midend extends Visitor {
       falseTarget = f;
       compile(node.cond);
 
-      t.deferPriority();
-      f.deferPriority();
-
       currentBB = t;
+      t.deferPriority();
       trueTarget = pushTrueTarget;
       falseTarget = pushFalseTarget;
       compile(node.trueExpr);
 
       currentBB = f;
+      f.deferPriority();
       trueTarget = pushTrueTarget;
       falseTarget = pushFalseTarget;
       compile(node.falseExpr);
@@ -622,21 +622,20 @@ public class Midend extends Visitor {
       falseTarget = f;
       compile(node.cond);
 
-      t.deferPriority();
-      f.deferPriority();
-      exit.deferPriority();
-
       currentBB = t;
+      t.deferPriority();
       currentAssignDest = returnValue;
       compile(node.trueExpr);
       currentBB.addJmp(exit);
 
       currentBB = f;
+      f.deferPriority();
       currentAssignDest = returnValue;
       compile(node.falseExpr);
       currentBB.addJmp(exit);
 
       currentBB = exit;
+      exit.deferPriority();
     }
   }
 
@@ -696,7 +695,7 @@ public class Midend extends Visitor {
 
       currentBB = loop;
       currentBB.add(zero, Op.STORE, temp, i)
-      .add(i, Op.ADD, new Imm64(1), i)
+      .add(i, Op.SUB, new Imm64(1), i)
       .addJmp(Op.JGE, loop, exit);
 
       currentBB = exit;
@@ -801,10 +800,10 @@ public class Midend extends Visitor {
     Operand newValue = node.array.type.getElementType() == Type.INT ? new Value() : new Value(false);
     if (node.cop == CoOperand.PLUS) {
       currentBB.add(oldValue, Op.LOAD, base, index)
-          .add(newValue, Op.ADD, value, oldValue);
+      .add(newValue, Op.ADD, value, oldValue);
     } else if (node.cop == CoOperand.MINUS) {
       currentBB.add(oldValue, Op.LOAD, base, index)
-          .add(newValue, Op.SUB, value, oldValue);
+      .add(newValue, Op.SUB, value, oldValue);
     } else {
       newValue = value;
     }
@@ -863,7 +862,7 @@ public class Midend extends Visitor {
     BasicBlock pushTrueTarget = trueTarget;
     BasicBlock pushFalseTarget = falseTarget;
 
-    currentBB.add(Op.ALLOCATE, new Imm64(Math.max(6, node.args.size()) - 6));
+    currentBB.add(Op.ALLOCATE, new Imm64((Math.max(6, node.args.size()) - 6) * 8));
     ArrayList<Operand> args = new ArrayList<>();
     for (ExpressionNode e : node.args) {
       trueTarget = null;
@@ -872,13 +871,6 @@ public class Midend extends Visitor {
       assert (value != null);
       args.add(value);
     }
-
-    // final int offset = (Math.max(6, node.args.size()) - 6) * 8;
-    /*BasicBlock next = new BasicBlock();
-    currentBB.add(Op.JMP);
-    currentBB.taken = next;
-
-    currentBB = next;*/
 
     returnValue = pushReturnValue;
 
@@ -892,63 +884,6 @@ public class Midend extends Visitor {
       currentBB.add(new Instruction(Op.TEST, Register.rax, Register.rax));
       currentBB.addJmp(Op.JNE, trueTarget, falseTarget);
     }
-
-    /*.add(Op.MOV, Register.rax, new Memory(Register.rsp, offset, Operand.Type.r64))
-    .add(Op.MOV, Register.rcx, new Memory(Register.rsp, offset + 8, Operand.Type.r64))
-    .add(Op.MOV, Register.rdx, new Memory(Register.rsp, offset + 16, Operand.Type.r64))
-    .add(Op.MOV, Register.rdi, new Memory(Register.rsp, offset + 24, Operand.Type.r64))
-    .add(Op.MOV, Register.rsi, new Memory(Register.rsp, offset + 32, Operand.Type.r64))
-    .add(Op.MOV, Register.r8, new Memory(Register.rsp, offset + 40, Operand.Type.r64))
-    .add(Op.MOV, Register.r9, new Memory(Register.rsp, offset + 48, Operand.Type.r64))
-    .add(Op.MOV, Register.r10, new Memory(Register.rsp, offset + 56, Operand.Type.r64))
-    .add(Op.MOV, Register.r11, new Memory(Register.rsp, offset + 64, Operand.Type.r64));
-     */
-
-
-    /*switch (node.args.size()) { // fallthrough
-    default:
-      for (int i = 6; i < node.args.size(); i++) {
-        currentBB.add(new Memory(Register.rsp, (i - 6) * 8, Operand.Type.r64), Op.MOV, args.get(i));
-      }
-    case 6:
-      currentBB.add(Op.MOV, args.get(5), Register.r9);
-    case 5:
-      currentBB.add(Op.MOV, args.get(4), Register.r8);
-    case 4:
-      currentBB.add(Op.MOV, args.get(3), Register.rcx);
-    case 3:
-      currentBB.add(Op.MOV, args.get(2), Register.rdx);
-    case 2:
-      currentBB.add(Op.MOV, args.get(1), Register.rsi);
-    case 1:
-      currentBB.add(Op.MOV, args.get(0), Register.rdi);
-    case 0:
-    }
-    if (node.func.isCallout && (node.func.id.contains("printf") || node.func.id.contains("scanf"))) {
-      currentBB.add(Op.XOR, Register.rax, Register.rax);
-    }
-    currentBB.add(Op.CALL, new Symbol(node.---
-    if (node.func.returnType != Type.NONE) {
-      if (currentAssignDest != null) {
-        returnValue = currentAssignDest;
-        currentAssignDest = null;
-      } else {
-        returnValue = node.func.returnType == Type.INT ? new Value() : new Value(false);
-      }
-      currentBB.add(Op.MOV, Register.rax, returnValue);
-    }
-
-    currentBB.add(Op.MOV, new Memory(Register.rsp, offset + 64, Operand.Type.r64), Register.r11)
-    .add(Op.MOV, new Memory(Register.rsp, offset + 56, Operand.Type.r64), Register.r10)
-    .add(Op.MOV, new Memory(Register.rsp, offset + 48, Operand.Type.r64), Register.r9)
-    .add(Op.MOV, new Memory(Register.rsp, offset + 40, Operand.Type.r64), Register.r8)
-    .add(Op.MOV, new Memory(Register.rsp, offset + 32, Operand.Type.r64), Register.rsi)
-    .add(Op.MOV, new Memory(Register.rsp, offset + 24, Operand.Type.r64), Register.rdi)
-    .add(Op.MOV, new Memory(Register.rsp, offset + 16, Operand.Type.r64), Register.rdx)
-    .add(Op.MOV, new Memory(Register.rsp, offset + 8, Operand.Type.r64), Register.rcx)
-    .add(Op.MOV, new Memory(Register.rsp, offset, Operand.Type.r64), Register.rax)
-
-    .add(Value.dummy, Op.DEALLOCATE, new Imm64(9 + Math.max(6, node.args.size()) - 6));*/
   }
 
   @Override
@@ -1020,14 +955,13 @@ public class Midend extends Visitor {
     trueTarget = null;
     falseTarget = null;
 
-    body.deferPriority();
-    exit.deferPriority();
-
     currentBB = body;
+    body.deferPriority();
     node.body.accept(this);
     currentBB.addJmp(cond);
 
     currentBB = exit;
+    exit.deferPriority();
 
     breakBB = pushBreak;
     continueBB = pushContinue;

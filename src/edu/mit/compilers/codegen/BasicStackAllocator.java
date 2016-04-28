@@ -2,7 +2,6 @@ package edu.mit.compilers.codegen;
 
 import java.util.HashMap;
 
-import edu.mit.compilers.codegen.CFG.CFGDesc;
 import edu.mit.compilers.codegen.Operand.Type;
 import edu.mit.compilers.common.Util;
 
@@ -21,9 +20,9 @@ public class BasicStackAllocator extends BasicBlockTraverser {
       //Memory a, b1, dest;
       if (ins.op == Op.LOCAL_ARRAY_DECL) {
         assert (!relocationTable.containsKey(ins.dest));
-        bssoffset = Util.roundUp(bssoffset, 16);
-        Memory stack = new Memory(Register.orbp, -bssoffset, Type.r64);
-        bssoffset += ((Imm64) ins.a).val * (ins.dest.getType() == Operand.Type.r64 ? 8 : 1);
+        bssoffset -= ((Imm64) ins.a).val * (ins.dest.getType() == Operand.Type.r64 ? 8 : 1);
+        bssoffset = Util.roundDown(bssoffset, 16);
+        Memory stack = new Memory(Register.orbp, bssoffset, Type.r64);
         relocationTable.put(ins.dest, stack);
         ins.dest = stack;
       }
@@ -39,14 +38,14 @@ public class BasicStackAllocator extends BasicBlockTraverser {
         Memory stack = relocationTable.get(b2);
         if (stack == null) {
           if (b2.getType() == Operand.Type.r64) {
-            bssoffset = Util.roundUp(bssoffset, 8);
+            bssoffset = Util.roundDown(bssoffset, 8);
           }
-          stack = new Memory(Register.orbp, -bssoffset, b2.getType());
           if (b2.getType() == Operand.Type.r64) {
-            bssoffset += 8;
+            bssoffset -= 8;
           } else {
-            bssoffset += 1;
+            bssoffset -= 1;
           }
+          stack = new Memory(Register.orbp, bssoffset, b2.getType());
           relocationTable.put(b2, stack);
         }
         ins.b = stack;
@@ -56,14 +55,14 @@ public class BasicStackAllocator extends BasicBlockTraverser {
         Memory stack = relocationTable.get(a2);
         if (stack == null) {
           if (a2.getType() == Operand.Type.r64) {
-            bssoffset = Util.roundUp(bssoffset, 8);
+            bssoffset = Util.roundDown(bssoffset, 8);
           }
-          stack = new Memory(Register.orbp, -bssoffset, a2.getType());
           if (a2.getType() == Operand.Type.r64) {
-            bssoffset += 8;
+            bssoffset -= 8;
           } else {
-            bssoffset += 1;
+            bssoffset -= 1;
           }
+          stack = new Memory(Register.orbp, bssoffset, a2.getType());
           relocationTable.put(a2, stack);
         }
         ins.a = stack;
@@ -73,28 +72,24 @@ public class BasicStackAllocator extends BasicBlockTraverser {
         Memory stack = relocationTable.get(d2);
         if (stack == null) {
           if (d2.getType() == Operand.Type.r64) {
-            bssoffset = Util.roundUp(bssoffset, 8);
+            bssoffset = Util.roundDown(bssoffset, 8);
           }
-          stack = new Memory(Register.orbp, -bssoffset, d2.getType());
           if (d2.getType() == Operand.Type.r64) {
-            bssoffset += 8;
+            bssoffset -= 8;
           } else {
-            bssoffset += 1;
+            bssoffset -= 1;
           }
+          stack = new Memory(Register.orbp, bssoffset, d2.getType());
           relocationTable.put(d2, stack);
         }
         ins.dest = stack;
       }
     }
-
   }
 
   @Override
-  public void traverse(CFG cfg) {
-    for (CFGDesc b : cfg) {
-      relocationTable = new HashMap<>();
-      bssoffset = 0;
-      traverse(b.entry);
-    }
+  public void reset() {
+    relocationTable = new HashMap<>();
+    bssoffset = 0;
   }
 }

@@ -9,10 +9,10 @@ public enum Op {
    * 1    Can be used as Pseudo Op
    * 2 3  ISA operand count (0-3)
    * 4-5  set if operand 1, 2, 3 is written to, or 0 none
-   * 7    set if additional reg is written to (call, idiv)
+   * 6-7  set if operand 1, 2 is read
    * 8    Non ISA dest is dummy? (either must be dummy or mustn't be)
    * 9 10 Non ISA operand count (0-3)
-   * 11
+   * 11   set if additional reg is written to (call, idiv)
    * 12   has suffix
    * 13   has XMM form
    * 14   has CSE side effect / Not CSE-able
@@ -29,25 +29,28 @@ public enum Op {
    * 28-31 Pseudo op may not appear after this stage in fixed pipeline
    *                             C   8   4   0   C   8   4   0
    */
-  ADD("add",                0b01110000001011000011010000101011),
-  SUB("sub",                0b01110000000011000011010000101011),
-  IMUL("imul",              0b01110000001001000011010000101011),
-  XOR("xor",                0b01110000001011000011010000101011),
-  SAL("sal",                0b01110000000011000011010000101011),
-  SAR("sar",                0b01110000000011000011010000101011),
+  ADD("add",                0b01110000001011000011010011101011),
+  SUB("sub",                0b01110000000011000011010011101011),
+  IMUL("imul",              0b01110000001001000011010011101011),
+  XOR("xor",                0b01110000001011000011010011101011),
+  SAL("sal",                0b01110000000011000011010011101011),
+  SAR("sar",                0b01110000000011000011010011101011),
 
-  IDIV("idiv",              0b00000000000001001001000010000101),
+  IDIV("idiv",              0b01110000000001001001101101000111),
 
-  NOT("not",                0b01110000000011000001001000010111),
-  NEG("neg",                0b01110000000011000001001000010111),
-  INC("inc",                0b01110000000011000001001000010111),
-  DEC("dec",                0b01110000000011000001001000010111),
+  NOT("not",                0b01110000000011000001001001010111),
+  NEG("neg",                0b01110000000011000001001001010111),
+  INC("inc",                0b01110000000011000001001001010111),
+  DEC("dec",                0b01110000000011000001001001010111),
 
-  MOV("mov",                0b01110000000000000011001000101011),
-  LEA("lea",                0b01110000000000000001001000101011),
+  MOV("mov",                0b01110000000000000011001001101011),
+  LEA("lea",                0b01110000000000000001001001101011),
 
-  CMP("cmp",                0b01110000001011001001010100001011),
-  TEST("test",              0b01110000001011001001010100001011),
+  PUSH("push",              0b00000000000000000001000001000101),
+  POP("pop",                0b00000000000000000001000000010101),
+
+  CMP("cmp",                0b01110000000011001001010111001011),
+  TEST("test",              0b01110000001011001001010111001011),
 
   SETE("sete",              0b01110001000100000000000000010111),
   SETNE("setne",            0b01110001000100000000000000010111),
@@ -56,12 +59,12 @@ public enum Op {
   SETL("setl",              0b01110001000100000000000000010111),
   SETLE("setle",            0b01110001000100000000000000010111),
 
-  CMOVE("cmove",            0b00000010000100000001000000101001),
-  CMOVNE("cmovne",          0b00000010000100000001000000101001),
-  CMOVG("cmovg",            0b00000010000100000001000000101001),
-  CMOVGE("cmovge",          0b00000010000100000001000000101001),
-  CMOVL("cmovl",            0b00000010000100000001000000101001),
-  CMOVLE("cmovle",          0b00000010000100000001000000101001),
+  CMOVE("cmove",            0b00000010000100000001000001101001),
+  CMOVNE("cmovne",          0b00000010000100000001000001101001),
+  CMOVG("cmovg",            0b00000010000100000001000001101001),
+  CMOVGE("cmovge",          0b00000010000100000001000001101001),
+  CMOVL("cmovl",            0b00000010000100000001000001101001),
+  CMOVLE("cmovle",          0b00000010000100000001000001101001),
 
   JE("je",                  0b00000100000100010000010100000111),
   JNE("jne",                0b00000100000100010000010100000111),
@@ -71,8 +74,8 @@ public enum Op {
   JLE("jle",                0b00000100000100010000010100000111),
 
   JMP("jmp",                0b00000000000000100000001100000111),
-  CALL("call",              0b00000000000001001100000010000101),
-  RET("ret",                0b00000000000000110000000100000001),
+  CALL("call",              0b00000000000001001100100000000101),
+  RET("ret",                0b00000000000000110000000000000001),
 
   NOP("nop",                0b11110000000000000000000100000011),
 
@@ -80,18 +83,18 @@ public enum Op {
   //                             C   8   4   0   C   8   4   0
   LOCAL_ARRAY_DECL(
       "local_array",        0b11010000000000000001001000000010),
-  FAKE_DIV("xdiv",          0b00000000000001001001010010000010), // d = a / b (div|mod)
+  FAKE_DIV("xdiv",          0b00000000000001001001110000000010), // d = a / b (div|mod)
   LOAD("load",              0b01110000000000000001010000000010), // d = a[b]
   STORE("store",            0b01110000000000001101010000000010), // a[b] = d
-  FAKE_CALL("xcall",        0b00000000000001000001001010000010), // d = call $a (args...) #xmm used
+  FAKE_CALL("xcall",        0b00000000000001000001101000000010), // d = call $a (args...) #xmm used
   OUT_OF_BOUNDS(
       "out_of_bounds",      0b11110000000000000000010000000010), // d = funcName a = line, b = col
   CONTROL_REACHES_END(
       "control_reaches_end",0b11110000000000000000010000000010), // d = funcName a = line, b = col
   ALLOCATE("allocate",      0b11010000000000000000001100000010), // a = Imm64 (set up for func call)
-  TEMP_REG("temp_reg",      0b11110000000000000001000000000010),
+  TEMP_REG("temp_reg",      0b10100000000000000001000000000010),
   END_TEMP_REG(
-      "end_temp_reg",       0b11110000000000000000000100000010),
+      "end_temp_reg",       0b10100000000000000000000100000010),
   BEGIN_XCALL("begin_xcall",0b10100000000000000000000100000010),
   BEGIN_XDIV("begin_xdiv",  0b10100000000000000000000100000010),
   END_XCALL("end_xcall",    0b10100000000000000000000100000010),
@@ -109,6 +112,18 @@ public enum Op {
   Op(String s, int property) {
     mnemonics = s;
     this.property = property;
+
+    assert(isa() || pseudoOp());
+    assert (Util.implies(isa() && !pseudoOp(), !pseudoOpDestMustBeDummy() && pseudoOpOperandNun() == 0));
+    assert (Util.implies(!isa() && pseudoOp(), isaOperandNum() == 0 && isaWriteDest() == 0 && isaReadSrc() == 0));
+    assert (isaOperandNum() <= 2);
+
+    int readSrc = isaReadSrc();
+    assert ((readSrc & 2) == 0 || isaOperandNum() == 2);
+    assert ((readSrc & 1) == 0 || isaOperandNum() >= 1);
+
+    assert (Util.implies(setFlag(), invalidateFlag()));
+    assert (Util.implies(communicative(), isa() && isaOperandNum() == 2));
   }
 
   public boolean isa() {
@@ -119,16 +134,16 @@ public enum Op {
     return Util.extractNBit(property, 1, 1) != 0;
   }
 
-  public int isaOerandNum() {
+  public int isaOperandNum() {
     return Util.extractNBit(property, 2, 2);
   }
 
   public int isaWriteDest() {
-    return Util.extractNBit(property, 4, 3);
+    return Util.extractNBit(property, 4, 2);
   }
 
-  public boolean special() {
-    return Util.extractNBit(property, 7, 1) != 0;
+  public int isaReadSrc() {
+    return Util.extractNBit(property, 6, 2);
   }
 
   public boolean pseudoOpDestMustBeDummy() {
@@ -139,6 +154,9 @@ public enum Op {
     return Util.extractNBit(property, 9, 2);
   }
 
+  public boolean special() {
+    return Util.extractNBit(property, 11, 1) != 0;
+  }
   public boolean hasSuffix() {
     return Util.extractNBit(property, 12, 1) != 0;
   }

@@ -2,7 +2,9 @@ package edu.mit.compilers.codegen;
 
 public abstract class BasicBlockTraverser extends BasicBlockVisitor<BasicBlockTraverser.T> {
 
-  public class T implements Transformable<T> {
+  public static class T implements Transformable<T> {
+    public final static T t = new T();
+
     @Override
     public T transform(T t) {
       return t;
@@ -17,7 +19,7 @@ public abstract class BasicBlockTraverser extends BasicBlockVisitor<BasicBlockTr
 
   @Override
   public T getInitValue() {
-    return new T();
+    return T.t;
   }
 
   protected abstract void visit(BasicBlock b);

@@ -11,10 +11,10 @@ public class Lower3Operand extends BasicBlockTraverser {
     for (int i = 0; i < b.size(); i++) {
       Instruction ins = b.get(i);
       assert (ins.twoOperand || ins.op.stage() >= stage);
-      // assert (ins.dest == null || ins.dest.isReg() || ins.dest.isMem() ||
-      // ins.dest == Value.dummy);
 
-      if (!ins.twoOperand && ins.op.isa()) {
+      if (ins.op == Op.IDIV) {
+        b.set(i, new Instruction(Op.IDIV, ins.a));
+      } else if (!ins.twoOperand && ins.op.isa()) {
         if (ins.a == null && ins.b == null) {
           if (ins.dest != Value.dummy) {
             b.set(i, new Instruction(ins.op, ins.dest));
@@ -80,14 +80,18 @@ public class Lower3Operand extends BasicBlockTraverser {
             b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
           }
         } else if (ins.dest == Value.dummy) {
-          if (ins.a.isImm64N32() || ins.a.isMem() && ins.b.isMem()) {
+          if (ins.b.isReg() && !ins.a.isImm64N32() || ins.b.isMem() && (ins.a.isImm32() || ins.a.isReg())) {
+            b.set(i, new Instruction(ins.op, ins.a, ins.b));
+          } else if (ins.b.isReg() || ins.b.isMem()) {
             b.set(i, new Instruction(Op.MOV, ins.a, Register.rax));
             b.add(++i, new Instruction(ins.op, Register.rax, ins.b));
-          } else if (ins.b.isImm64N32()){
+          } else if (ins.b.isImm32() && ins.op.communicative()) {
+            b.set(i, new Instruction(ins.op, ins.b, ins.a));
+          } else if (ins.b.isImm()) {
             b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
             b.add(++i, new Instruction(ins.op, ins.a, Register.rax));
           } else {
-            b.set(i, new Instruction(ins.op, ins.a, ins.b));
+            throw new RuntimeException();
           }
         } else if (ins.b == null) {
           if (ins.dest.isMem() && ins.a.isMem()) {
@@ -137,23 +141,22 @@ public class Lower3Operand extends BasicBlockTraverser {
             b.add(++i, new Instruction(ins.op, Register.rax, Register.rax));
             b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
           } else if (ins.a.isReg() || ins.a.isImm32()) {
-            if (!ins.b.isMem()) {
-              b.set(i, new Instruction(Op.MOV, ins.b, ins.dest));
-              b.add(++i, new Instruction(ins.op, ins.a, ins.dest));
-            } else {
-              b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
-              b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
-              b.add(++i, new Instruction(ins.op, ins.a, ins.dest));
-            }
-          } else if (ins.b.isReg() || ins.b.isImm32()) {
-            b.set(i, new Instruction(Op.MOV, ins.a, Register.rax));
-            b.add(++i, new Instruction(Op.MOV, ins.b, ins.dest));
-            b.add(++i, new Instruction(ins.op, Register.rax, ins.dest));
+            b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
+            b.add(++i, new Instruction(ins.op, ins.a, Register.rax));
+            b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
+          } else if (ins.a.isMem()) {
+            b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
+            b.add(++i, new Instruction(ins.op, ins.a, Register.rax));
+            b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
           } else if (ins.a.isImm64N32()) {
             if (ins.op.communicative()) {
               b.set(i, new Instruction(Op.MOV, ins.a, Register.rax));
               b.add(++i, new Instruction(ins.op, ins.b, Register.rax));
               b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
+            } else if (ins.b.isReg() || ins.b.isImm32()) {
+              b.add(++i, new Instruction(Op.MOV, ins.b, ins.dest));
+              b.set(i, new Instruction(Op.MOV, ins.a, Register.rax));
+              b.add(++i, new Instruction(ins.op, Register.rax, ins.dest));
             } else {
               b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
               b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
@@ -161,9 +164,7 @@ public class Lower3Operand extends BasicBlockTraverser {
               b.add(++i, new Instruction(ins.op, Register.rax, ins.dest));
             }
           } else {
-            b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
-            b.add(++i, new Instruction(ins.op, ins.a, Register.rax));
-            b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
+            throw new RuntimeException();
           }
         }
       } else if (ins.op == Op.LOAD) {
@@ -184,34 +185,36 @@ public class Lower3Operand extends BasicBlockTraverser {
           throw new RuntimeException("Can load to non reg non mem");
         }
 
+        i--;
+
         if (ins.b.isReg()) {
           index = (Register) ins.b;
         } else if (ins.b.isMem() || ins.b.isImm64N32()) {
-          b.add(i++, new Instruction(Op.MOV, ins.b, Register.rax));
+          b.add(++i, new Instruction(Op.MOV, ins.b, Register.rax));
           offset = 0;
           index = Register.rax;
         } else if (ins.b.isImm32()) {
-          offset += ins.b instanceof Imm8 ? ((Imm8) ins.b).val : ((Imm64) ins.b).val;
+          offset += ins.b instanceof Imm8 ? ((Imm8) ins.b).val : ((Imm64) ins.b).val * 8;
         } else {
           throw new RuntimeException();
         }
 
         if (ins.a instanceof Memory && ((Memory) ins.a).index != null) {
           if (ins.b.isMem() || ins.b.isImm64N32()) {
-            b.add(i++, new Instruction(Op.ADD, index, Register.rax));
+            b.add(++i, new Instruction(Op.ADD, index, Register.rax));
           } else if (ins.b.isReg()) {
-            b.add(i++, new Instruction(Op.LEA, ins.a, Register.rax));
+            b.add(++i, new Instruction(Op.LEA, ins.a, Register.rax));
             base = Register.rax;
           }
         }
 
         if (ins.a instanceof Memory) {
-          b.set(i++, new Instruction(Op.MOV, new Memory(base, index, offset, type), ins.dest));
+          b.set(++i, new Instruction(Op.MOV, new Memory(base, index, offset, type), ins.dest));
         } else if (ins.a instanceof BSSObject) {
           if (index != null) {
-            b.set(i++, new Instruction(Op.MOV, new Memory((BSSObject) ins.a, index, type), ins.dest));
+            b.set(++i, new Instruction(Op.MOV, new Memory((BSSObject) ins.a, index, type), ins.dest));
           } else {
-            b.set(i++, new Instruction(Op.MOV, new Memory((BSSObject) ins.a, offset, type), ins.dest));
+            b.set(++i, new Instruction(Op.MOV, new Memory((BSSObject) ins.a, offset, type), ins.dest));
           }
         }
       } else if (ins.op == Op.STORE) {
@@ -225,47 +228,47 @@ public class Lower3Operand extends BasicBlockTraverser {
           offset = ((Memory) ins.a).offset;
         }
 
+        i--;
+
         if (ins.b.isReg()) {
           index = (Register) ins.b;
         } else if (ins.b.isMem() || ins.b.isImm64N32()) {
-          b.add(i++, new Instruction(Op.MOV, ins.b, Register.rax));
+          b.add(++i, new Instruction(Op.MOV, ins.b, Register.rax));
           offset = 0;
           index = Register.rax;
         } else if (ins.b.isImm32()) {
-          offset += ins.b instanceof Imm8 ? ((Imm8) ins.b).val : ((Imm64) ins.b).val;
+          offset += ins.b instanceof Imm8 ? ((Imm8) ins.b).val : ((Imm64) ins.b).val * 8;
         } else {
           throw new RuntimeException();
         }
 
         if (ins.a instanceof Memory && ((Memory) ins.a).index != null) {
           if (ins.b.isMem() || ins.b.isImm64N32()) {
-            b.add(i++, new Instruction(Op.ADD, index, Register.rax));
+            b.add(++i, new Instruction(Op.ADD, index, Register.rax));
           } else if (ins.b.isReg()) {
-            b.add(i++, new Instruction(Op.LEA, ins.a, Register.rax));
+            b.add(++i, new Instruction(Op.LEA, ins.a, Register.rax));
             base = Register.rax;
           }
         }
 
-        Operand prevDist = ins.dest;
         boolean needTemp = !(ins.dest.isReg() || ins.dest.isImm32());
         if (needTemp) {
-          b.add(i++, new Instruction(Register.rxx, Op.TEMP_REG));
-          b.add(i++, new Instruction(Op.MOV, ins.dest, Register.rxx));
+          b.add(++i, new Instruction(Register.rxx, Op.TEMP_REG));
+          b.add(++i, new Instruction(Op.MOV, ins.dest, Register.rxx));
           ins.dest = Register.rxx;
         }
 
         if (ins.a instanceof Memory) {
-          b.set(i++, new Instruction(Op.MOV, ins.dest, new Memory(base, index, offset, type)));
+          b.set(++i, new Instruction(Op.MOV, ins.dest, new Memory(base, index, offset, type)));
         } else if (ins.a instanceof BSSObject) {
           if (index != null) {
-            b.set(i++, new Instruction(Op.MOV, ins.dest, new Memory((BSSObject) ins.a, index, type)));
+            b.set(++i, new Instruction(Op.MOV, ins.dest, new Memory((BSSObject) ins.a, index, type)));
           } else {
-            b.set(i++, new Instruction(Op.MOV, ins.dest, new Memory((BSSObject) ins.a, offset, type)));
+            b.set(++i, new Instruction(Op.MOV, ins.dest, new Memory((BSSObject) ins.a, offset, type)));
           }
         }
         if (needTemp) {
-          b.add(i++, new Instruction(Op.MOV, Register.rxx, prevDist));
-          b.add(i++, new Instruction(Value.dummy, Op.END_TEMP_REG));
+          b.add(++i, new Instruction(Value.dummy, Op.END_TEMP_REG));
         }
       }
     }

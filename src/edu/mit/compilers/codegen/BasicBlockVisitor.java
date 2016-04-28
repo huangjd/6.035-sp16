@@ -36,12 +36,14 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
 
   public void traverse(CFG cfg) {
     for (CFGDesc b : cfg) {
+      reset();
       traverse(b.entry);
     }
   }
 
   public void reverseTraverse(CFG cfg) {
     for (CFGDesc b : cfg) {
+      reset();
       reverseTraverse(b.exits);
     }
   }
@@ -126,4 +128,8 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
   public abstract T getInitValue();
 
   public abstract T visit(BasicBlock b, T in);
+
+  public void reset() {
+    // Optional operation for each function BB
+  }
 }
