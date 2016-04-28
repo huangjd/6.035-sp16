@@ -15,6 +15,7 @@ class Main {
   static CLI2 CLI = new CLI2();
 
   static CFG backend(CFG ir) {
+    new UnreachableBlockRemoval().traverse(ir);
     new LowerPseudoOp1().traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR lower pseudo op I -----");
@@ -45,7 +46,7 @@ class Main {
       System.out.println("----- IR lower pseudo op II -----");
       System.out.print(ir.toString());
     }
-    new Linearizer().traverse(ir);
+    // new Linearizer().traverse(ir);
     return ir;
   }
 

@@ -56,7 +56,8 @@ public class CFG extends ArrayList<CFG.CFGDesc> {
 
       @Override
       public int compare(Operand arg0, Operand arg1) {
-        return ((StringObject) arg0).symbol.compareTo(((StringObject) arg1).symbol);
+        return (new Integer(((StringObject) arg0).symbol.substring(3)))
+            .compareTo(new Integer(((StringObject) arg1).symbol.substring(3)));
       }
     });
     for (Operand operand : a) {

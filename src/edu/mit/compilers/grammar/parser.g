@@ -475,11 +475,13 @@ call returns [Call e = null] {
           }
         } 
       }
-    } catch (TypeException ex) {
+    } catch (NullPointerException ex) {
+    }catch (TypeException ex) {
       ErrorLogger.logError(ex);
     } catch (ArgumentsException ex) {
       ErrorLogger.logError(ex);
-    } catch (NullPointerException ex) {
+    } catch (Exception ex) { 
+      ErrorLogger.logError(ex);
     }
   }
 };

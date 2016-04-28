@@ -228,22 +228,26 @@ public class Instruction {
   @Override
   public String toString() {
     if (twoOperand) {
-      Operand.Type opType = Operand.Type.r64;
-      if (b != null) {
-        opType = b.getType();
-        if (opType == Operand.Type.r8 && a.getType() == Operand.Type.r64) {
+      if (op.hasSuffix()) {
+        Operand.Type opType;
+        if (b != null) {
+          opType = b.getType();
+        } else if (a != null) {
+          opType = a.getType();
+        } else {
           opType = Operand.Type.r64;
         }
-      } else if (a != null) {
-        opType = a.getType();
+        return op.toString(opType) + '\t' + (a != null ? a.toString(opType) : "")
+            + (b != null ? ", " + b.toString(opType) : "");
+      } else {
+        return op.toString() + '\t' + (a != null ? a.toString() : "")
+            + (b != null ? ", " + b.toString() : "");
       }
-      return op.toString(opType) + '\t' + (a != null ? a.toString() : "")
-          + (b != null ? ", " + b.toString() : "");
     } else {
       Operand.Type opType = dest.getType();
-      return dest.toString() + " =\t" + op.toString(opType) +
-          '\t' + (a != null ? a.toString() : "") +
-          (b != null ? ", " + b.toString() : "");
+      return dest.toString(opType) + " =\t" + op.toString(opType) +
+          '\t' + (a != null ? a.toString(opType) : "") +
+          (b != null ? ", " + b.toString(opType) : "");
     }
   }
 }

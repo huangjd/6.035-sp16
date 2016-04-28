@@ -82,6 +82,7 @@ public class Register extends Operand {
   }
 
   static Register[] regs = {rax, rcx, rdx, rbx, rbp, rsp, rdi, rsi, r8, r9, r10, r11, r12, r13, r14, r15};
+  static Register[] regs8 = {al, cl, dl, bl, bpl, spl, dil, sil, r8b, r9b, r10b, r11b, r12b, r13b, r14b, r15b};
 
   public static Register[] indicesToRegs(int indices) {
     Register[] res = new Register[Integer.bitCount(indices)];
@@ -121,5 +122,20 @@ public class Register extends Operand {
   @Override
   public boolean equals(Object arg0) {
     return arg0 == this;
+  }
+
+  @Override
+  public String toString(Type type) {
+    if (this == rxx || this == rip || this == orbp) {
+      return toString();
+    }
+    switch(type) {
+    case r8:
+      return regs8[id].toString();
+    case r64:
+      return regs[id].toString();
+    default:
+      throw new RuntimeException();
+    }
   }
 }
