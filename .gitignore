@@ -3,3 +3,5 @@ bin/
 classes/
 autogen/
 *~
+*.jar
+*.class
