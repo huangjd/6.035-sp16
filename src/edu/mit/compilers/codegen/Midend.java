@@ -158,6 +158,11 @@ public class Midend extends Visitor {
         symtab.insert(v, arg);
         i++;
       }
+      currentBB.add(new Value(), Op.MOV, Register.rbx);
+      currentBB.add(new Value(), Op.MOV, Register.r12);
+      currentBB.add(new Value(), Op.MOV, Register.r13);
+      currentBB.add(new Value(), Op.MOV, Register.r14);
+      currentBB.add(new Value(), Op.MOV, Register.r15);
       node.body.accept(this);
       symtab = symtab.unscope();
       isMain = false;

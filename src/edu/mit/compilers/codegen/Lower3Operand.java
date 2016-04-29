@@ -69,6 +69,9 @@ public class Lower3Operand extends BasicBlockTraverser {
           case MOV:
             z = x;
             break;
+          case MOVSX:
+            z = x;
+            break;
           default:
             throw new RuntimeException();
           }

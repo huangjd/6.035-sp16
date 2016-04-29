@@ -237,6 +237,7 @@ public class Instruction {
         } else {
           opType = Operand.Type.r64;
         }
+
         return op.toString(opType) + '\t' + (a != null ? a.toString(opType) : "")
             + (b != null ? ", " + b.toString(opType) : "");
       } else {
