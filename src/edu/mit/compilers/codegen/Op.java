@@ -78,6 +78,8 @@ public enum Op {
   CALL("call",              0b00000000000001001100100000000101),
   RET("ret",                0b00000000000000110000000000000001),
 
+  CQO("cqo",                0b00000000000000000000100000000001),
+  
   NOP("nop",                0b11110000000000000000000100000011),
 
   // Pseudo ops from midend, need to be lowered in backend

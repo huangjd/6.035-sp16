@@ -17,9 +17,8 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
 
         boolean isImm = ins.b.isImm();
 
-        b.add(++j, new Instruction(Op.XOR, Register.rdx, Register.rdx));
         b.add(++j, new Instruction(Register.rax, Op.MOV, ins.a));
-
+        b.add(++j, new Instruction(Op.CQO));
         if (isImm) {
           b.add(++j, new Instruction(Register.rxx, Op.TEMP_REG));
           b.add(++j, new Instruction(Register.rxx, Op.MOV, ins.b));

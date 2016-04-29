@@ -82,7 +82,9 @@ public class StackFrameSetup extends BasicBlockAnalyzeTransformTraverser {
         if (ins.op == Op.PROLOGUE) {
           b.set(i, new Instruction(Op.PUSH, Register.rbp));
           b.add(++i, new Instruction(Op.MOV, Register.rsp, Register.rbp));
-          b.add(++i, new Instruction(Op.SUB, new Imm64(stackoffset), Register.rsp));
+          if (stackoffset != 0) {
+            b.add(++i, new Instruction(Op.SUB, new Imm64(stackoffset), Register.rsp));
+          }
         }
         if (ins.op == Op.EPILOGUE) {
           b.set(i, new Instruction(Op.MOV, Register.rbp, Register.rsp));
