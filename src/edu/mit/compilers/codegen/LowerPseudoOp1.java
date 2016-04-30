@@ -13,18 +13,21 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
       if (ins instanceof DivInstruction) {
         Operand div = ins.dest;
         Operand mod = ((DivInstruction) ins).dest2;
-        b.set(j, new Instruction(Value.dummy, Op.BEGIN_XDIV));
+        // b.set(j, new Instruction(Value.dummy, Op.BEGIN_XDIV));
 
+        Value saverdx = new Value();
+        b.set(j, new Instruction(saverdx, Op.MOV, Register.rdx));
         boolean isImm = ins.b.isImm();
 
         b.add(++j, new Instruction(Register.rax, Op.MOV, ins.a));
         b.add(++j, new Instruction(Op.CQO));
         if (isImm) {
-          b.add(++j, new Instruction(Register.rxx, Op.TEMP_REG));
-          b.add(++j, new Instruction(Register.rxx, Op.MOV, ins.b));
-          ins.b = Register.rxx;
+          Value temp = new Value();
+          //b.add(++j, new Instruction(temp, Op.TEMP_REG));
+          b.add(++j, new Instruction(temp, Op.MOV, ins.b));
+          ins.b = temp;
         }
-        b.add(++j, new Instruction(Value.dummy, Op.IDIV, ins.b));
+        b.add(++j, new Instruction(Op.IDIV, ins.b));
         if (mod != Value.dummy && mod != null) {
           b.add(++j, new Instruction(mod, Op.MOV, Register.rdx));
         }
@@ -32,9 +35,10 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
           b.add(++j, new Instruction(div, Op.MOV, Register.rax));
         }
         if (isImm) {
-          b.add(++j, new Instruction(Value.dummy, Op.END_TEMP_REG));
+          //b.add(++j, new Instruction(Value.dummy, Op.END_TEMP_REG));
         }
-        b.add(++j, new Instruction(Value.dummy, Op.END_XDIV));
+        //b.add(++j, new Instruction(Value.dummy, Op.END_XDIV));
+        b.add(++j, new Instruction(Register.rdx, Op.MOV, saverdx));
 
       } else if (ins instanceof CallInstruction) {
         CallInstruction call = (CallInstruction) ins;
@@ -42,7 +46,25 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         boolean nextInsIsTest = b.get(j + 1).op == Op.TEST && b.get(j + 1).a == Register.rax
             && b.get(j + 1).b == Register.rax;
 
-        b.set(j, new Instruction(Value.dummy, Op.BEGIN_XCALL));
+        // b.set(j, new Instruction(Value.dummy, Op.BEGIN_XCALL));
+        Value savercx = new Value();
+        Value saverdx = new Value();
+        Value saversi = new Value();
+        Value saverdi = new Value();
+        Value saver8 = new Value();
+        Value saver9 = new Value();
+        Value saver10 = new Value();
+        Value saver11 = new Value();
+        b.set(j, new Instruction(Op.DELETED));
+        b.add(++j, new Instruction(savercx, Op.MOV, Register.rcx));
+        b.add(++j, new Instruction(saverdx, Op.MOV, Register.rdx));
+        b.add(++j, new Instruction(saversi, Op.MOV, Register.rsi));
+        b.add(++j, new Instruction(saverdi, Op.MOV, Register.rdi));
+        b.add(++j, new Instruction(saver8, Op.MOV, Register.r8));
+        b.add(++j, new Instruction(saver9, Op.MOV, Register.r9));
+        b.add(++j, new Instruction(saver10, Op.MOV, Register.r10));
+        b.add(++j, new Instruction(saver11, Op.MOV, Register.r11));
+
         switch (call.args.size()) { // fallthrough
         default:
           for (int k = 6; k < call.args.size(); k++) {
@@ -54,35 +76,23 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
             }
           }
         case 6:
-          b.add(++j, new Instruction(Op.MOV, call.args.get(5), Register.r9));
-          if (call.args.get(5).getType() == Type.r8) {
-            b.add(++j, new Instruction(Op.MOVSX, Register.r9b, Register.r9));
-          }
+          Op op = call.args.get(5).getType() == Type.r8 ? Op.MOVSX : Op.MOV;
+          b.add(++j, new Instruction(Register.r9, op, call.args.get(5)));
         case 5:
-          b.add(++j, new Instruction(Op.MOV, call.args.get(4), Register.r8));
-          if (call.args.get(4).getType() == Type.r8) {
-            b.add(++j, new Instruction(Op.MOVSX, Register.r8b, Register.r8));
-          }
+          op = call.args.get(4).getType() == Type.r8 ? Op.MOVSX : Op.MOV;
+          b.add(++j, new Instruction(Register.r8, op, call.args.get(4)));
         case 4:
-          b.add(++j, new Instruction(Op.MOV, call.args.get(3), Register.rcx));
-          if (call.args.get(3).getType() == Type.r8) {
-            b.add(++j, new Instruction(Op.MOVSX, Register.cl, Register.rcx));
-          }
+          op = call.args.get(3).getType() == Type.r8 ? Op.MOVSX : Op.MOV;
+          b.add(++j, new Instruction(Register.rcx, op, call.args.get(3)));
         case 3:
-          b.add(++j, new Instruction(Op.MOV, call.args.get(2), Register.rdx));
-          if (call.args.get(2).getType() == Type.r8) {
-            b.add(++j, new Instruction(Op.MOVSX, Register.dl, Register.rdx));
-          }
+          op = call.args.get(2).getType() == Type.r8 ? Op.MOVSX : Op.MOV;
+          b.add(++j, new Instruction(Register.rdx, op, call.args.get(2)));
         case 2:
-          b.add(++j, new Instruction(Op.MOV, call.args.get(1), Register.rsi));
-          if (call.args.get(1).getType() == Type.r8) {
-            b.add(++j, new Instruction(Op.MOVSX, Register.sil, Register.rsi));
-          }
+          op = call.args.get(1).getType() == Type.r8 ? Op.MOVSX : Op.MOV;
+          b.add(++j, new Instruction(Register.rsi, op, call.args.get(1)));
         case 1:
-          b.add(++j, new Instruction(Op.MOV, call.args.get(0), Register.rdi));
-          if (call.args.get(0).getType() == Type.r8) {
-            b.add(++j, new Instruction(Op.MOVSX, Register.dil, Register.rdi));
-          }
+          op = call.args.get(0).getType() == Type.r8 ? Op.MOVSX : Op.MOV;
+          b.add(++j, new Instruction(Register.rdi, op, call.args.get(0)));
         case 0:
           break;
         }
@@ -96,7 +106,15 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         if (nextInsIsTest) {
           ++j;
         }
-        b.add(++j, new Instruction(Value.dummy, Op.END_XCALL));
+        // b.add(++j, new Instruction(Value.dummy, Op.END_XCALL));
+        b.add(++j, new Instruction(Register.r11, Op.MOV, saver11));
+        b.add(++j, new Instruction(Register.r10, Op.MOV, saver10));
+        b.add(++j, new Instruction(Register.r9, Op.MOV, saver9));
+        b.add(++j, new Instruction(Register.r8, Op.MOV, saver8));
+        b.add(++j, new Instruction(Register.rdi, Op.MOV, saverdi));
+        b.add(++j, new Instruction(Register.rsi, Op.MOV, saversi));
+        b.add(++j, new Instruction(Register.rdx, Op.MOV, saverdx));
+        b.add(++j, new Instruction(Register.rcx, Op.MOV, savercx));
       } else if (ins.op == Op.GET_ARG) {
         assert (ins.a instanceof Imm64);
         switch ((int) ((Imm64) ins.a).val) {

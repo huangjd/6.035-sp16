@@ -7,8 +7,7 @@ public class Register extends Operand {
   public final String name;
 
   public static final Register
-  rxx = new Register(-2, Type.r64, "r?? [temp]"),
-  orbp = new Register(4, Type.r64, "rbp"), // used for omit-frame-pointer
+  orbp = new Register(4, Type.r64, "RBP"), // used for omit-frame-pointer
   rip = new Register(-1, Type.r64, "rip"),
   rax = new Register(0, Type.r64, "rax"),
   rcx = new Register(1, Type.r64, "rcx"),
@@ -126,7 +125,7 @@ public class Register extends Operand {
 
   @Override
   public String toString(Type type) {
-    if (this == rxx || this == rip || this == orbp) {
+    if (this == rip || this == orbp) {
       return toString();
     }
     switch(type) {

@@ -82,6 +82,7 @@ public class Midend extends Visitor {
     exit.add(new Instruction(Op.CALL, new Symbol("exit")));
     exit.add(new Instruction(Op.NO_RETURN));
 
+    dummy0.addComment("error handling code");
     dummy0.addJmp(Op.JE, dummy1, dummy2);
     dummy1.addJmp(Op.JE, exit0, exit1);
     dummy2.addJmp(Op.JE, exit2, exit3);
@@ -138,6 +139,7 @@ public class Midend extends Visitor {
       currentFunctionName = compile(new StringLiteral("\"" + node.getMangledName() + "\"", null).box());
 
       currentBB = new BasicBlock(node.getMangledName());
+      currentBB.addComment(node.getSignature());
       funcEntryBB = currentBB;
       symtab = symtab.scope();
       currentBB.add(Op.PROLOGUE);
@@ -568,6 +570,8 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(If node) {
+    currentBB.addComment("if (" + node.cond.toString() + ") {");
+
     BasicBlock t = new BasicBlock();
     BasicBlock f = new BasicBlock();
     BasicBlock exit = new BasicBlock();
@@ -580,7 +584,6 @@ public class Midend extends Visitor {
 
     currentBB = t;
     t.deferPriority();
-
     node.trueBlock.accept(this);
     currentBB.addJmp(exit);
 
@@ -588,8 +591,8 @@ public class Midend extends Visitor {
     falseTarget = null;
 
     currentBB = f;
+    currentBB.addComment("} else {");
     f.deferPriority();
-
     node.falseBlock.accept(this);
     currentBB.addJmp(exit);
 
@@ -679,6 +682,8 @@ public class Midend extends Visitor {
         throw new TypeException(node.var, new SourcePosition());
       }
     } else {
+      currentBB.addComment(node.toString());
+
       Operand zero = (node.var.type == Type.INT || node.var.type == Type.INTARRAY ? new Imm64(0) : new Imm8(false));
 
       Operand temp = null;
@@ -707,14 +712,13 @@ public class Midend extends Visitor {
       BasicBlock loop = new BasicBlock();
       BasicBlock exit = new BasicBlock();
 
-      Operand i = new Value();
       currentBB.add(temp, Op.LOCAL_ARRAY_DECL, new Imm64(node.var.length));
-      currentBB.add(i, Op.MOV, new Imm64(node.var.length - 1))
+      currentBB.add(Register.rax, Op.MOV, new Imm64(node.var.length - 1))
       .addJmp(loop);
 
       currentBB = loop;
-      currentBB.add(zero, Op.STORE, temp, i)
-      .add(i, Op.SUB, new Imm64(1), i)
+      currentBB.add(zero, Op.STORE, temp, Register.rax)
+      .add(Register.rax, Op.SUB, new Imm64(1), Register.rax)
       .addJmp(Op.JGE, loop, exit);
 
       currentBB = exit;
@@ -739,6 +743,8 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(Assign node) {
+    currentBB.addComment(node.toString());
+
     currentAssignDest = symtab.lookup(node.var);
     Operand pushCurrent = currentAssignDest;
     Operand value = compile(node.value);
@@ -787,6 +793,8 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(Store node) {
+    currentBB.addComment(node.toString());
+
     Operand index = compile(node.index);
     long length = node.array.length;
     if (node.checkBounds) {
@@ -838,18 +846,21 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(Break node) {
+    currentBB.addComment(node.toString());
     currentBB.addJmp(breakBB);
     currentBB = new BasicBlock("");
   }
 
   @Override
   protected void visit(Continue node) {
+    currentBB.addComment(node.toString());
     currentBB.addJmp(continueBB);
     currentBB = new BasicBlock("");
   }
 
   @Override
   protected void visit(Die node) {
+    currentBB.addComment("exit(" + String.valueOf(node.exitCode) + ");");
     if (node.exitCode == Die.CONTROL_REACHES_END_OF_NON_VOID_FUNCTION) {
       SourcePosition pos = node.getSourcePosition();
       if (pos == null) {
@@ -874,7 +885,6 @@ public class Midend extends Visitor {
     } else {
       returnValue = node.func.returnType == Type.BOOLEAN ? new Value(false) : new Value();
     }
-
 
     Operand pushReturnValue = returnValue;
 
@@ -911,12 +921,16 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(CallStmt node) {
+    currentBB.addComment(node.toString());
     currentAssignDest = node.call.getType() == Type.BOOLEAN ? new Value(false) : new Value();
     visit(node.call);
   }
 
   @Override
   protected void visit(For node) {
+    currentBB.addComment("for (" + node.loopVar.toString() + " = " + node.init.toString() + ", " + node.end.toString()
+    + ", " + String.valueOf(node.increment) + ") {");
+
     BasicBlock pushBreak = breakBB;
     BasicBlock pushContinue = continueBB;
 
@@ -933,6 +947,7 @@ public class Midend extends Visitor {
     Operand i = symtab.lookup(node.loopVar);
 
     currentBB.add(i, Op.MOV, init)
+    .add(i, Op.LOOP_START)
     .addJmp(cond);
 
     currentBB = cond;
@@ -955,10 +970,13 @@ public class Midend extends Visitor {
     exit.deferPriority();
     breakBB = pushBreak;
     continueBB = pushContinue;
+    currentBB.add(i, Op.LOOP_END);
   }
 
   @Override
   protected void visit(While node) {
+    currentBB.addComment("while (" + node.cond.toString() + ") {");
+
     BasicBlock pushBreak = breakBB;
     BasicBlock pushContinue = continueBB;
 

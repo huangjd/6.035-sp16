@@ -35,6 +35,9 @@ public class LowerPseudoOp2 extends BasicBlockTraverser {
         }
         break;
       default:
+        if (ins.op.pseudoOp() && !ins.op.isa()) {
+          b.set(i, new Instruction(Op.DELETED));
+        }
         break;
       }
     }

@@ -76,7 +76,7 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
 
   @Override
   public void transform(BasicBlock b) {
-    int used = ((State) get(b).out).val;
+   /* int used = ((State) get(b).out).val;
 
     for (int i = b.size() - 1; i >= 0; i--) {
       Instruction ins = b.get(i);
@@ -227,7 +227,9 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
               }
 
               int regsToSave = used & Register.callerSavedRegs & ~(1 << Register.rax.id);
-              int regsAvail = ~(used | (1 << Register.rax.id) | (1 << Register.rbp.id) | (1 << Register.rsp.id));
+              int regsAvail = (0xFFFF)
+                  & ~(used | (1 << Register.rax.id) | (1 << Register.rbp.id) | (1 << Register.rsp.id)
+                  | Register.callerSavedRegs);
 
               int stackNeeded = Math.max(0, Integer.bitCount(regsToSave) - Integer.bitCount(regsAvail)) * 8;
               b.set(j, new Instruction(Value.dummy, Op.ALLOCATE, new Imm64(offset + stackNeeded)));
@@ -236,7 +238,7 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
                 int k = Integer.numberOfTrailingZeros(regsToSave);
                 Register savee = Register.regs[k];
                 Operand saver;
-                if (regsAvail != 0) {
+                if ((regsAvail & 0xFFFF) != 0) {
                   int l = Integer.numberOfTrailingZeros(regsAvail);
                   saver = Register.regs[l];
                   regsAvail &= ~(1 << l);
@@ -260,6 +262,6 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
           break;
         }
       }
-    }
+    }*/
   }
 }

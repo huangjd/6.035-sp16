@@ -21,6 +21,15 @@ class Main {
       System.out.println("----- IR lower pseudo op I -----");
       System.out.print(ir.toString());
     }
+
+    if (CLI.opts[CLI2.Optimization.REGALLOC.index]) {
+      new RegisterPreAllocator(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- IR loop var reg pre-alloc -----");
+        System.out.print(ir.toString());
+      }
+    }
+
     new BasicStackAllocator().traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR allocate stack vars -----");
@@ -31,10 +40,10 @@ class Main {
       System.out.println("----- IR lower 3 operands -----");
       System.out.print(ir.toString());
     }
-    new ResolveTempReg().reverseTraverse(ir);
+    // new ResolveTempReg().reverseTraverse(ir);
     if (CLI.debug) {
-      System.out.println("----- IR resolve temp regs -----");
-      System.out.print(ir.toString());
+      // System.out.println("----- IR resolve temp regs -----");
+      // System.out.print(ir.toString());
     }
     new StackFrameSetup(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir);
     if (CLI.debug) {

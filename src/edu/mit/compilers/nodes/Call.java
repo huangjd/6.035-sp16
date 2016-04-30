@@ -43,7 +43,9 @@ public class Call extends Expression {
       s.append(", ");
     }
     String str = s.toString();
-    str = str.substring(0, str.length() - 2);
+    if (str.length() >= 2) {
+      str = str.substring(0, str.length() - 2);
+    }
 
     return func.getName() + "(" + str + ")";
   }

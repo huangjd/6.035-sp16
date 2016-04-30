@@ -1,0 +1,14 @@
+callout printf;
+
+void main() {
+  int i, j;
+  j = 0;
+  for (i = 0, 999, 991) {
+    for (i = 3, 7) {
+      printf("%d", i);
+    }
+    i += j;
+    j += 1;
+  }
+  printf("\n");
+}

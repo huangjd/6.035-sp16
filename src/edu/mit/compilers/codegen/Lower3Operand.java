@@ -76,7 +76,7 @@ public class Lower3Operand extends BasicBlockTraverser {
             throw new RuntimeException();
           }
           Operand imm = ins.a instanceof Imm8? new Imm8((byte) z) : new Imm64(z);
-          if (ins.dest.isReg() || ins.dest.isMem() && imm.isImm32() || ins.op == Op.MOV) {
+          if (ins.dest.isReg() || ins.dest.isMem() && imm.isImm32()) {
             b.set(i, new Instruction(Op.MOV, imm, ins.dest));
           } else {
             b.set(i, new Instruction(Op.MOV, imm, Register.rax));
@@ -254,9 +254,10 @@ public class Lower3Operand extends BasicBlockTraverser {
 
         boolean needTemp = !(ins.dest.isReg() || ins.dest.isImm32());
         if (needTemp) {
-          b.add(++i, new Instruction(Register.rxx, Op.TEMP_REG));
-          b.add(++i, new Instruction(Op.MOV, ins.dest, Register.rxx));
-          ins.dest = Register.rxx;
+          // b.add(++i, new Instruction(Register.rxx, Op.TEMP_REG));
+          b.add(++i, new Instruction(Op.MOV, Register.rdx, new Memory(Register.rsp, -8, Type.r64)));
+          b.add(++i, new Instruction(Op.MOV, ins.dest, Register.rdx));
+          ins.dest = Register.rdx;
         }
 
         if (ins.a instanceof Memory) {
@@ -269,7 +270,8 @@ public class Lower3Operand extends BasicBlockTraverser {
           }
         }
         if (needTemp) {
-          b.add(++i, new Instruction(Value.dummy, Op.END_TEMP_REG));
+          b.add(++i, new Instruction(Op.MOV, new Memory(Register.rsp, -8, Type.r64), Register.rdx));
+          // b.add(++i, new Instruction(Value.dummy, Op.END_TEMP_REG));
         }
       }
     }

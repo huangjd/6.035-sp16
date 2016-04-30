@@ -44,6 +44,16 @@ public final class SemanticsPostProcess extends Mutator {
       returnNode = new Return(node.context, new IntLiteral(0, null).box(), node.getSourcePosition());
     } else {
       super.visit(node);
+      Function func = ((Function) (node.context.getNode()));
+      if (func.returnType == Type.NONE) {
+        if (node.value != null) {
+          ErrorLogger.logError(new GeneralException("returning a value from a void function", null));
+        }
+      } else {
+        if (node.value.getType() != func.returnType) {
+          ErrorLogger.logError(new TypeException(func.returnType, node.value.getType(), null));
+        }
+      }
     }
   }
 

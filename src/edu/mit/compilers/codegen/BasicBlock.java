@@ -73,6 +73,14 @@ public class BasicBlock extends ArrayList<Instruction> {
     return this;
   }
 
+  public BasicBlock addComment(String content) {
+    if (content.length() > 0 && content.charAt(content.length() - 1) == '\n') {
+      content = content.substring(0, content.length() - 1);
+    }
+    super.add(new Instruction(Op.COMMENT, new StringObject(content)));
+    return this;
+  }
+
   private void setTaken(BasicBlock target) {
     clearTaken();
     taken = target;

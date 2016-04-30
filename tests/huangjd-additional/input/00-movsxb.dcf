@@ -1,0 +1,15 @@
+callout printf;
+
+void b(int a1, int a2, int a3, int a4, int a5, int a6, int a7) {
+  printf("%lld %lld %lld %lld %lld %lld %lld\n", a1, a2, a3, a4, a5, a6, a7);
+}
+
+void main() {
+  int y;
+  boolean x;
+  
+  y = 9223372036854775807;
+  b(y, y, y, y, y, y, y);
+  
+  printf("%d %d %d %d %d %d %d\n", x, x, x, x, x, x, x);
+}

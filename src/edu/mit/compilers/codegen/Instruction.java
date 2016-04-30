@@ -184,7 +184,7 @@ public class Instruction {
   }
 
   public Register[] getRegRead() {
-    if ((op == Op.SUB || op == Op.XOR) && a instanceof Register && a.equals(b) && a != Register.rxx) {
+    if ((op == Op.SUB || op == Op.XOR) && a instanceof Register && a.equals(b)) {
       return new Register[]{};
     }
     ArrayList<Register> regs = new ArrayList<Register>();
@@ -227,6 +227,10 @@ public class Instruction {
 
   @Override
   public String toString() {
+    if (op == Op.COMMENT) {
+      return "/* " + ((StringObject) a).content + " */";
+    }
+
     if (twoOperand) {
       if (op.hasSuffix()) {
         Operand.Type opType;
