@@ -13,7 +13,6 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
       if (ins instanceof DivInstruction) {
         Operand div = ins.dest;
         Operand mod = ((DivInstruction) ins).dest2;
-        // b.set(j, new Instruction(Value.dummy, Op.BEGIN_XDIV));
 
         Value saverdx = new Value();
         b.set(j, new Instruction(saverdx, Op.MOV, Register.rdx));
@@ -23,21 +22,16 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         b.add(++j, new Instruction(Op.CQO));
         if (isImm) {
           Value temp = new Value();
-          //b.add(++j, new Instruction(temp, Op.TEMP_REG));
           b.add(++j, new Instruction(temp, Op.MOV, ins.b));
           ins.b = temp;
         }
-        b.add(++j, new Instruction(Op.IDIV, ins.b));
+        b.add(++j, new Instruction(Value.dummy, Op.IDIV, ins.b));
         if (mod != Value.dummy && mod != null) {
           b.add(++j, new Instruction(mod, Op.MOV, Register.rdx));
         }
         if (div != Value.dummy && div != null) {
           b.add(++j, new Instruction(div, Op.MOV, Register.rax));
         }
-        if (isImm) {
-          //b.add(++j, new Instruction(Value.dummy, Op.END_TEMP_REG));
-        }
-        //b.add(++j, new Instruction(Value.dummy, Op.END_XDIV));
         b.add(++j, new Instruction(Register.rdx, Op.MOV, saverdx));
 
       } else if (ins instanceof CallInstruction) {
@@ -46,24 +40,7 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         boolean nextInsIsTest = b.get(j + 1).op == Op.TEST && b.get(j + 1).a == Register.rax
             && b.get(j + 1).b == Register.rax;
 
-        // b.set(j, new Instruction(Value.dummy, Op.BEGIN_XCALL));
-        Value savercx = new Value();
-        Value saverdx = new Value();
-        Value saversi = new Value();
-        Value saverdi = new Value();
-        Value saver8 = new Value();
-        Value saver9 = new Value();
-        Value saver10 = new Value();
-        Value saver11 = new Value();
-        b.set(j, new Instruction(Op.DELETED));
-        b.add(++j, new Instruction(savercx, Op.MOV, Register.rcx));
-        b.add(++j, new Instruction(saverdx, Op.MOV, Register.rdx));
-        b.add(++j, new Instruction(saversi, Op.MOV, Register.rsi));
-        b.add(++j, new Instruction(saverdi, Op.MOV, Register.rdi));
-        b.add(++j, new Instruction(saver8, Op.MOV, Register.r8));
-        b.add(++j, new Instruction(saver9, Op.MOV, Register.r9));
-        b.add(++j, new Instruction(saver10, Op.MOV, Register.r10));
-        b.add(++j, new Instruction(saver11, Op.MOV, Register.r11));
+        b.set(j, new Instruction(Value.dummy, Op.BEGIN_XCALL));
 
         switch (call.args.size()) { // fallthrough
         default:
@@ -106,35 +83,28 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         if (nextInsIsTest) {
           ++j;
         }
-        // b.add(++j, new Instruction(Value.dummy, Op.END_XCALL));
-        b.add(++j, new Instruction(Register.r11, Op.MOV, saver11));
-        b.add(++j, new Instruction(Register.r10, Op.MOV, saver10));
-        b.add(++j, new Instruction(Register.r9, Op.MOV, saver9));
-        b.add(++j, new Instruction(Register.r8, Op.MOV, saver8));
-        b.add(++j, new Instruction(Register.rdi, Op.MOV, saverdi));
-        b.add(++j, new Instruction(Register.rsi, Op.MOV, saversi));
-        b.add(++j, new Instruction(Register.rdx, Op.MOV, saverdx));
-        b.add(++j, new Instruction(Register.rcx, Op.MOV, savercx));
+        b.add(++j, new Instruction(Value.dummy, Op.END_XCALL));
+
       } else if (ins.op == Op.GET_ARG) {
         assert (ins.a instanceof Imm64);
         switch ((int) ((Imm64) ins.a).val) {
         case 0:
-          b.set(j, new Instruction(Op.MOV, Register.rdi, ins.dest));
+          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rdi));
           break;
         case 1:
-          b.set(j, new Instruction(Op.MOV, Register.rsi, ins.dest));
+          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rsi));
           break;
         case 2:
-          b.set(j, new Instruction(Op.MOV, Register.rdx, ins.dest));
+          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rdx));
           break;
         case 3:
-          b.set(j, new Instruction(Op.MOV, Register.rcx, ins.dest));
+          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rcx));
           break;
         case 4:
-          b.set(j, new Instruction(Op.MOV, Register.r8, ins.dest));
+          b.set(j, new Instruction(ins.dest, Op.MOV, Register.r8));
           break;
         case 5:
-          b.set(j, new Instruction(Op.MOV, Register.r9, ins.dest));
+          b.set(j, new Instruction(ins.dest, Op.MOV, Register.r9));
           break;
         default:
           b.set(j, new Instruction(ins.dest, Op.MOV,

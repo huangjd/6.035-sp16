@@ -46,6 +46,6 @@ public abstract class BasicBlockAnalyzeTransformPass extends BasicBlockVisitor<B
 
   @Override
   public void fini(HashSet<BasicBlock> exits) {
-    transformer.reverseTraverse(exits);
+    transformer.traverse(exits);
   }
 }

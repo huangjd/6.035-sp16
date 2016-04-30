@@ -76,7 +76,7 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
 
   @Override
   public void transform(BasicBlock b) {
-   /* int used = ((State) get(b).out).val;
+    int used = ((State) get(b).out).val;
 
     for (int i = b.size() - 1; i >= 0; i--) {
       Instruction ins = b.get(i);
@@ -134,13 +134,13 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
                   }
                   for (int j = i + 1; j < itmp2; j++) {
                     Instruction ins2 = b.get(j);
-                    if (ins2.a != null && ins2.a.equals(Register.rxx)) {
-                      b.set(j, new Instruction(ins2.op, reg, ins2.b));
-                    }
+                    // if (ins2.a != null && ins2.a.equals(Register.rxx)) {
+                    b.set(j, new Instruction(ins2.op, reg, ins2.b));
+                    // }
                     ins2 = b.get(j);
-                    if (ins2.b != null && ins2.b.equals(Register.rxx)) {
-                      b.set(j, new Instruction(ins2.op, ins2.a, reg));
-                    }
+                    // if (ins2.b != null && ins2.b.equals(Register.rxx)) {
+                    b.set(j, new Instruction(ins2.op, ins2.a, reg));
+                    // }
                   }
                   for (i--;; i--) {
                     ins = b.get(i);
@@ -192,13 +192,13 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
               }
               for (int j = i + 1; j < itmp; j++) {
                 Instruction ins2 = b.get(j);
-                if (ins2.a != null && ins2.a.equals(Register.rxx)) {
-                  b.set(j, new Instruction(ins2.op, reg, ins2.b));
-                }
+                // if (ins2.a != null && ins2.a.equals(Register.rxx)) {
+                b.set(j, new Instruction(ins2.op, reg, ins2.b));
+                // }
                 ins2 = b.get(j);
-                if (ins2.b != null && ins2.b.equals(Register.rxx)) {
-                  b.set(j, new Instruction(ins2.op, ins2.a, reg));
-                }
+                // if (ins2.b != null && ins2.b.equals(Register.rxx)) {
+                b.set(j, new Instruction(ins2.op, ins2.a, reg));
+                // }
               }
               break;
             }
@@ -229,11 +229,12 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
               int regsToSave = used & Register.callerSavedRegs & ~(1 << Register.rax.id);
               int regsAvail = (0xFFFF)
                   & ~(used | (1 << Register.rax.id) | (1 << Register.rbp.id) | (1 << Register.rsp.id)
-                  | Register.callerSavedRegs);
+                      | Register.callerSavedRegs);
 
               int stackNeeded = Math.max(0, Integer.bitCount(regsToSave) - Integer.bitCount(regsAvail)) * 8;
               b.set(j, new Instruction(Value.dummy, Op.ALLOCATE, new Imm64(offset + stackNeeded)));
 
+              int count = 0;
               while (regsToSave != 0) {
                 int k = Integer.numberOfTrailingZeros(regsToSave);
                 Register savee = Register.regs[k];
@@ -243,7 +244,7 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
                   saver = Register.regs[l];
                   regsAvail &= ~(1 << l);
                 } else {
-                  saver = new Memory(Register.rsp, (int) offset, Operand.Type.r64);
+                  saver = new Memory(Register.rsp, (int) offset + 8 * (count++), Operand.Type.r64);
                 }
                 b.add(itmp, new Instruction(Op.MOV, saver, savee));
                 b.add(i, new Instruction(Op.MOV, savee, saver));
@@ -262,6 +263,6 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
           break;
         }
       }
-    }*/
+    }
   }
 }

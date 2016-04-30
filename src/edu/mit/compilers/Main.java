@@ -22,13 +22,35 @@ class Main {
       System.out.print(ir.toString());
     }
 
-    if (CLI.opts[CLI2.Optimization.REGALLOC.index]) {
-      new RegisterPreAllocator(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir);
-      if (CLI.debug) {
-        System.out.println("----- IR loop var reg pre-alloc -----");
-        System.out.print(ir.toString());
-      }
-    }
+    /*
+     * if (CLI.opts[CLI2.Optimization.CSE.index]) {
+     * new CSEPass().traverse(ir);
+     * if (CLI.debug) {
+     * System.out.println("----- CSE -----");
+     * System.out.print(ir.toString());
+     * }
+     * }
+     *
+     * if (CLI.opts[CLI2.Optimization.CP.index]) {
+     * new CPPass().traverse(ir);
+     * if (CLI.debug) {
+     * System.out.println("----- CP -----");
+     * System.out.print(ir.toString());
+     * }
+     * }
+     */
+
+    /*
+     * if (CLI.opts[CLI2.Optimization.REGALLOC.index]) {
+     * new
+     * RegisterAllocator(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir)
+     * ;
+     * if (CLI.debug) {
+     * System.out.println("----- regalloc -----");
+     * System.out.print(ir.toString());
+     * }
+     * }
+     */
 
     new BasicStackAllocator().traverse(ir);
     if (CLI.debug) {
@@ -40,10 +62,10 @@ class Main {
       System.out.println("----- IR lower 3 operands -----");
       System.out.print(ir.toString());
     }
-    // new ResolveTempReg().reverseTraverse(ir);
+    new ResolveTempReg().reverseTraverse(ir);
     if (CLI.debug) {
-      // System.out.println("----- IR resolve temp regs -----");
-      // System.out.print(ir.toString());
+      System.out.println("----- IR resolve temp regs -----");
+      System.out.print(ir.toString());
     }
     new StackFrameSetup(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir);
     if (CLI.debug) {

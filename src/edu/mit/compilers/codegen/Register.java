@@ -45,6 +45,7 @@ public class Register extends Operand {
 
   public static int calleeSavedRegs = 0b1111000000111000;
   public static int callerSavedRegs = 0b0000111111000111;
+  public static int funcCallReadRegs = 0b0000001111000110;
 
   private Register(int id, Type type, String name) {
     this.id = id;
@@ -76,6 +77,14 @@ public class Register extends Operand {
     int[] res = new int[regs.length];
     for (int i = 0; i < regs.length; i++) {
       res[i] = regs[i].id;
+    }
+    return res;
+  }
+
+  public static int regsToInt(Register[] regs) {
+    int res = 0;
+    for (Register reg : regs) {
+      res |= (1 << reg.id);
     }
     return res;
   }

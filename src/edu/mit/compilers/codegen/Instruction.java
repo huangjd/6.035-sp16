@@ -1,6 +1,6 @@
 package edu.mit.compilers.codegen;
 
-import java.util.ArrayList;
+import java.util.*;
 
 import edu.mit.compilers.common.Util;
 
@@ -225,6 +225,27 @@ public class Instruction {
     }
   }
 
+  public void rename(AbstractMap<? extends Operand, ? extends Operand> renameTable) {
+    if (dest != Value.dummy) {
+      Operand n = renameTable.get(dest);
+      if (n != null) {
+        dest = n;
+      }
+    }
+    if (a != null) {
+      Operand n = renameTable.get(a);
+      if (n != null) {
+        a = n;
+      }
+    }
+    if (b != null) {
+      Operand n = renameTable.get(b);
+      if (n != null) {
+        b = n;
+      }
+    }
+  }
+
   @Override
   public String toString() {
     if (op == Op.COMMENT) {
@@ -232,6 +253,13 @@ public class Instruction {
     }
 
     if (twoOperand) {
+      if (op == Op.MOVSX) {
+        return op.toString() + '\t' + a.toString(Operand.Type.r8)+ ",\t" + b.toString(Operand.Type.r64);
+      }
+      if (op.setcc()) {
+        return op.toString() + '\t' + a.toString(Operand.Type.r8);
+      }
+
       if (op.hasSuffix()) {
         Operand.Type opType;
         if (b != null) {

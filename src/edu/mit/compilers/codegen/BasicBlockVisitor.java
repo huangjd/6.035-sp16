@@ -27,13 +27,6 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
     }
   }
 
-  PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(new Comparator<QueueNode>() {
-    @Override
-    public int compare(QueueNode a, QueueNode b) {
-      return Integer.compare(a.b.priority, b.b.priority);
-    }
-  });
-
   public void traverse(CFG cfg) {
     for (CFGDesc b : cfg) {
       reset();
@@ -44,15 +37,12 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
   public void reverseTraverse(CFG cfg) {
     for (CFGDesc b : cfg) {
       reset();
-      reverseTraverse(b.exits);
+      traverse(b.exits);
     }
   }
 
-  public void traverse(BasicBlock entry) {
-    init(entry);
-    queue.add(new QueueNode(entry, getInitValue()));
+  void traverse(PriorityQueue<QueueNode> queue, boolean direction) {
     QueueNode node;
-
     while ((node = queue.poll()) != null) {
       BasicBlock b = node.b;
       Data oldData = get(b);
@@ -70,46 +60,54 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
         T newOut = visit(b, newIn);
         put(b, new Data(newIn, newOut));
 
-        if (b.taken != null) {
-          queue.add(new QueueNode(b.taken, newOut));
-        }
-        if (b.notTaken != null) {
-          queue.add(new QueueNode(b.notTaken, newOut));
+        if (direction) {
+          if (b.taken != null) {
+            queue.add(new QueueNode(b.taken, newOut));
+          }
+          if (b.notTaken != null) {
+            queue.add(new QueueNode(b.notTaken, newOut));
+          }
+        } else {
+          for (BasicBlock predecessor : b.comefroms) {
+            queue.add(new QueueNode(predecessor, newIn));
+          }
         }
       }
     }
+  }
+
+  public void traverse(BasicBlock entry) {
+    PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(new Comparator<QueueNode>() {
+      @Override
+      public int compare(QueueNode a, QueueNode b) {
+        return Integer.compare(a.b.priority, b.b.priority);
+      }
+    });
+
+    init(entry);
+    queue.add(new QueueNode(entry, getInitValue()));
+    QueueNode node;
+
+    traverse(queue, true);
+
     fini(entry);
   }
 
-  public void reverseTraverse(HashSet<BasicBlock> exits) {
+  public void traverse(HashSet<BasicBlock> exits) {
+    PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(new Comparator<QueueNode>() {
+      @Override
+      public int compare(QueueNode a, QueueNode b) {
+        return Integer.compare(b.b.priority, a.b.priority);
+      }
+    });
+
     init(exits);
     for (BasicBlock exit : exits) {
       queue.add(new QueueNode(exit, getInitValue()));
     }
     QueueNode node;
+    traverse(queue, false);
 
-    while ((node = queue.poll()) != null) {
-      BasicBlock b = node.b;
-      Data oldData = get(b);
-
-      T oldOut, newOut;
-      if (oldData != null) {
-        oldOut = oldData.out;
-        newOut = oldOut.transform(node.in);
-      } else {
-        oldOut = null;
-        newOut = node.in;
-      }
-
-      if (!newOut.equals(oldOut)) {
-        T newIn = visit(b, newOut);
-        put(b, new Data(newIn, newOut));
-
-        for (BasicBlock predecessor : b.comefroms) {
-          queue.add(new QueueNode(predecessor, newIn));
-        }
-      }
-    }
     fini(exits);
   }
 
@@ -117,12 +115,18 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
   }
 
   public void init(HashSet<BasicBlock> exits) {
+    for (BasicBlock b : exits) {
+      init(b);
+    }
   }
 
   public void fini(BasicBlock entry) {
   }
 
   public void fini(HashSet<BasicBlock> exits) {
+    for (BasicBlock b : exits) {
+      fini(b);
+    }
   }
 
   public abstract T getInitValue();
