@@ -47,7 +47,7 @@ public class Lower3Operand extends BasicBlockTraverser {
           case CMP:
             z = y - x;
             ins.dest = Register.rax;
-            b.add(i + 1, new Instruction(Op.CMP, Register.rax, Register.rax));
+            b.add(i + 1, new Instruction(Op.TEST, Register.rax, Register.rax));
             break;
           case TEST:
             z = y ^ x;
@@ -67,6 +67,9 @@ public class Lower3Operand extends BasicBlockTraverser {
             z = x - 1;
             break;
           case MOV:
+            z = x;
+            break;
+          case MOVSX:
             z = x;
             break;
           default:
@@ -191,7 +194,6 @@ public class Lower3Operand extends BasicBlockTraverser {
           index = (Register) ins.b;
         } else if (ins.b.isMem() || ins.b.isImm64N32()) {
           b.add(++i, new Instruction(Op.MOV, ins.b, Register.rax));
-          offset = 0;
           index = Register.rax;
         } else if (ins.b.isImm32()) {
           offset += ins.b instanceof Imm8 ? ((Imm8) ins.b).val : ((Imm64) ins.b).val * 8;
@@ -234,7 +236,6 @@ public class Lower3Operand extends BasicBlockTraverser {
           index = (Register) ins.b;
         } else if (ins.b.isMem() || ins.b.isImm64N32()) {
           b.add(++i, new Instruction(Op.MOV, ins.b, Register.rax));
-          offset = 0;
           index = Register.rax;
         } else if (ins.b.isImm32()) {
           offset += ins.b instanceof Imm8 ? ((Imm8) ins.b).val : ((Imm64) ins.b).val * 8;

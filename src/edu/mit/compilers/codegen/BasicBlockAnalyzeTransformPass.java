@@ -41,7 +41,7 @@ public abstract class BasicBlockAnalyzeTransformPass extends BasicBlockVisitor<B
 
   @Override
   public void fini(BasicBlock entry) {
-    transformer.visit(entry);
+    transformer.traverse(entry);
   }
 
   @Override

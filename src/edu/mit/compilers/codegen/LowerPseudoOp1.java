@@ -17,9 +17,8 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
 
         boolean isImm = ins.b.isImm();
 
-        b.add(++j, new Instruction(Op.XOR, Register.rdx, Register.rdx));
         b.add(++j, new Instruction(Register.rax, Op.MOV, ins.a));
-
+        b.add(++j, new Instruction(Op.CQO));
         if (isImm) {
           b.add(++j, new Instruction(Register.rxx, Op.TEMP_REG));
           b.add(++j, new Instruction(Register.rxx, Op.MOV, ins.b));
@@ -47,20 +46,43 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         switch (call.args.size()) { // fallthrough
         default:
           for (int k = 6; k < call.args.size(); k++) {
-            b.add(++j, new Instruction(new Memory(Register.rsp, (k - 6) * 8, Type.r64), Op.MOV, call.args.get(k)));
+            if (call.args.get(k).getType() == Type.r8) {
+              b.add(++j, new Instruction(Register.rax, Op.MOVSX, call.args.get(k)));
+              b.add(++j, new Instruction(new Memory(Register.rsp, (k - 6) * 8, Type.r64), Op.MOV, Register.rax));
+            } else {
+              b.add(++j, new Instruction(new Memory(Register.rsp, (k - 6) * 8, Type.r64), Op.MOV, call.args.get(k)));
+            }
           }
         case 6:
           b.add(++j, new Instruction(Op.MOV, call.args.get(5), Register.r9));
+          if (call.args.get(5).getType() == Type.r8) {
+            b.add(++j, new Instruction(Op.MOVSX, Register.r9b, Register.r9));
+          }
         case 5:
           b.add(++j, new Instruction(Op.MOV, call.args.get(4), Register.r8));
+          if (call.args.get(4).getType() == Type.r8) {
+            b.add(++j, new Instruction(Op.MOVSX, Register.r8b, Register.r8));
+          }
         case 4:
           b.add(++j, new Instruction(Op.MOV, call.args.get(3), Register.rcx));
+          if (call.args.get(3).getType() == Type.r8) {
+            b.add(++j, new Instruction(Op.MOVSX, Register.cl, Register.rcx));
+          }
         case 3:
           b.add(++j, new Instruction(Op.MOV, call.args.get(2), Register.rdx));
+          if (call.args.get(2).getType() == Type.r8) {
+            b.add(++j, new Instruction(Op.MOVSX, Register.dl, Register.rdx));
+          }
         case 2:
           b.add(++j, new Instruction(Op.MOV, call.args.get(1), Register.rsi));
+          if (call.args.get(1).getType() == Type.r8) {
+            b.add(++j, new Instruction(Op.MOVSX, Register.sil, Register.rsi));
+          }
         case 1:
           b.add(++j, new Instruction(Op.MOV, call.args.get(0), Register.rdi));
+          if (call.args.get(0).getType() == Type.r8) {
+            b.add(++j, new Instruction(Op.MOVSX, Register.dil, Register.rdi));
+          }
         case 0:
           break;
         }

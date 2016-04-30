@@ -24,6 +24,7 @@ public class Midend extends Visitor {
   // Global data
   HashMap<String, Operand> strtab;
   boolean bssMode = false;
+  boolean isMain = false;
 
   // Const
 
@@ -47,8 +48,8 @@ public class Midend extends Visitor {
   CFG.CFGDesc getExitBlock() {
     Operand s0 = compile(new StringLiteral("\"rip=0x%x: Array index out of bounds\\n\"", null).box());
     Operand s1 = compile(new StringLiteral("\"rip=0x%x: Control reaches end of non-void function\\n\"", null).box());
-    Operand s2 = compile(new StringLiteral("\"%s(): %d:%d: Array index out of bounds\\n\"", null).box());
-    Operand s3 = compile(new StringLiteral("\"%s(): %d:%d: Control reaches end of non-void function\\n\"", null).box());
+    Operand s2 = compile(new StringLiteral("\"%s: %d:%d: Array index out of bounds\\n\"", null).box());
+    Operand s3 = compile(new StringLiteral("\"%s: %d:%d: Control reaches end of non-void function\\n\"", null).box());
     BasicBlock dummy0 = new BasicBlock();
     BasicBlock dummy1 = new BasicBlock();
     BasicBlock dummy2 = new BasicBlock();
@@ -124,6 +125,11 @@ public class Midend extends Visitor {
   @Override
   protected void visit(Function node) {
     if (!node.isCallout) {
+      if (node.id.equals("main")) {
+        isMain = true;
+      } else {
+        isMain = false;
+      }
       currentBB = null;
       funcEntryBB = null;
       funcExits = new HashSet<>();
@@ -152,8 +158,14 @@ public class Midend extends Visitor {
         symtab.insert(v, arg);
         i++;
       }
+      currentBB.add(new Value(), Op.MOV, Register.rbx);
+      currentBB.add(new Value(), Op.MOV, Register.r12);
+      currentBB.add(new Value(), Op.MOV, Register.r13);
+      currentBB.add(new Value(), Op.MOV, Register.r14);
+      currentBB.add(new Value(), Op.MOV, Register.r15);
       node.body.accept(this);
       symtab = symtab.unscope();
+      isMain = false;
     }
   }
 
@@ -572,6 +584,9 @@ public class Midend extends Visitor {
     node.trueBlock.accept(this);
     currentBB.addJmp(exit);
 
+    trueTarget = null;
+    falseTarget = null;
+
     currentBB = f;
     f.deferPriority();
 
@@ -622,12 +637,16 @@ public class Midend extends Visitor {
       falseTarget = f;
       compile(node.cond);
 
+      trueTarget = null;
+      falseTarget = null;
       currentBB = t;
       t.deferPriority();
       currentAssignDest = returnValue;
       compile(node.trueExpr);
       currentBB.addJmp(exit);
 
+      trueTarget = null;
+      falseTarget = null;
       currentBB = f;
       f.deferPriority();
       currentAssignDest = returnValue;
@@ -862,7 +881,6 @@ public class Midend extends Visitor {
     BasicBlock pushTrueTarget = trueTarget;
     BasicBlock pushFalseTarget = falseTarget;
 
-    currentBB.add(Op.ALLOCATE, new Imm64((Math.max(6, node.args.size()) - 6) * 8));
     ArrayList<Operand> args = new ArrayList<>();
     for (ExpressionNode e : node.args) {
       trueTarget = null;
@@ -874,6 +892,7 @@ public class Midend extends Visitor {
 
     returnValue = pushReturnValue;
 
+    currentBB.add(Op.ALLOCATE, new Imm64((Math.max(6, node.args.size()) - 6) * 8));
     boolean variadic = node.func.isCallout && (node.func.id.contains("printf") || node.func.id.contains("scanf"));
     currentBB.add(new Instruction.CallInstruction(returnValue, new Symbol(node.func.getMangledName()), args, variadic, 0));
 
@@ -881,7 +900,11 @@ public class Midend extends Visitor {
     falseTarget = pushFalseTarget;
 
     if (trueTarget != null) {
-      currentBB.add(new Instruction(Op.TEST, Register.rax, Register.rax));
+      if (node.func.returnType == Type.BOOLEAN) {
+        currentBB.add(new Instruction(Op.TEST, Register.al, Register.al));
+      } else {
+        currentBB.add(new Instruction(Op.TEST, Register.rax, Register.rax));
+      }
       currentBB.addJmp(Op.JNE, trueTarget, falseTarget);
     }
   }
@@ -988,16 +1011,21 @@ public class Midend extends Visitor {
       currentAssignDest = Register.rax;
       compile(node.value);
     }
-    currentBB.add(Value.dummy, Op.EPILOGUE)
-    .add(new Instruction(Op.RET));
+    currentBB.add(Value.dummy, Op.EPILOGUE);
+
+    if (isMain) {
+      currentBB.add(Register.rax, Op.MOV, new Imm64(0));
+    }
+
+    currentBB.add(new Instruction(Op.RET));
     funcExits.add(currentBB);
 
-    currentBB = new BasicBlock("");
+    currentBB = new BasicBlock();
   }
 
   @Override
   protected void visit(StringLiteral node) {
-    returnValue = strtab.get(node.toEscapedString());
+    returnValue = strtab.get(node.value);
     if (returnValue == null) {
       returnValue = new StringObject(node.toEscapedString());
       strtab.put(node.value, returnValue);

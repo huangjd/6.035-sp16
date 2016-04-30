@@ -56,6 +56,10 @@ public abstract class Operand {
 
   @Override
   public abstract boolean equals(Object arg0);
+
+  public String toString(Type type) {
+    return toString();
+  }
 }
 
 class JumpTarget extends Operand {
@@ -360,11 +364,11 @@ class Memory extends Operand {
       if (index != null) {
         return bssoffset.toString() + "(," + index.toString() + "," + mult + ")";
       } else {
-        return bssoffset.toString() + "+" + String.valueOf(offset) + "*" + mult;
+        return bssoffset.toString() + "+" + String.valueOf(offset);
       }
     } else {
-      return (offset != 0 ? String.valueOf(offset) : "") + "(" + base.toString() + ","
-          + (index != null ? index.toString() : "") + "," + mult + ")";
+      return (offset != 0 ? String.valueOf(offset) : "") + "(" + base.toString()
+      + (index != null ? "," + index.toString() + "," + mult : "") + ")";
     }
   }
 
