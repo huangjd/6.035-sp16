@@ -22,6 +22,14 @@ class Main {
       System.out.print(ir.toString());
     }
 
+    if (CLI.opts[CLI2.Optimization.CSE.index]) {
+      new CSE().traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- CSE -----");
+        System.out.print(ir.toString());
+      }
+    }
+
     /*
      * if (CLI.opts[CLI2.Optimization.CSE.index]) {
      * new CSEPass().traverse(ir);

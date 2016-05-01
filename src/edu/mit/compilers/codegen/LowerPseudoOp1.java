@@ -78,7 +78,7 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         }
         b.add(++j, new Instruction(Op.CALL, call.a));
         if (ins.dest != Value.dummy) {
-          b.add(++j, new Instruction(Op.MOV, Register.rax, ins.dest));
+          b.add(++j, new Instruction(ins.dest, Op.MOV, Register.rax));
         }
         if (nextInsIsTest) {
           ++j;
