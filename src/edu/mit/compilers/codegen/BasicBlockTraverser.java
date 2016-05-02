@@ -2,11 +2,11 @@ package edu.mit.compilers.codegen;
 
 public abstract class BasicBlockTraverser extends BasicBlockVisitor<BasicBlockTraverser.T> {
 
-  public static class T implements Transformable<T> {
+  public static class T implements Mergable<T> {
     public final static T t = new T();
 
     @Override
-    public T transform(T t) {
+    public T merge(T t) {
       return t;
     }
   }

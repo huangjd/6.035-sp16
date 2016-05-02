@@ -1,8 +1,36 @@
 package edu.mit.compilers.common;
 
-import java.util.Iterator;
+import java.util.*;
 
 public class Util {
+
+  public interface Predicate<T> {
+    public boolean eval(T obj);
+  }
+
+  public static <T, C extends Collection<T>> C filter(C collection, Predicate<T> pred) {
+    for (Iterator<T> it = collection.iterator(); it.hasNext(); ) {
+      T obj = it.next();
+      if (!pred.eval(obj)) {
+        it.remove();
+      }
+    }
+    return collection;
+  }
+
+  public static <T> T[] filter(T[] collection, Predicate<T> pred) {
+    ArrayList<T> res = new ArrayList<T>();
+    for (T element : collection) {
+      if (element != null) {
+        if (pred.eval(element)) {
+          res.add(element);
+        }
+      }
+    }
+    T[] temp = Arrays.copyOf(collection, 0);
+    return res.toArray(temp);
+  }
+
   public static boolean implies(boolean condition, boolean consequence) {
     return (!condition || consequence);
   }

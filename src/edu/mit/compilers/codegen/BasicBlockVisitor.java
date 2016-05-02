@@ -4,7 +4,7 @@ import java.util.*;
 
 import edu.mit.compilers.codegen.CFG.CFGDesc;
 
-public abstract class BasicBlockVisitor<T extends Transformable<T>>
+public abstract class BasicBlockVisitor<T extends Mergable<T>>
 extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
 
   public class Data {
@@ -50,7 +50,7 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
       T oldIn, newIn;
       if (oldData != null) {
         oldIn = oldData.in;
-        newIn = oldIn.transform(node.in);
+        newIn = oldIn.merge(node.in);
       } else {
         oldIn = null;
         newIn = node.in;

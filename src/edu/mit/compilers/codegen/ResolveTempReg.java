@@ -13,7 +13,7 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
     }
 
     @Override
-    public State transform(BasicBlockAnalyzeTransformPass.State t) {
+    public State merge(BasicBlockAnalyzeTransformPass.State t) {
       return new State(val | ((State) t).val);
     }
 

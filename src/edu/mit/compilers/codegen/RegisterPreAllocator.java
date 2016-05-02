@@ -8,7 +8,7 @@ public class RegisterPreAllocator extends BasicBlockVisitor<RegisterPreAllocator
 
   boolean omitrbp = false;
 
-  public static class State implements Transformable<State> {
+  public static class State implements Mergable<State> {
     final int val;
     final HashMap<Operand, Integer> renameTable;
 
@@ -23,7 +23,7 @@ public class RegisterPreAllocator extends BasicBlockVisitor<RegisterPreAllocator
     }
 
     @Override
-    public State transform(State t) {
+    public State merge(State t) {
       return t;
     }
 
@@ -82,7 +82,7 @@ public class RegisterPreAllocator extends BasicBlockVisitor<RegisterPreAllocator
             if (depth == 0) {
               val |= 1 << (old & 0xF);
               renameTable.remove(ins.dest);
-            b.add(i++, new Instruction(ins.dest, Op.MOV, Register.regs[old & 0xF]));
+              b.add(i++, new Instruction(ins.dest, Op.MOV, Register.regs[old & 0xF]));
             } else {
               depth--;
               old = old & (0xF) | (depth << 4);

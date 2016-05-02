@@ -78,7 +78,7 @@ public class RegisterAllocator extends BasicBlockTraverser {
       }
 
       @Override
-      public State transform(BasicBlockAnalyzeTransformPass.State t) {
+      public State merge(BasicBlockAnalyzeTransformPass.State t) {
         return new State(inuse | ((State) t).inuse);
       }
 
@@ -257,7 +257,7 @@ public class RegisterAllocator extends BasicBlockTraverser {
         State oldOut, newOut;
         if (oldData != null) {
           oldOut = (State) oldData.out;
-          newOut = oldOut.transform(node.in);
+          newOut = oldOut.merge(node.in);
         } else {
           oldOut = null;
           newOut = (State) node.in;

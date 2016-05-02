@@ -4,9 +4,9 @@ import java.util.HashSet;
 
 public abstract class BasicBlockAnalyzeTransformPass extends BasicBlockVisitor<BasicBlockAnalyzeTransformPass.State> {
 
-  public static abstract class State implements Transformable<State> {
+  public static abstract class State implements Mergable<State> {
     @Override
-    public abstract State transform(State t);
+    public abstract State merge(State t);
 
     @Override
     protected abstract State clone();

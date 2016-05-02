@@ -16,11 +16,7 @@ class Main {
 
   static CFG backend(CFG ir) {
     new UnreachableBlockRemoval().traverse(ir);
-    new LowerPseudoOp1().traverse(ir);
-    if (CLI.debug) {
-      System.out.println("----- IR lower pseudo op I -----");
-      System.out.print(ir.toString());
-    }
+
 
     if (CLI.opts[CLI2.Optimization.CSE.index]) {
       new CSE().traverse(ir);
@@ -28,6 +24,12 @@ class Main {
         System.out.println("----- CSE -----");
         System.out.print(ir.toString());
       }
+    }
+
+    new LowerPseudoOp1().traverse(ir);
+    if (CLI.debug) {
+      System.out.println("----- IR lower pseudo op I -----");
+      System.out.print(ir.toString());
     }
 
     /*

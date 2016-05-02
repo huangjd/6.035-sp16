@@ -4,7 +4,7 @@ public abstract class BasicBlockAnalyzeTransformTraverser extends BasicBlockAnal
 
   public static class State extends BasicBlockAnalyzeTransformPass.State {
     @Override
-    public State transform(BasicBlockAnalyzeTransformPass.State t) {
+    public State merge(BasicBlockAnalyzeTransformPass.State t) {
       return (State) t;
     }
 

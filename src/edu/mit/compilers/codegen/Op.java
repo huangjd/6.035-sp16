@@ -27,6 +27,7 @@ public enum Op {
    * 24   setcc
    * 25   cmovcc
    * 26   jcc
+   * 27   annotation
    * 28-31 Pseudo op may not appear after this stage in fixed pipeline
    *
    * DWORD 2:
@@ -91,32 +92,31 @@ public enum Op {
   // Pseudo ops from midend, need to be lowered in backend
   //                             C   8   4   0   C   8   4   0
   LOCAL_ARRAY_DECL(
-      "local_array",        0b11010000000000000001001000000010, 0),
+      "local_array",        0b11011000000000000001001000000010, 0),
   FAKE_DIV("xdiv",          0b00000000000001001001110000000010, 0), // d = a / b (div|mod)
   LOAD("load",              0b01110000000000000001010000000010, 0), // d = a[b]
   STORE("store",            0b01110000000000001101010000000010, 0), // a[b] = d
   FAKE_CALL("xcall",        0b00000000000001000001101000000010, 0), // d = call $a (args...) #xmm used
   OUT_OF_BOUNDS(
-      "out_of_bounds",      0b11110000000000000000010000000010, 0xFFEF0000), // d = funcName a = line, b = col
+      "out_of_bounds",      0b11111000000000000000010000000010, 0xFFEF0000), // d = funcName a = line, b = col
   CONTROL_REACHES_END(
-      "control_reaches_end",0b11110000000000000000010000000010, 0xFFEF0000), // d = funcName a = line, b = col
-  ALLOCATE("allocate",      0b11010000000000000000001100000010, 0), // a = Imm64 (set up for func call)
-              TEMP_REG("temp_reg", 0b10100000000000000001000000000010, 0), END_TEMP_REG(
-                  "end_temp_reg", 0b10100000000000000000000100000010,
-                  0),
-  BEGIN_XCALL("begin_xcall",0b10100000000000000000000100000010, 0),
- BEGIN_XDIV("begin_xdiv",
-                      0b10100000000000000000000100000010, 0),
-  END_XCALL("end_xcall",    0b10100000000000000000000100000010, 0),
- END_XDIV("end_xdiv", 0b10100000000000000000000100000010, 0),
-  PROLOGUE("func_prologue", 0b11010000000000000000000100000010, 0),
-  GET_ARG("get_arg",        0b00000000000000000001001000000010, 0), // d = var, a = Imm64 (index of arg)
-  EPILOGUE("func_epilogue", 0b11010000000000000000000100000010, 0),
-  NO_RETURN("#no_ret",      0b11110000000000110000000100000011, 0),
-  LOOP_START("loop_start",  0b11110000000000000000000000000010, 0),
-  LOOP_END("loop_end",      0b11110000000000000000000000000010, 0),
-  COMMENT("# ",             0b00000000000000000000000000000101, 0),
-  DELETED("",               0b11110000000000000000000100000011, 0)
+      "control_reaches_end",0b11111000000000000000010000000010, 0xFFEF0000), // d = funcName a = line, b = col
+  ALLOCATE("allocate",      0b11011000000000000000001100000010, 0), // a = Imm64 (set up for func call)
+  TEMP_REG("temp_reg",      0b10101000000000000001000000000010, 0),
+  END_TEMP_REG(
+      "end_temp_reg",          0b10101000000000000000000100000010, 0),
+  BEGIN_XCALL("begin_xcall",0b10101000000000000000000100000010, 0),
+  BEGIN_XDIV("begin_xdiv",  0b10101000000000000000000100000010, 0),
+  END_XCALL("end_xcall",    0b10101000000000000000000100000010, 0),
+  END_XDIV("end_xdiv",      0b10101000000000000000000100000010, 0),
+  PROLOGUE("func_prologue", 0b11011000000000000000000100000010, 0),
+  GET_ARG("get_arg",        0b00001000000000000001001000000010, 0), // d = var, a = Imm64 (index of arg)
+  EPILOGUE("func_epilogue", 0b11011000000000000000000100000010, 0),
+  NO_RETURN("#no_ret",      0b11111000000000110000000100000011, 0),
+  LOOP_START("loop_start",  0b11111000000000000000000000000010, 0),
+  LOOP_END("loop_end",      0b11111000000000000000000000000010, 0),
+  COMMENT("# ",             0b00001000000000000000000000000101, 0),
+  DELETED("",               0b11111000000000000000000100000011, 0)
   ;
 
   String mnemonics;
@@ -221,6 +221,10 @@ public enum Op {
 
   public int getAdditionalWriteRegs() {
     return Util.extractNBit(extraRW, 16, 16);
+  }
+
+  public boolean isAnnotation() {
+    return Util.extractNBit(property, 27, 1) != 0;
   }
 
   @Override

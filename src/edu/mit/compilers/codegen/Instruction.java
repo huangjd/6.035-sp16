@@ -3,6 +3,7 @@ package edu.mit.compilers.codegen;
 import java.util.*;
 
 import edu.mit.compilers.common.Util;
+import edu.mit.compilers.common.Util.Predicate;
 
 public class Instruction {
   public boolean twoOperand;
@@ -10,8 +11,38 @@ public class Instruction {
   public Operand a, b;
   public Operand dest;
 
+  public Instruction(Instruction ins) {
+    this.op = ins.op;
+    this.a = ins.a;
+    this.b = ins.b;
+    this.dest = ins.dest;
+    this.twoOperand = ins.twoOperand;
+  }
+
+  @Override
+  protected Instruction clone() {
+    return new Instruction(this);
+  }
+
+  static Predicate<Operand> dummyFilter = new Predicate<Operand>() {
+    @Override
+    public boolean eval(Operand obj) {
+      return (obj != Value.dummy);
+    }
+  };
+
   static public class DivInstruction extends Instruction {
     public Operand dest2;
+
+    public DivInstruction(DivInstruction ins) {
+      super(ins);
+      this.dest2 = ins.dest2;
+    }
+
+    @Override
+    protected DivInstruction clone() {
+      return new DivInstruction(this);
+    }
 
     public DivInstruction(Operand dest1, Operand dest2, Operand a, Operand b) {
       super(dest1, Op.FAKE_DIV, a, b);
@@ -23,12 +54,34 @@ public class Instruction {
     public String toString() {
       return dest.toString() + ", " + dest2.toString() + " = x_div\t" + a.toString() + ",\t" + b.toString();
     }
+
+    @Override
+    public Operand[] getDestOperand() {
+      return Util.filter(new Operand[]{dest, dest2}, dummyFilter);
+    }
+
+    @Override
+    public Operand dest2() {
+      return dest2;
+    }
   }
 
   static public class CallInstruction extends Instruction {
     public ArrayList<Operand> args;
     public boolean variadic;
     public int variadicXMMArgsCount;
+
+    public CallInstruction(CallInstruction ins) {
+      super(ins);
+      this.args = (ArrayList<Operand>) ins.args.clone();
+      this.variadic = ins.variadic;
+      this.variadicXMMArgsCount = ins.variadicXMMArgsCount;
+    }
+
+    @Override
+    protected Instruction clone() {
+      return new CallInstruction(this);
+    }
 
     public CallInstruction(Operand dest, Operand symbol, ArrayList<Operand> args, boolean variadic,
         int variadicXMMArgsCount) {
@@ -242,6 +295,62 @@ public class Instruction {
       Operand n = renameTable.get(b);
       if (n != null) {
         b = n;
+      }
+    }
+  }
+
+  public Operand dest2() {
+    return null;
+  }
+
+  public Operand[] getDestOperand() {
+    if (twoOperand) {
+      switch (op.isaWriteDest()) {
+      case 0:
+        return new Operand[]{};
+      case 1:
+        return new Operand[]{a};
+      case 2:
+        return new Operand[]{b};
+      default:
+        throw new RuntimeException();
+      }
+    } else {
+      if (op.isAnnotation()) {
+        return new Operand[]{};
+      }
+      switch (op) {
+      case STORE:
+        return new Operand[]{};
+      default:
+        return Util.filter(new Operand[]{dest}, dummyFilter);
+      }
+    }
+  }
+
+  public Operand[] getReadOperand() {
+    if (twoOperand) {
+      switch (op.isaReadSrc()) {
+      case 0:
+        return new Operand[]{};
+      case 1:
+        return new Operand[]{a};
+      case 2:
+        return new Operand[]{b};
+      case 3:
+        return new Operand[]{a, b};
+      default:
+        throw new RuntimeException();
+      }
+    } else {
+      if (op.isAnnotation()) {
+        return new Operand[]{};
+      }
+      switch (op) {
+      case STORE:
+        return new Operand[]{a, b, dest};
+      default:
+        return Util.filter(new Operand[]{a, b}, dummyFilter);
       }
     }
   }
