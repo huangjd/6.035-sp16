@@ -73,7 +73,7 @@ public class SymbolTable extends ScopedMap<String, Var> {
 
   public ArrayList<Var> asList() {
     ArrayList<Var> list = new ArrayList<Var>(map.values());
-    list.sort(new Comparator<Var>() {
+    Collections.sort(list, new Comparator<Var>() {
       @Override
       public int compare(Var arg0, Var arg1) {
         int i = Integer.compare(arg1.stackOffset, arg0.stackOffset);
