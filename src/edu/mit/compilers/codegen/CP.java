@@ -33,7 +33,7 @@ public class CP extends BasicBlockAnalyzeTransformPass {
 
       map = (HashMap<Operand, Operand>) rename.clone();
       for (Entry<Operand, Operand > e2 : other.rename.entrySet()) {
-        map.put(e2.getKey(), e2.getValue())
+        map.put(e2.getKey(), e2.getValue());
       }
 
       return new State(map);
