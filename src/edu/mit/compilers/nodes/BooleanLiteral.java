@@ -9,7 +9,7 @@ public class BooleanLiteral extends Literal {
   public BooleanLiteral(boolean v, SourcePosition pos) {
     super(pos);
     value = v;
-    hashCache = Boolean.hashCode(v);
+    hashCache = value ? 1 : 0;
   }
 
   @Override

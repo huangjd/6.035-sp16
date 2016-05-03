@@ -32,7 +32,7 @@ public class CP extends BasicBlockAnalyzeTransformPass {
       //other.rename = (HashMap<Operand, Operand>) map.clone();
 
       map = (HashMap<Operand, Operand>) rename.clone();
-      for (Entry<Operand, Operand > e2 : other.rename.entrySet()) {
+      for (AbstractMap.Entry<Operand, Operand> e2 : other.rename.entrySet()) {
         map.put(e2.getKey(), e2.getValue());
       }
 
@@ -70,8 +70,8 @@ public class CP extends BasicBlockAnalyzeTransformPass {
 
     void invalidate(Operand op) {
       rename.remove(op);
-      for (Iterator<Entry<Operand, Operand>> it = rename.entrySet().iterator(); it.hasNext();) {
-        Entry<Operand, Operand> e = it.next();
+      for (Iterator<AbstractMap.Entry<Operand, Operand>> it = rename.entrySet().iterator(); it.hasNext();) {
+        AbstractMap.Entry<Operand, Operand> e = it.next();
         if (e.getValue().equals(op)) {
           it.remove();
         }

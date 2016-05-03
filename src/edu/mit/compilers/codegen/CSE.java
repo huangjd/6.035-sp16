@@ -94,16 +94,16 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
           exprs.put(e, n);
         }
       }
-      ArrayList<Entry<ExprDesc, Operand>> xx = new ArrayList<>();
-      for (Iterator<Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
-        Entry<ExprDesc, Operand> ent = it.next();
+      ArrayList<AbstractMap.Entry<ExprDesc, Operand>> xx = new ArrayList<>();
+      for (Iterator<AbstractMap.Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
+        AbstractMap.Entry<ExprDesc, Operand> ent = it.next();
         ExprDesc e = ent.getKey();
         if (old.equals(e.a) || old.equals(e.b)) {
           xx.add(ent);
           it.remove();
         }
       }
-      for (Entry<ExprDesc, Operand> ent : xx) {
+      for (AbstractMap.Entry<ExprDesc, Operand> ent : xx) {
         ExprDesc e = ent.getKey();
         if (old.equals(e.a)) {
           e.a = n;
@@ -134,8 +134,8 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
       HashMap<ExprDesc, Operand> newexpr = new HashMap<>();
       HashMap<Operand, Operand> newrename = new HashMap<>();
 
-      ArrayList<Entry<Operand, Operand>> replaceList = new ArrayList<>();
-      for (java.util.Map.Entry<ExprDesc, Operand> e : exprs.entrySet()) {
+      ArrayList<AbstractMap.Entry<Operand, Operand>> replaceList = new ArrayList<>();
+      for (AbstractMap.Entry<ExprDesc, Operand> e : exprs.entrySet()) {
         ExprDesc e1 = e.getKey();
         Operand o1 = e.getValue();
         Operand o2 = other.exprs.get(e1);
@@ -152,11 +152,11 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
         }
       }
 
-      for (Entry<Operand, Operand> ent : replaceList) {
+      for (AbstractMap.Entry<Operand, Operand> ent : replaceList) {
         replaceOut(ent.getKey(), ent.getValue());
       }
 
-      for (java.util.Map.Entry<Operand, Operand> e : rename.entrySet()) {
+      for (AbstractMap.Entry<Operand, Operand> e : rename.entrySet()) {
         Operand k1 = e.getKey();
         Operand v1 = e.getValue();
         Operand v2 = other.rename.get(k1);
@@ -212,7 +212,7 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
 
     void invalidate(Operand op) {
       rename.remove(op);
-      for (Iterator<Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
+      for (Iterator<AbstractMap.Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
         ExprDesc desc = it.next().getKey();
         if (op.equals(desc.a) || op.equals(desc.b)) {
           it.remove();
@@ -221,7 +221,7 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
     }
 
     void invalidateExcept(Operand op, ExprDesc e) {
-      for (Iterator<Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
+      for (Iterator<AbstractMap.Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
         ExprDesc desc = it.next().getKey();
         if (!desc.equals(e)) {
           if (op.equals(desc.a) || op.equals(desc.b)) {
@@ -281,7 +281,7 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
       }
 
       if (ins.op.invalidateFlag()) {
-        for (Iterator<Entry<ExprDesc, Operand>> it = state.exprs.entrySet().iterator(); it.hasNext();) {
+        for (Iterator<AbstractMap.Entry<ExprDesc, Operand>> it = state.exprs.entrySet().iterator(); it.hasNext();) {
           Op op = it.next().getKey().op;
           if (op == Op.CMP || op == Op.TEST) {
             it.remove();
@@ -394,7 +394,7 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
       }
 
       if (ins.op.invalidateFlag()) {
-        for (Iterator<Entry<ExprDesc, Operand>> it = in.exprs.entrySet().iterator(); it.hasNext();) {
+        for (Iterator<AbstractMap.Entry<ExprDesc, Operand>> it = in.exprs.entrySet().iterator(); it.hasNext();) {
           Op op = it.next().getKey().op;
           if (op == Op.CMP || op == Op.TEST) {
             it.remove();

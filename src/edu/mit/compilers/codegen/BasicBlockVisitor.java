@@ -77,7 +77,7 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
   }
 
   public void traverse(BasicBlock entry) {
-    PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(new Comparator<QueueNode>() {
+    PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(1, new Comparator<QueueNode>() {
       @Override
       public int compare(QueueNode a, QueueNode b) {
         return Integer.compare(a.b.priority, b.b.priority);
@@ -94,7 +94,7 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
   }
 
   public void traverse(HashSet<BasicBlock> exits) {
-    PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(new Comparator<QueueNode>() {
+    PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(exits.size(), new Comparator<QueueNode>() {
       @Override
       public int compare(QueueNode a, QueueNode b) {
         return Integer.compare(b.b.priority, a.b.priority);

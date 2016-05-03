@@ -9,7 +9,7 @@ public class IntLiteral extends Literal {
   public IntLiteral(long v, SourcePosition pos) {
     super(pos);
     value = v;
-    hashCache = Long.hashCode(v);
+    hashCache = (int) v;
   }
 
   @Override

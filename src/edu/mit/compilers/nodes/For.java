@@ -33,7 +33,7 @@ public class For extends Statement implements Breakable {
     }
 
     this.hashCache = loopVar.hashCode() + init.hashCode() * 3 + end.hashCode() * 5 +
-        Long.hashCode(increment) * 7 + body.hashCode() * 11;
+        (int) increment * 7 + body.hashCode() * 11;
   }
 
   public For(Var loopVar, ExpressionNode init, ExpressionNode cond, StatementNode body, SourcePosition pos) {

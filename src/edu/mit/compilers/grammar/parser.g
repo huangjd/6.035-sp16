@@ -859,7 +859,7 @@ primary_expr returns [ExpressionNode e = null] {
       e = new VarExpr(var, pos).box();
     }
   }
-  | {HashMap.Entry<Var, ExpressionNode> kvp; } kvp = arraylocation {
+  | {AbstractMap.Entry<Var, ExpressionNode> kvp; } kvp = arraylocation {
     if (kvp.getKey() != null && kvp.getValue() != null) {
       e = new Load(kvp.getKey(), kvp.getValue(), pos).box();
     }

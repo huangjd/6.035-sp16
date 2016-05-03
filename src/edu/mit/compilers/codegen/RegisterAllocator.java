@@ -237,7 +237,7 @@ public class RegisterAllocator extends BasicBlockTraverser {
 
     @Override
     public void traverse(HashSet<BasicBlock> exits) {
-      PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(new Comparator<QueueNode>() {
+      PriorityQueue<QueueNode> queue = new PriorityQueue<QueueNode>(exits.size(), new Comparator<QueueNode>() {
         @Override
         public int compare(QueueNode a, QueueNode b) {
           return Integer.compare(b.b.priority, a.b.priority);
@@ -285,7 +285,7 @@ public class RegisterAllocator extends BasicBlockTraverser {
     for (Value val : heuristic.keySet()) {
       values0.add(new SimpleEntry<Value, Integer>(val, heuristic.get(val)));
     }
-    values0.sort(new Comparator<SimpleEntry<Value, Integer>>() {
+    Collections.sort(values0, new Comparator<SimpleEntry<Value, Integer>>() {
       @Override
       public int compare(SimpleEntry<Value, Integer> arg0, SimpleEntry<Value, Integer> arg1) {
         return arg1.getValue().compareTo(arg0.getValue());

@@ -50,7 +50,7 @@ public class Midend extends Visitor {
     Operand s1 = compile(new StringLiteral("\"Control reaches end of non-void function\\n\"", null).box());
     Operand s2 = compile(new StringLiteral("\"Array index out of bounds\\n\"", null).box());
     Operand s3 = compile(new StringLiteral("\"Control reaches end of non-void function\\n\"", null).box());
-    BasicBlock dummy0 = new BasicBlock();
+    final BasicBlock dummy0 = new BasicBlock();
     BasicBlock dummy1 = new BasicBlock();
     BasicBlock dummy2 = new BasicBlock();
     BasicBlock exit0 = new BasicBlock("_exit.0");
@@ -721,7 +721,7 @@ public class Midend extends Visitor {
 
       currentBB = loop;
       currentBB.add(zero, Op.STORE, temp, index)
-          .add(index, Op.SUB, new Imm64(1), index);
+      .add(index, Op.SUB, new Imm64(1), index);
       currentBB.addJmp(Op.JGE, loop, exit);
 
       currentBB = exit;
@@ -881,8 +881,10 @@ public class Midend extends Visitor {
       currentBB.add(currentFunctionName, Op.CONTROL_REACHES_END, new Imm64(pos.lineNum), new Imm64(pos.colNum))
       .add(Op.NO_RETURN);
     } else {
+      final Imm64 imm = new Imm64(node.exitCode);
+      
       currentBB.add(new Instruction.CallInstruction(Value.dummy, new Symbol("exit"),
-          new ArrayList<Operand>(){{add(new Imm64(node.exitCode));}}, false, 0));
+          new ArrayList<Operand>(){{add(imm);}}, false, 0));
       currentBB.add(Op.NO_RETURN);
     }
     funcExits.add(currentBB);
