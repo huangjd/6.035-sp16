@@ -34,6 +34,25 @@ public class LowerPseudoOp2 extends BasicBlockTraverser {
           }
         }
         break;
+      case RANGE:
+        assert(ins.b instanceof Imm64);
+        long range = ((Imm64)ins.b).val;
+        if (ins.a.isImm()) {
+          long index = ins.a instanceof Imm8 ? ((Imm8) ins.a).val : ((Imm64) ins.a).val;
+          if (index >= 0 && index < range) {
+            b.set(i, new Instruction(Op.DELETED));
+          } else {
+            b.set(i, new Instruction(Op.CALL, new Symbol("_exit.0")));
+          }
+        } else {
+          if (ins.b.isImm64N32()) {
+            b.add(i++, new Instruction(Op.MOV, ins.b, Register.rax));
+            ins.b = Register.rax;
+          }
+          b.set(i, new Instruction(Op.CMP, ins.b, ins.a));
+          b.add(++i, new Instruction(Op.JAE, new Symbol("_exit.0")));
+        }
+        break;
       default:
         if (ins.op.pseudoOp() && !ins.op.isa()) {
           b.set(i, new Instruction(Op.DELETED));

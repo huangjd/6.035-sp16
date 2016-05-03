@@ -26,6 +26,14 @@ class Main {
       }
     }
 
+    if (CLI.opts[CLI2.Optimization.CP.index]) {
+      // new CP().traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- CP -----");
+        System.out.print(ir.toString());
+      }
+    }
+
     new LowerPseudoOp1().traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR lower pseudo op I -----");

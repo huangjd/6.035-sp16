@@ -164,61 +164,63 @@ public class Instruction {
   }
 
   public Instruction(Op op, Operand a, Operand b) {
-    assert (op.isa());
-    assert (a != Value.dummy && b != Value.dummy);
-    int operandNum = op.isaOperandNum();
-    switch (operandNum) {
-    case 0:
-      assert (a == null && b == null);
-      break;
-    case 1:
-      assert (a != null && b == null);
-      break;
-    case 2:
-      assert (a != null && b != null);
-      break;
-    case 3:
-    default:
-      throw new RuntimeException();
-    }
-    assert (!op.hasSuffix() || operandNum > 0);
+    if (op != Op.RANGE && !op.isAnnotation()) {
+      assert (op.isa());
+      assert (a != Value.dummy && b != Value.dummy);
+      int operandNum = op.isaOperandNum();
+      switch (operandNum) {
+      case 0:
+        assert (a == null && b == null);
+        break;
+      case 1:
+        assert (a != null && b == null);
+        break;
+      case 2:
+        assert (a != null && b != null);
+        break;
+      case 3:
+      default:
+        throw new RuntimeException();
+      }
+      assert (!op.hasSuffix() || operandNum > 0);
 
-    switch (op) {
-    case IDIV:
-      assert (a.isReg() || a.isMem());
-      break;
-    case MOV:
-      if (a.isMem()) {
-        assert (b.isReg());
-      }
-      if (b.isMem()) {
-        assert (a.isReg() || a.isImm32());
-      }
-      break;
-    case CALL:
-      break;
-    default:
-      if (op.isaOperandNum() == 2) {
-        assert (!a.isImm64N32() && !b.isImm() && !(a.isMem() && b.isMem()));
-      } else if (op.isaOperandNum() == 1) {
-        if (op.ctrlx() == 1 || op.ctrlx() == 2) {
-          assert (a instanceof JumpTarget);
-        } else {
-          assert (a.isMem() || a.isReg());
+      switch (op) {
+      case IDIV:
+        assert (a.isReg() || a.isMem());
+        break;
+      case MOV:
+        if (a.isMem()) {
+          assert (b.isReg());
+        }
+        if (b.isMem()) {
+          assert (a.isReg() || a.isImm32());
+        }
+        break;
+      case CALL:
+        break;
+      default:
+        if (op.isaOperandNum() == 2) {
+          assert (!a.isImm64N32() && !b.isImm() && !(a.isMem() && b.isMem()));
+        } else if (op.isaOperandNum() == 1) {
+          if (op.ctrlx() == 1 || op.ctrlx() == 2) {
+            assert (a instanceof JumpTarget || a instanceof Symbol);
+          } else {
+            assert (a.isMem() || a.isReg());
+          }
         }
       }
-    }
 
-    int destWrite = op.isaWriteDest();
-    switch (destWrite) {
-    case 0:
-      break;
-    case 1:
-      assert (a.isReg() || a.isMem() || a instanceof Value);
-      break;
-    case 2:
-      assert (b.isReg() || b.isMem() || b instanceof Value);
-      break;
+      int destWrite = op.isaWriteDest();
+      switch (destWrite) {
+      case 0:
+        break;
+      case 1:
+        assert (a.isReg() || a.isMem() || a instanceof Value);
+        break;
+      case 2:
+        assert (b.isReg() || b.isMem() || b instanceof Value);
+        break;
+      }
     }
 
     this.a = a;

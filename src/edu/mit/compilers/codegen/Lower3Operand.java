@@ -50,7 +50,7 @@ public class Lower3Operand extends BasicBlockTraverser {
             b.add(i + 1, new Instruction(Op.TEST, Register.rax, Register.rax));
             break;
           case TEST:
-            z = y ^ x;
+            z = y & x;
             ins.dest = Register.rax;
             b.add(i + 1, new Instruction(Op.TEST, Register.rax, Register.rax));
             break;

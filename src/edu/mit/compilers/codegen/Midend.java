@@ -46,10 +46,10 @@ public class Midend extends Visitor {
   }
 
   CFG.CFGDesc getExitBlock() {
-    Operand s0 = compile(new StringLiteral("\"rip=0x%x: Array index out of bounds\\n\"", null).box());
-    Operand s1 = compile(new StringLiteral("\"rip=0x%x: Control reaches end of non-void function\\n\"", null).box());
-    Operand s2 = compile(new StringLiteral("\"%s: %d:%d: Array index out of bounds\\n\"", null).box());
-    Operand s3 = compile(new StringLiteral("\"%s: %d:%d: Control reaches end of non-void function\\n\"", null).box());
+    Operand s0 = compile(new StringLiteral("\"Array index out of bounds\\n\"", null).box());
+    Operand s1 = compile(new StringLiteral("\"Control reaches end of non-void function\\n\"", null).box());
+    Operand s2 = compile(new StringLiteral("\"Array index out of bounds\\n\"", null).box());
+    Operand s3 = compile(new StringLiteral("\"Control reaches end of non-void function\\n\"", null).box());
     BasicBlock dummy0 = new BasicBlock();
     BasicBlock dummy1 = new BasicBlock();
     BasicBlock dummy2 = new BasicBlock();
@@ -714,14 +714,15 @@ public class Midend extends Visitor {
       BasicBlock loop = new BasicBlock();
       BasicBlock exit = new BasicBlock();
 
+      Value index = new Value();
       currentBB.add(temp, Op.LOCAL_ARRAY_DECL, new Imm64(node.var.length));
-      currentBB.add(Register.rax, Op.MOV, new Imm64(node.var.length - 1))
+      currentBB.add(index, Op.MOV, new Imm64(node.var.length - 1))
       .addJmp(loop);
 
       currentBB = loop;
-      currentBB.add(zero, Op.STORE, temp, Register.rax)
-      .add(Register.rax, Op.DEC, Register.rax)
-      .addJmp(Op.JGE, loop, exit);
+      currentBB.add(zero, Op.STORE, temp, index)
+          .add(index, Op.SUB, new Imm64(1), index);
+      currentBB.addJmp(Op.JGE, loop, exit);
 
       currentBB = exit;
     }
@@ -765,30 +766,34 @@ public class Midend extends Visitor {
 
     Operand index = compile(node.index);
     long length = node.array.length;
-    if (node.checkBounds) {
-      BasicBlock check1 = new BasicBlock();
-      BasicBlock ok = new BasicBlock();
-      BasicBlock die = new BasicBlock();
-
-      currentBB.add(Op.CMP, new Imm64(0), index)
-      .addJmp(Op.JL, die, check1);
-
-      currentBB = check1;
-      currentBB.add(Op.CMP, new Imm64(length), index)
-      .addJmp(Op.JGE, die, ok);
-
-      currentBB = die;
-      currentBB.priority = 1000000000;
-      SourcePosition pos = node.getSourcePosition();
-      if (pos == null) {
-        pos = new SourcePosition();
-      }
-      currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new Imm64(pos.lineNum), new Imm64(pos.colNum))
-      .add(Op.NO_RETURN);
-      funcExits.add(currentBB);
-
-      currentBB = ok;
-    }
+    /*
+     * if (node.checkBounds) {
+     * BasicBlock check1 = new BasicBlock();
+     * BasicBlock ok = new BasicBlock();
+     * BasicBlock die = new BasicBlock();
+     *
+     * currentBB.add(Op.CMP, new Imm64(0), index)
+     * .addJmp(Op.JL, die, check1);
+     *
+     * currentBB = check1;
+     * currentBB.add(Op.CMP, new Imm64(length), index)
+     * .addJmp(Op.JGE, die, ok);
+     *
+     * currentBB = die;
+     * currentBB.priority = 1000000000;
+     * SourcePosition pos = node.getSourcePosition();
+     * if (pos == null) {
+     * pos = new SourcePosition();
+     * }
+     * currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new
+     * Imm64(pos.lineNum), new Imm64(pos.colNum))
+     * .add(Op.NO_RETURN);
+     * funcExits.add(currentBB);
+     *
+     * currentBB = ok;
+     * }
+     */
+    currentBB.add(Value.dummy, Op.RANGE, index, new Imm64(node.array.length));
     Operand base = symtab.lookup(node.array);
     currentBB.add(returnValue, Op.LOAD, base, index);
   }
@@ -799,30 +804,35 @@ public class Midend extends Visitor {
 
     Operand index = compile(node.index);
     long length = node.array.length;
-    if (node.checkBounds) {
-      BasicBlock check1 = new BasicBlock();
-      BasicBlock ok = new BasicBlock();
-      BasicBlock die = new BasicBlock();
+    /*
+     * if (node.checkBounds) {
+     * BasicBlock check1 = new BasicBlock();
+     * BasicBlock ok = new BasicBlock();
+     * BasicBlock die = new BasicBlock();
+     *
+     * currentBB.add(Op.CMP, new Imm64(0), index)
+     * .addJmp(Op.JL, die, check1);
+     *
+     * currentBB = check1;
+     * currentBB.add(Op.CMP, new Imm64(length), index)
+     * .addJmp(Op.JGE, die, ok);
+     *
+     * currentBB = die;
+     * currentBB.priority = 1000000000;
+     * SourcePosition pos = node.getSourcePosition();
+     * if (pos == null) {
+     * pos = new SourcePosition();
+     * }
+     * currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new
+     * Imm64(pos.lineNum), new Imm64(pos.colNum))
+     * .add(Op.NO_RETURN);
+     * funcExits.add(currentBB);
+     *
+     * currentBB = ok;
+     * }
+     */
+    currentBB.add(Value.dummy, Op.RANGE, index, new Imm64(node.array.length));
 
-      currentBB.add(Op.CMP, new Imm64(0), index)
-      .addJmp(Op.JL, die, check1);
-
-      currentBB = check1;
-      currentBB.add(Op.CMP, new Imm64(length), index)
-      .addJmp(Op.JGE, die, ok);
-
-      currentBB = die;
-      currentBB.priority = 1000000000;
-      SourcePosition pos = node.getSourcePosition();
-      if (pos == null) {
-        pos = new SourcePosition();
-      }
-      currentBB.add(currentFunctionName, Op.OUT_OF_BOUNDS, new Imm64(pos.lineNum), new Imm64(pos.colNum))
-      .add(Op.NO_RETURN);
-      funcExits.add(currentBB);
-
-      currentBB = ok;
-    }
     Operand value = compile(node.value);
     Operand base = symtab.lookup(node.array);
     Operand oldValue = node.array.type.getElementType() == Type.INT ? new Value() : new Value(false);
@@ -881,6 +891,10 @@ public class Midend extends Visitor {
 
   @Override
   protected void visit(Call node) {
+    BasicBlock next = new BasicBlock();
+    currentBB.addJmp(next);
+    currentBB = next;
+
     if (currentAssignDest != null) {
       returnValue = currentAssignDest;
       currentAssignDest = null;

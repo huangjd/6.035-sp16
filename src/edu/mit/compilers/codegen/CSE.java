@@ -94,10 +94,36 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
           exprs.put(e, n);
         }
       }
+      ArrayList<Entry<ExprDesc, Operand>> xx = new ArrayList<>();
+      for (Iterator<Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
+        Entry<ExprDesc, Operand> ent = it.next();
+        ExprDesc e = ent.getKey();
+        if (old.equals(e.a) || old.equals(e.b)) {
+          xx.add(ent);
+          it.remove();
+        }
+      }
+      for (Entry<ExprDesc, Operand> ent : xx) {
+        ExprDesc e = ent.getKey();
+        if (old.equals(e.a)) {
+          e.a = n;
+        }
+        if (old.equals(e.b)) {
+          e.b = n;
+        }
+        exprs.put(e, ent.getValue());
+      }
+
       for (Operand o : rename.keySet()) {
         if (rename.get(o).equals(old)) {
           rename.put(o, n);
         }
+      }
+
+      Operand o2 = rename.get(old);
+      if (o2 != null) {
+        rename.remove(old);
+        rename.put(n, o2);
       }
     }
 
@@ -105,50 +131,46 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
     public State merge(BasicBlockAnalyzeTransformPass.State t) {
       State other = (State) t;
 
-      for (Iterator<Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
-        Entry<ExprDesc, Operand> e = it.next();
+      HashMap<ExprDesc, Operand> newexpr = new HashMap<>();
+      HashMap<Operand, Operand> newrename = new HashMap<>();
+
+      ArrayList<Entry<Operand, Operand>> replaceList = new ArrayList<>();
+      for (java.util.Map.Entry<ExprDesc, Operand> e : exprs.entrySet()) {
         ExprDesc e1 = e.getKey();
         Operand o1 = e.getValue();
-        if (other.exprs.containsKey(e1)) {
-          Operand o2 = other.exprs.get(e1);
+        Operand o2 = other.exprs.get(e1);
+        if (o2 != null) {
           if (!o1.equals(o2)) {
             if (o1 instanceof DivRes) {
-              assert (o2 instanceof DivRes);
-              replaceOut(((DivRes) o1).q, ((DivRes) o2).q);
-              replaceOut(((DivRes) o1).r, ((DivRes) o2).r);
+              replaceList.add(new AbstractMap.SimpleEntry<>(((DivRes) o1).q, ((DivRes) o2).q));
+              replaceList.add(new AbstractMap.SimpleEntry<>(((DivRes) o1).r, ((DivRes) o2).r));
             } else if (o1 != Value.dummy) {
-              replaceOut(o1, o2);
+              replaceList.add(new AbstractMap.SimpleEntry<>(o1, o2));
             }
           }
-        } else {
-          it.remove();
-        }
-      }
-      for (Iterator<Entry<ExprDesc, Operand>> it = other.exprs.entrySet().iterator(); it.hasNext();) {
-        if (!exprs.containsKey(it.next().getKey())) {
-          it.remove();
+          newexpr.put(e1, o2);
         }
       }
 
-      for (Iterator<Entry<Operand, Operand>> it = rename.entrySet().iterator(); it.hasNext();) {
-        Entry<Operand, Operand> e = it.next();
+      for (Entry<Operand, Operand> ent : replaceList) {
+        replaceOut(ent.getKey(), ent.getValue());
+      }
+
+      for (java.util.Map.Entry<Operand, Operand> e : rename.entrySet()) {
         Operand k1 = e.getKey();
         Operand v1 = e.getValue();
-        if (!v1.equals(other.rename.get(k1))) {
-          it.remove();
+        Operand v2 = other.rename.get(k1);
+        if (v1.equals(v2)) {
+          newrename.put(k1, v1);
         }
       }
 
-      for (Iterator<Entry<Operand, Operand>> it = other.rename.entrySet().iterator(); it.hasNext();) {
-        Entry<Operand, Operand> e = it.next();
-        Operand k2 = e.getKey();
-        Operand v2 = e.getValue();
-        if (!v2.equals(rename.get(k2))) {
-          it.remove();
-        }
-      }
-      assert (this.equals(other));
-      return this;
+      this.exprs = (HashMap<ExprDesc, Operand>) newexpr.clone();
+      this.rename = (HashMap<Operand, Operand>) newrename.clone();
+      other.exprs = (HashMap<ExprDesc, Operand>) newexpr.clone();
+      other.rename = (HashMap<Operand, Operand>) newrename.clone();
+
+      return new State(newexpr, newrename);
     }
 
     @Override
@@ -197,13 +219,34 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
         }
       }
     }
+
+    void invalidateExcept(Operand op, ExprDesc e) {
+      for (Iterator<Entry<ExprDesc, Operand>> it = exprs.entrySet().iterator(); it.hasNext();) {
+        ExprDesc desc = it.next().getKey();
+        if (!desc.equals(e)) {
+          if (op.equals(desc.a) || op.equals(desc.b)) {
+            it.remove();
+          }
+        }
+      }
+    }
   }
-
-
 
   @Override
   public State getInitValue() {
     return new State(new HashMap<ExprDesc, Operand>(), new HashMap<Operand, Operand>());
+  }
+
+  boolean notSelfAssign(Instruction ins) {
+    if (ins.dest.equals(ins.a) || ins.dest.equals(ins.b)) {
+      return false;
+    }
+    if (ins.dest2() != null) {
+      if (ins.dest2().equals(ins.a) || ins.dest2().equals(ins.b)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
@@ -217,6 +260,10 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
 
       if (ins.dest instanceof BSSObject) {
         globals.add(ins.dest);
+      }
+
+      if (ins.dest2() instanceof BSSObject) {
+        globals.add(ins.dest2());
       }
 
       if (ins.a instanceof BSSObject) {
@@ -241,64 +288,72 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
           }
         }
       }
-
-
-      for (Operand dest : ins.getDestOperand()) {
-        state.invalidate(dest);
-      }
-
+      ExprDesc e = null;
 
       if (!ins.twoOperand) {
-        switch (ins.op) {
-        case ADD:
-        case SUB:
-        case IMUL:
-        case XOR:
-        case SAL:
-        case SAR:
-        case NOT:
-        case NEG:
-        case INC:
-        case DEC:
-        case LOAD:
-          ExprDesc e = new ExprDesc(ins.op, state.lookup(ins.a), state.lookup(ins.b));
-          if (state.exprs.containsKey(e)) {
-            state.rename.put(ins.dest, state.exprs.get(e));
-          } else {
-            Value rename = new Value();
-            state.exprs.put(e, rename);
-            state.rename.put(ins.dest, rename);
+        boolean fresh = false;
+
+        if (notSelfAssign(ins)) {
+          switch (ins.op) {
+          case ADD:
+          case SUB:
+          case IMUL:
+          case XOR:
+          case SAL:
+          case SAR:
+          case NOT:
+          case NEG:
+          case INC:
+          case DEC:
+          case LOAD:
+            e = new ExprDesc(ins.op, state.lookup(ins.a), state.lookup(ins.b));
+            if (state.exprs.containsKey(e)) {
+              state.rename.put(ins.dest, state.exprs.get(e));
+            } else {
+              Value rename = new Value();
+              state.exprs.put(e, rename);
+              state.rename.put(ins.dest, rename);
+            }
+            fresh = true;
+            break;
+          case CMP:
+          case TEST:
+          case RANGE:
+            e = new ExprDesc(ins.op, state.lookup(ins.a), state.lookup(ins.b));
+            if (!state.exprs.containsKey(e)) {
+              Value rename = Value.dummy;
+              state.exprs.put(e, rename);
+            }
+            fresh = true;
+            break;
+          case FAKE_DIV:
+            e = new ExprDesc(ins.op, state.lookup(ins.a), state.lookup(ins.b));
+            if (state.exprs.containsKey(e)) {
+              if (ins.dest != Value.dummy) {
+                state.rename.put(ins.dest, ((DivRes) state.exprs.get(e)).q);
+              }
+              if (ins.dest2() != Value.dummy) {
+                state.rename.put(ins.dest2(), ((DivRes) state.exprs.get(e)).r);
+              }
+            } else {
+              Value renameq = new Value();
+              Value renamer = new Value();
+              state.exprs.put(e, new DivRes(renameq, renamer));
+              if (ins.dest != Value.dummy) {
+                state.rename.put(ins.dest, renameq);
+              }
+              if (ins.dest2() != Value.dummy) {
+                state.rename.put(ins.dest2(), renamer);
+              }
+            }
+            fresh = true;
+            break;
           }
-          break;
-        case CMP:
-        case TEST:
-          e = new ExprDesc(ins.op, state.lookup(ins.a), state.lookup(ins.b));
-          if (!state.exprs.containsKey(e)) {
-            Value rename = Value.dummy;
-            state.exprs.put(e, rename);
+        }
+        if (!fresh) {
+          for (Operand dest : ins.getDestOperand()) {
+            state.invalidate(dest);
           }
-          break;
-        case FAKE_DIV:
-          e = new ExprDesc(ins.op, state.lookup(ins.a), state.lookup(ins.b));
-          if (state.exprs.containsKey(e)) {
-            if (ins.dest != Value.dummy) {
-              state.rename.put(ins.dest, ((DivRes) state.exprs.get(e)).q);
-            }
-            if (ins.dest2() != Value.dummy) {
-              state.rename.put(ins.dest2(), ((DivRes) state.exprs.get(e)).r);
-            }
-          } else {
-            Value renameq = new Value();
-            Value renamer = new Value();
-            state.exprs.put(e, new DivRes(renameq, renamer));
-            if (ins.dest != Value.dummy) {
-              state.rename.put(ins.dest, renameq);
-            }
-            if (ins.dest2() != Value.dummy) {
-              state.rename.put(ins.dest2(), renamer);
-            }
-          }
-          break;
         }
       }
     }
@@ -318,6 +373,10 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
 
       if (ins.dest instanceof BSSObject) {
         globals.add(ins.dest);
+      }
+
+      if (ins.dest2() instanceof BSSObject) {
+        globals.add(ins.dest2());
       }
 
       if (ins.a instanceof BSSObject) {
@@ -342,99 +401,137 @@ public class CSE extends BasicBlockAnalyzeTransformPass {
           }
         }
       }
-
-      for (Operand dest : ins.getDestOperand()) {
-        in.invalidate(dest);
-      }
+      ExprDesc e = null;
 
       if (!ins.twoOperand) {
-        boolean fresh = false, freshcmp = false;
+        boolean fresh = false;
 
-        switch (ins.op) {
-        case ADD:
-        case SUB:
-        case IMUL:
-        case XOR:
-        case SAL:
-        case SAR:
-        case NOT:
-        case NEG:
-        case INC:
-        case DEC:
-        case LOAD:
-          ExprDesc e = new ExprDesc(ins.op, in.lookup(ins.a), in.lookup(ins.b));
-          if (in.exprs.containsKey(e)) {
-            in.rename.put(ins.dest, in.exprs.get(e));
-            b.set(i, new Instruction(ins.dest, Op.MOV, in.exprs.get(e)));
-          } else {
-            Operand rename;
-            if (out.exprs.containsKey(e)) {
-              rename = out.exprs.get(e);
-            } else {
-              rename = new Value();
-            }
-            in.exprs.put(e, rename);
-            in.rename.put(ins.dest, rename);
-            b.add(++i, new Instruction(rename, Op.MOV, ins.dest));
-          }
-          break;
-        case CMP:
-        case TEST:
-          e = new ExprDesc(ins.op, in.lookup(ins.a), in.lookup(ins.b));
-          if (in.exprs.containsKey(e)) {
-            b.set(i, new Instruction(Op.DELETED));
-          } else {
-            Value rename = Value.dummy;
-            in.exprs.put(e, rename);
-          }
-          break;
-        case FAKE_DIV:
-          e = new ExprDesc(ins.op, in.lookup(ins.a), in.lookup(ins.b));
-          if (in.exprs.containsKey(e)) {
-            b.set(i, new Instruction(Op.DELETED));
-            if (ins.dest != Value.dummy) {
-              in.rename.put(ins.dest, ((DivRes) in.exprs.get(e)).q);
-              b.add(++i, new Instruction(ins.dest, Op.MOV, ((DivRes) in.exprs.get(e)).q));
-            }
-            if (ins.dest2() != Value.dummy) {
-              in.rename.put(ins.dest2(), ((DivRes) in.exprs.get(e)).r);
-              b.add(++i, new Instruction(ins.dest2(), Op.MOV, ((DivRes) in.exprs.get(e)).r));
-            }
-          } else {
-            Operand renameq, renamer;
-            if (out.exprs.containsKey(e)) {
-              DivRes temp = ((DivRes) out.exprs.get(e));
-              renameq = temp.q;
-              renamer = temp.r;
-            } else {
-              renameq = new Value();
-              renamer = new Value();
-            }
-            in.exprs.put(e, new DivRes(renameq, renamer));
-            if (ins.dest != Value.dummy) {
-              in.rename.put(ins.dest, renameq);
-              if (ins.dest2() != Value.dummy) {
-                in.rename.put(ins.dest2(), renamer);
-                b.add(++i, new Instruction(renameq, Op.MOV, ins.dest));
-                b.add(++i, new Instruction(renamer, Op.MOV, ins.dest2()));
-              } else {
-                b.set(i, new Instruction.DivInstruction(ins.dest, renamer, in.lookup(ins.a), in.lookup(ins.b)));
-                b.add(++i, new Instruction(renameq, Op.MOV, ins.dest));
+        if (notSelfAssign(ins)) {
+          switch (ins.op) {
+          case ADD:
+          case SUB:
+          case IMUL:
+          case XOR:
+          case SAL:
+          case SAR:
+          case NOT:
+          case NEG:
+          case INC:
+          case DEC:
+          case LOAD:
+            e= new ExprDesc(ins.op, in.lookup(ins.a), in.lookup(ins.b));
+            if (in.exprs.containsKey(e)) {
+              in.rename.put(ins.dest, in.exprs.get(e));
+              b.set(i, new Instruction(ins.dest, Op.MOV, in.exprs.get(e)));
+              if (out.exprs.containsKey(ins.dest)) {
+                // b.add(++i, new Instruction(out.exprs.get(ins.dest), Op.MOV,
+                // ins.dest));
               }
             } else {
-              if (ins.dest2() != Value.dummy) {
-                in.rename.put(ins.dest2(), renamer);
-                b.set(i, new Instruction.DivInstruction(renameq, ins.dest2(), in.lookup(ins.a), in.lookup(ins.b)));
-                b.add(++i, new Instruction(renamer, Op.MOV, ins.dest2()));
+              Operand rename;
+              if (out.exprs.containsKey(e)) {
+                rename = out.exprs.get(e);
+              } else if (out.rename.containsKey(ins.dest)) {
+                rename = out.rename.get(ins.dest);
               } else {
-                assert (false);
+                rename = new Value();
+              }
+              in.exprs.put(e, rename);
+              in.rename.put(ins.dest, rename);
+
+
+              b.add(++i, new Instruction(rename, Op.MOV, ins.dest));
+            }
+            fresh = true;
+            break;
+          case CMP:
+          case TEST:
+          case RANGE:
+            e = new ExprDesc(ins.op, in.lookup(ins.a), in.lookup(ins.b));
+            if (in.exprs.containsKey(e)) {
+              b.set(i, new Instruction(Op.DELETED));
+            } else {
+              Value rename = Value.dummy;
+              in.exprs.put(e, rename);
+
+            }
+            fresh = true;
+            break;
+          case FAKE_DIV:
+            e = new ExprDesc(ins.op, in.lookup(ins.a), in.lookup(ins.b));
+            if (in.exprs.containsKey(e)) {
+              b.set(i, new Instruction(Op.DELETED));
+              if (ins.dest != Value.dummy) {
+                in.rename.put(ins.dest, ((DivRes) in.exprs.get(e)).q);
+                b.add(++i, new Instruction(ins.dest, Op.MOV, ((DivRes) in.exprs.get(e)).q));
+              }
+              if (ins.dest2() != Value.dummy) {
+                in.rename.put(ins.dest2(), ((DivRes) in.exprs.get(e)).r);
+                b.add(++i, new Instruction(ins.dest2(), Op.MOV, ((DivRes) in.exprs.get(e)).r));
+              }
+              if (out.exprs.containsKey(ins.dest)) {
+                // b.add(++i, new Instruction(out.exprs.get(ins.dest), Op.MOV,
+                // ins.dest));
+              }
+              if (out.exprs.containsKey(ins.dest2())) {
+                // b.add(++i, new Instruction(out.exprs.get(ins.dest2()), Op.MOV,
+                // ins.dest2()));
+              }
+            } else {
+              Operand renameq, renamer;
+              if (out.exprs.containsKey(e)) {
+                DivRes temp = ((DivRes) out.exprs.get(e));
+                renameq = temp.q;
+                renamer = temp.r;
+              } else {
+                if (out.rename.containsKey(ins.dest)) {
+                  renameq = out.rename.get(ins.dest);
+                } else {
+                  renameq = new Value();
+                }
+                if (out.rename.containsKey(ins.dest2())) {
+                  renamer = out.rename.get(ins.dest2());
+                } else {
+                  renamer = new Value();
+                }
+              }
+
+
+              in.exprs.put(e, new DivRes(renameq, renamer));
+              if (ins.dest != Value.dummy) {
+                in.rename.put(ins.dest, renameq);
+                if (ins.dest2() != Value.dummy) {
+                  in.rename.put(ins.dest2(), renamer);
+                  b.add(++i, new Instruction(renameq, Op.MOV, ins.dest));
+                  b.add(++i, new Instruction(renamer, Op.MOV, ins.dest2()));
+                } else {
+                  b.set(i, new Instruction.DivInstruction(ins.dest, renamer, in.lookup(ins.a), in.lookup(ins.b)));
+                  b.add(++i, new Instruction(renameq, Op.MOV, ins.dest));
+                }
+              } else {
+                if (ins.dest2() != Value.dummy) {
+                  in.rename.put(ins.dest2(), renamer);
+                  b.set(i, new Instruction.DivInstruction(renameq, ins.dest2(), in.lookup(ins.a), in.lookup(ins.b)));
+                  b.add(++i, new Instruction(renamer, Op.MOV, ins.dest2()));
+                } else {
+                  assert (false);
+                }
               }
             }
+            fresh = true;
+            break;
           }
-          break;
+        }
+
+
+        if (!fresh) {
+          for (Operand dest : ins.getDestOperand()) {
+            in.invalidate(dest);
+          }
         }
       }
     }
+
   }
 
   @Override
