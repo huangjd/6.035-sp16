@@ -47,6 +47,8 @@ public class Register extends Operand {
   public static int callerSavedRegs = 0b0000111111000111;
   public static int funcCallReadRegs = 0b0000001111000110;
 
+  public static Register[] argsRegs = {rdi, rsi, rdx, rcx, r8, r9};
+
   private Register(int id, Type type, String name) {
     this.id = id;
     this.type = type;

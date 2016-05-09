@@ -31,89 +31,21 @@ public class Instruction {
     }
   };
 
-  static public class DivInstruction extends Instruction {
-    public Operand dest2;
-
-    public DivInstruction(DivInstruction ins) {
-      super(ins);
-      this.dest2 = ins.dest2;
-    }
-
-    @Override
-    protected DivInstruction clone() {
-      return new DivInstruction(this);
-    }
-
-    public DivInstruction(Operand dest1, Operand dest2, Operand a, Operand b) {
-      super(dest1, Op.FAKE_DIV, a, b);
-      assert (dest2 != null);
-      this.dest2 = dest2;
-    }
-
-    @Override
-    public String toString() {
-      return dest.toString() + ", " + dest2.toString() + " = x_div\t" + a.toString() + ",\t" + b.toString();
-    }
-
-    @Override
-    public Operand[] getDestOperand() {
-      return Util.filter(new Operand[]{dest, dest2}, dummyFilter);
-    }
-
-    @Override
-    public Operand dest2() {
-      return dest2;
-    }
-  }
-
-  static public class CallInstruction extends Instruction {
-    public ArrayList<Operand> args;
-    public boolean variadic;
-    public int variadicXMMArgsCount;
-
-    public CallInstruction(CallInstruction ins) {
-      super(ins);
-      this.args = (ArrayList<Operand>) ins.args.clone();
-      this.variadic = ins.variadic;
-      this.variadicXMMArgsCount = ins.variadicXMMArgsCount;
-    }
-
-    @Override
-    protected Instruction clone() {
-      return new CallInstruction(this);
-    }
-
-    public CallInstruction(Operand dest, Operand symbol, ArrayList<Operand> args, boolean variadic,
-        int variadicXMMArgsCount) {
-      super(dest, Op.FAKE_CALL, symbol);
-      this.args = args;
-      this.variadic = variadic;
-      this.variadicXMMArgsCount = variadicXMMArgsCount;
-      for (Operand op : args) {
-        assert (op != null);
-      }
-    }
-
-    @Override
-    public String toString() {
-      return super.toString() + "\t(" + Util.toCommaSeparatedString(args) + ")"
-          + (variadic ? "\tvariadic with " + String.valueOf(variadicXMMArgsCount) + " XMM args" : "");
-    }
-  }
-
-  static public class HardCode extends Instruction {
-    String content;
-
-    public HardCode(String s) {
-      super(Op.NOP);
-      content = s;
-    }
-
-    @Override
-    public String toString() {
-      return content;
-    };
-  }
+  /*
+   * static public class HardCode extends Instruction {
+   * String content;
+   *
+   * public HardCode(String s) {
+   * super(Op.NOP);
+   * content = s;
+   * }
+   *
+   * @Override
+   * public String toString() {
+   * return content;
+   * };
+   * }
+   */
 
   public Instruction(Operand dest, Op op, Operand a, Operand b) {
     assert (op.pseudoOp());
@@ -242,7 +174,7 @@ public class Instruction {
     if ((op == Op.SUB || op == Op.XOR) && a instanceof Register && a.equals(b)) {
       return new Register[]{};
     }
-    ArrayList<Register> regs = new ArrayList<Register>();
+    HashSet<Register> regs = new HashSet<Register>();
     int readsrc = op.isaReadSrc();
     if ((readsrc & 1) != 0 || a != null && a.isMem()) {
       for (Register reg : a.getInvolvedRegs()) {
@@ -365,7 +297,11 @@ public class Instruction {
 
     if (twoOperand) {
       if (op == Op.MOVSX) {
-        return op.toString() + '\t' + a.toString(Operand.Type.r8)+ ",\t" + b.toString(Operand.Type.r64);
+        if (a.isImm()) {
+          return new Instruction(Op.MOV, a, b).toString();
+        } else {
+          return op.toString() + '\t' + a.toString(Operand.Type.r8) + ",\t" + b.toString(Operand.Type.r64);
+        }
       }
       if (op.setcc()) {
         return op.toString() + '\t' + a.toString(Operand.Type.r8);
@@ -393,5 +329,102 @@ public class Instruction {
           '\t' + (a != null ? a.toString(opType) : "") +
           (b != null ? ", " + b.toString(opType) : "");
     }
+  }
+
+  static public class DivInstruction extends Instruction {
+    public Operand dest2;
+
+    public DivInstruction(DivInstruction ins) {
+      super(ins);
+      this.dest2 = ins.dest2;
+    }
+
+    @Override
+    protected DivInstruction clone() {
+      return new DivInstruction(this);
+    }
+
+    public DivInstruction(Operand dest1, Operand dest2, Operand a, Operand b) {
+      super(dest1, Op.FAKE_DIV, a, b);
+      assert (dest2 != null);
+      this.dest2 = dest2;
+    }
+
+    @Override
+    public String toString() {
+      return dest.toString() + ", " + dest2.toString() + " = x_div\t" + a.toString() + ",\t" + b.toString();
+    }
+
+    @Override
+    public Operand[] getDestOperand() {
+      return Util.filter(new Operand[]{dest, dest2}, dummyFilter);
+    }
+
+    @Override
+    public Operand dest2() {
+      return dest2;
+    }
+  }
+
+  static public class CallInstruction extends Instruction {
+    public ArrayList<Operand> args;
+    public boolean variadic;
+    public int variadicXMMArgsCount;
+
+    public CallInstruction(CallInstruction ins) {
+      super(ins);
+      this.args = (ArrayList<Operand>) ins.args.clone();
+      this.variadic = ins.variadic;
+      this.variadicXMMArgsCount = ins.variadicXMMArgsCount;
+    }
+
+    @Override
+    protected Instruction clone() {
+      return new CallInstruction(this);
+    }
+
+    public CallInstruction(Operand dest, Operand symbol, ArrayList<Operand> args, boolean variadic,
+        int variadicXMMArgsCount) {
+      super(dest, Op.FAKE_CALL, symbol);
+      this.args = args;
+      this.variadic = variadic;
+      this.variadicXMMArgsCount = variadicXMMArgsCount;
+      for (Operand op : args) {
+        assert (op != null);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return super.toString() + "\t(" + Util.toCommaSeparatedString(args) + ")"
+          + (variadic ? "\tvariadic with " + String.valueOf(variadicXMMArgsCount) + " XMM args" : "");
+    }
+
+    @Override
+    public Operand[] getReadOperand() {
+      return args.toArray(new Operand[]{});
+    }
+
+    @Override
+    public Register[] getRegRead() {
+      HashSet<Register> regs = new HashSet<>();
+      for (Operand arg : args) {
+        for (Register reg : arg.getInvolvedRegs()) {
+          regs.add(reg);
+        }
+      }
+      return regs.toArray(new Register[]{});
+    }
+  }
+
+  static ArrayList<Instruction> emitMov(Operand src, Operand dest) {
+    ArrayList<Instruction> arr = new ArrayList<>();
+    if (dest.isReg() || dest.isMem() && (src.isReg() || src.isImm32())) {
+      arr.add(new Instruction(Op.MOV, src, dest));
+    } else {
+      arr.add(new Instruction(Op.MOV, src, Register.rax));
+      arr.add(new Instruction(Op.MOV, Register.rax, dest));
+    }
+    return arr;
   }
 }

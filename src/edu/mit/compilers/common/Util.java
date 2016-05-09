@@ -31,6 +31,15 @@ public class Util {
     return res.toArray(temp);
   }
 
+  static public <T> boolean in(T[] array, T element) {
+    for (T i : array) {
+      if (i.equals(element)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static boolean implies(boolean condition, boolean consequence) {
     return (!condition || consequence);
   }

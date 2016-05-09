@@ -10,7 +10,7 @@ public class Linearizer extends BasicBlockTraverser {
 
   @Override
   protected void visit(BasicBlock b) {
-    huge.add(new Instruction.HardCode(b.label + ":"));
+    // huge.add(new Instruction.HardCode(b.label + ":"));
     for (Instruction i : b) {
       huge.add(i);
     }

@@ -121,6 +121,12 @@ public class BasicBlock extends ArrayList<Instruction> {
     }
   }
 
+  int replaceIns(int pos, ArrayList<Instruction> ins) {
+    remove(pos);
+    addAll(pos, ins);
+    return pos + ins.size();
+  }
+
   @Override
   public String toString() {
     BasicBlockPrinter p = new BasicBlockPrinter();
