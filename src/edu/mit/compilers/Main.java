@@ -26,13 +26,6 @@ class Main {
       }
     }
 
-    if (CLI.opts[CLI2.Optimization.CP.index]) {
-      // new CP().traverse(ir);
-      if (CLI.debug) {
-        System.out.println("----- CP -----");
-        System.out.print(ir.toString());
-      }
-    }
 
     new LowerPseudoOp1(CLI.opts[CLI2.Optimization.REGALLOC.index]).traverse(ir);
     if (CLI.debug) {
@@ -106,6 +99,14 @@ class Main {
     if (CLI.debug) {
       System.out.println("----- IR set up stack frame -----");
       System.out.print(ir.toString());
+    }
+
+    if (CLI.opts[CLI2.Optimization.DSE.index]) {
+      new LDSE().traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- DSE -----");
+        System.out.print(ir.toString());
+      }
     }
 
     if (CLI.opts[CLI2.Optimization.BRANCH.index]) {

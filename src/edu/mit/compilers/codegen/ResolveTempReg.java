@@ -127,7 +127,12 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
           ins.b = constreg;
         } else {
           constreg = ins.b;
+          if (constreg.equals(Register.rdx)) {
+            pre.add(new Instruction(Op.MOV, Register.rdx, new Memory(Register.rsp, -24, Type.r64)));
+            constreg = new Memory(Register.rsp, -24, Type.r64);
+          }
         }
+
         pre.add(new Instruction(Op.MOV, ins.a, Register.rax));
         pre.add(new Instruction(Op.CQO));
         pre.add(new Instruction(Op.IDIV, constreg));
