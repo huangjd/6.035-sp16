@@ -3,6 +3,8 @@ package edu.mit.compilers.codegen;
 import java.util.*;
 
 import edu.mit.compilers.codegen.CFG.CFGDesc;
+import edu.mit.compilers.codegen.Instruction.*;
+import edu.mit.compilers.common.Util;
 
 public class RegisterAllocator extends BasicBlockTraverser {
 
@@ -44,16 +46,13 @@ public class RegisterAllocator extends BasicBlockTraverser {
           heuristic.put((Value) ins.dest, 0);
         }
       }
-      if (ins.a instanceof Value) {
-        add((Value) ins.a, 1);
-        if (ins.a.equals(ins.dest)) {
-          add((Value) ins.a, 2);
-        }
-      }
-      if (ins.b instanceof Value) {
-        add((Value) ins.b, 1);
-        if (ins.b.equals(ins.dest)) {
-          add((Value) ins.b, 2);
+
+      for (Operand op : ins.getReadOperand()) {
+        if (op instanceof Value && op != Value.dummy) {
+          add((Value) op, 1);
+          if (op.equals(ins.dest)) {
+            add((Value) op, 3);
+          }
         }
       }
     }
@@ -63,6 +62,16 @@ public class RegisterAllocator extends BasicBlockTraverser {
   public void reset() {
     super.reset();
     heuristic = new HashMap<Value, Integer>();
+  }
+
+  static int or(int[] vals) {
+    int res = 0;
+    for (int val : vals) {
+      if (val >= 0) {
+        res |= 1 << val;
+      }
+    }
+    return res;
   }
 
   class Validator extends BasicBlockAnalyzeTransformPass {
@@ -108,114 +117,58 @@ public class RegisterAllocator extends BasicBlockTraverser {
     public State analyze(BasicBlock b, BasicBlockAnalyzeTransformPass.State in) {
       int inuse = ((State) in).inuse;
       for (int i = b.size() - 1; i >= 0; i--) {
-        int readset = 0, writeset = 0;
         Instruction ins = b.get(i);
-        switch (ins.op) {
-        case IDIV:
-          readset = Register.regsToInt(ins.a.getInvolvedRegs());
-          writeset = (1 << Register.rax.id) | (1 << Register.rdx.id);
-          break;
-        case CQO:
-          readset = (1 << Register.rax.id);
-          writeset = (1 << Register.rdx.id);
-          break;
-        case CALL:
-          // readset = Register.funcCallReadRegs;
-          // writeset = Register.callerSavedRegs;
-          break;
-        case STORE:
-          readset = Register.regsToInt(ins.dest.getInvolvedRegs()) |
-          Register.regsToInt(ins.a.getInvolvedRegs()) |
-          Register.regsToInt(ins.b.getInvolvedRegs());
-          break;
-        case SUB:
-        case XOR:
-          if (ins.a.equals(ins.b)) {
-            if (ins.twoOperand) {
-              writeset = Register.regsToInt(ins.a.getInvolvedRegs());
-            } else {
-              writeset = Register.regsToInt(ins.dest.getInvolvedRegs());
-            }
-            break;
-          }
-        default:
-          if (ins.twoOperand) {
-            for (Register reg : ins.getRegRead()) {
-              readset |= (1 << reg.id);
-            }
-            for (Register reg : ins.getRegWrite()) {
-              writeset |= (1 << reg.id);
-            }
-          } else {
-            if (ins.a != null) {
-              readset |= Register.regsToInt(ins.a.getInvolvedRegs());
-            }
-            if (ins.b != null) {
-              readset |= Register.regsToInt(ins.b.getInvolvedRegs());
-            }
-            writeset = Register.regsToInt(ins.dest.getInvolvedRegs());
-          }
-          break;
-        }
-        inuse &= ~(writeset);
-        inuse |= readset;
+        Operand[] opRead = ins.getReadOperand();
+        Operand[] opWrite = ins.getDestOperand();
+        Register[] regRead = ins.getRegRead();
+        Register[] regWrite = ins.getRegWrite();
+        int readset = or(Register.regsToIndices(regRead));
+        int writeset = or(Register.regsToIndices(regWrite));
 
-        if (!ins.twoOperand) {
-          switch (ins.op) {
-          case STORE:
-            if (ins.dest.equals(replacer) && (1 << replacer.id & inuse) != 0) {
+        if ((inuse & (1 << 16)) != 0) {
+          for (Register reg : regWrite) {
+            if (reg.equals(replacer)) {
               ok = false;
               break;
             }
-            break;
-          case SUB:
-          case XOR:
-            if (ins.a.equals(ins.b)) {
-              continue;
-            }
           }
-          if (ins.a != null && ins.a.equals(replacee) && (1 << replacer.id & inuse) != 0) {
-            ok = false;
-            break;
-          }
-          if (ins.b != null && ins.b.equals(replacee) && (1 << replacer.id & inuse) != 0) {
-            ok = false;
-            break;
-          }
-          if (ins.dest != null && ins.dest.equals(replacee) && (1 << replacer.id & inuse) != 0) {
-            ok = false;
-            break;
-          }
-        } else {
-          // switch (ins.op.isaWriteDest()) {
-          // case 0:
-          if (ins.a != null && ins.a.equals(replacee) && (1 << replacer.id & inuse) != 0) {
-            ok = false;
-            break;
-          }
-          if (ins.b != null && ins.b.equals(replacee) && (1 << replacer.id & inuse) != 0) {
-            ok = false;
-            break;
-          }
-          // break;
-          /*
-           * case 1:
-           * if (ins.b != null && ins.b.equals(replacee) && (1 << replacer.id &
-           * inuse) != 0) {
-           * ok = false;
-           * break;
-           * }
-           * break;
-           * case 2:
-           * if (ins.a != null && ins.a.equals(replacee) && (1 << replacer.id &
-           * inuse) != 0) {
-           * ok = false;
-           * break;
-           * }
-           * break;
-           * }
-           */
         }
+
+        inuse &= ~(writeset);
+
+        if (Util.in(opWrite, replacee)) {
+          inuse &= ~(1 << 16);
+        }
+
+        inuse |= readset;
+
+        for (Operand op : opRead) {
+          if (op.equals(replacee) && ((1 << replacer.id) & inuse) != 0) {
+            ok = false;
+            break;
+          }
+        }
+        for (Operand op : opWrite) {
+          if (op.equals(replacee) && ((1 << replacer.id) & (writeset | inuse)) != 0) {
+            ok = false;
+            break;
+          }
+        }
+
+
+
+        if (ins instanceof DivInstruction) {
+          if (replacer.equals(ins.dest) && replacee.equals(ins.dest2()) ||
+              replacee.equals(ins.dest) && replacer.equals(ins.dest2())) {
+            ok = false;
+            break;
+          }
+        }
+
+        if (Util.in(opRead, replacee)) {
+          inuse |= 1 << 16;
+        }
+
       }
       return new State(inuse);
     }
@@ -226,11 +179,22 @@ public class RegisterAllocator extends BasicBlockTraverser {
         if (ins.dest != null && ins.dest.equals(replacee)) {
           ins.dest = replacer;
         }
+        if (ins.dest2() != null && ins.dest2().equals(replacee)) {
+          ((DivInstruction) ins).dest2 = replacer;
+        }
         if (ins.a != null && ins.a.equals(replacee)) {
           ins.a = replacer;
         }
         if (ins.b != null && ins.b.equals(replacee)) {
           ins.b = replacer;
+        }
+        if (ins instanceof CallInstruction) {
+          CallInstruction call = (CallInstruction) ins;
+          for (int i = 0; i < call.args.size(); i++) {
+            if (call.args.get(i).equals(replacee)) {
+              call.args.set(i, replacer);
+            }
+          }
         }
       }
     }

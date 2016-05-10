@@ -176,40 +176,58 @@ public class Instruction {
       return new Register[]{};
     }
     HashSet<Register> regs = new HashSet<Register>();
-    int readsrc = op.isaReadSrc();
-    if ((readsrc & 1) != 0 || a != null && a.isMem()) {
-      for (Register reg : a.getInvolvedRegs()) {
-        regs.add(reg);
+    if (twoOperand) {
+      int readsrc = op.isaReadSrc();
+      if ((readsrc & 1) != 0 || a != null && a.isMem()) {
+        for (Register reg : a.getInvolvedRegs()) {
+          regs.add(reg);
+        }
+      }
+      if ((readsrc & 2) != 0 || b != null && b.isMem()) {
+        for (Register reg : b.getInvolvedRegs()) {
+          regs.add(reg);
+        }
+      }
+    } else {
+      for (Operand arg : getReadOperand()) {
+        for (Register reg : arg.getInvolvedRegs()) {
+          regs.add(reg);
+        }
       }
     }
-    if ((readsrc & 2) != 0 || b != null && b.isMem()) {
-      for (Register reg : b.getInvolvedRegs()) {
-        regs.add(reg);
-      }
-    }
-
     return regs.toArray(new Register[]{});
   }
 
   public Register[] getRegWrite() {
-    switch (op.isaWriteDest()) {
-    case 0:
-      return new Register[]{};
-    case 1:
-      if (a.isReg()) {
-        return a.getInvolvedRegs();
-      } else {
+    if (twoOperand) {
+      switch (op.isaWriteDest()) {
+      case 0:
         return new Register[]{};
+      case 1:
+        if (a.isReg()) {
+          return new Register[]{(Register) a};
+        } else {
+          return new Register[]{};
+        }
+      case 2:
+        if (b.isReg()) {
+          return new Register[]{(Register) b};
+        } else {
+          return new Register[]{};
+        }
+      case 3:
+      default:
+        throw new RuntimeException();
       }
-    case 2:
-      if (b.isReg()) {
-        return b.getInvolvedRegs();
-      } else {
-        return new Register[]{};
+    } else {
+      HashSet<Register> regs = new HashSet<>();
+
+      for (Operand arg : getDestOperand()) {
+        for (Register reg : arg.getInvolvedRegs()) {
+          regs.add(reg);
+        }
       }
-    case 3:
-    default:
-      throw new RuntimeException();
+      return regs.toArray(new Register[]{});
     }
   }
 

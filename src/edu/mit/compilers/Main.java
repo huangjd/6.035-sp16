@@ -48,6 +48,13 @@ class Main {
       }
     }
 
+    if (CLI.opts[CLI2.Optimization.REGALLOC.index]) {
+      new RegisterAllocator(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- Register allocation -----");
+        System.out.print(ir.toString());
+      }
+    }
     /*
      * if (CLI.opts[CLI2.Optimization.CSE.index]) {
      * new CSEPass().traverse(ir);

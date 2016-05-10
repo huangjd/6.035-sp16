@@ -19,6 +19,8 @@ $DIR/tests/huangjd-additional/test.sh;
 
 echo "Running dataflow optimzed";
 $DIR/tests/dataflow/test.sh;
+echo "Running dataflow hidden optimized"
+$DIR/tests/dataflow-hidden/test.sh;
 echo "Running optimizer optimzed";
 $DIR/tests/optimizer/test.sh;
 
