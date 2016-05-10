@@ -84,8 +84,7 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
     return new State(out);
   }
 
-  @Override
-  public void transform(BasicBlock b) {
+  public void transform2(BasicBlock b) {
     int out = ((State) get(b).out).val;
     for (int i = b.size() - 1; i >= 0; i--) {
       Instruction ins = b.get(i);
@@ -234,7 +233,8 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
     }
   }
 
-  public void transform2(BasicBlock b) {
+  @Override
+  public void transform(BasicBlock b) {
     int used = ((State) get(b).out).val;
 
     for (int i = b.size() - 1; i >= 0; i--) {

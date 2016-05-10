@@ -48,6 +48,7 @@ public class Instruction {
    */
 
   public Instruction(Operand dest, Op op, Operand a, Operand b) {
+    /*//if (op.special())
     assert (op.pseudoOp());
     assert (dest != null);
     if (!op.special()) {
@@ -78,7 +79,7 @@ public class Instruction {
     case 3:
     default:
       throw new RuntimeException();
-    }
+    }*/
 
     this.twoOperand = false;
     this.a = a;
@@ -96,7 +97,7 @@ public class Instruction {
   }
 
   public Instruction(Op op, Operand a, Operand b) {
-    if (op != Op.RANGE && !op.isAnnotation()) {
+    /*if (op != Op.RANGE && !op.isAnnotation()) {
       assert (op.isa());
       assert (a != Value.dummy && b != Value.dummy);
       int operandNum = op.isaOperandNum();
@@ -153,7 +154,7 @@ public class Instruction {
         assert (b.isReg() || b.isMem() || b instanceof Value);
         break;
       }
-    }
+    }*/
 
     this.a = a;
     this.b = b;
@@ -291,6 +292,10 @@ public class Instruction {
 
   @Override
   public String toString() {
+    if (op == Op.HACK_IMUL) {
+      return op.toString(b.getType()) + "\t" + dest.toString() + ",\t" + a.toString() + ",\t" + b.toString(b.getType());
+    }
+
     if (op == Op.COMMENT) {
       return "/* " + ((StringObject) a).content + " */";
     }

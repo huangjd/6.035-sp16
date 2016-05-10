@@ -12,10 +12,16 @@ public class Lower3Operand extends BasicBlockTraverser {
       Instruction ins = b.get(i);
       assert (ins.twoOperand || ins.op.stage() >= stage);
 
+      if (ins.op.ctrlx() != 0) {
+        continue;
+      }
+
       if (ins.op == Op.IDIV) {
         b.set(i, new Instruction(Op.IDIV, ins.a));
       } else if (!ins.twoOperand && ins.op.isa()) {
-        if (ins.a == null && ins.b == null) {
+        if (ins.op == Op.MOV && ins.a.equals(ins.dest)) {
+          b.set(i, new Instruction(Op.DELETED));
+        } else if (ins.a == null && ins.b == null) {
           if (ins.dest != Value.dummy) {
             b.set(i, new Instruction(ins.op, ins.dest));
           } else {
@@ -81,6 +87,47 @@ public class Lower3Operand extends BasicBlockTraverser {
           } else {
             b.set(i, new Instruction(Op.MOV, imm, Register.rax));
             b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
+          }
+        } else if (ins.op == Op.IMUL) {
+          if (ins.dest.isMem()) {
+            if (ins.a.isImm32()) {
+              b.set(i, new Instruction(ins.a, Op.HACK_IMUL, ins.b, Register.rax));
+            } else if (ins.b.isImm32()) {
+              b.set(i, new Instruction(ins.b, Op.HACK_IMUL, ins.a, Register.rax));
+            } else if (ins.a.isImm64N32()) {
+              b.set(i, new Instruction(Op.MOV, ins.a, Register.rax));
+              b.add(++i, new Instruction(Op.IMUL, ins.b, Register.rax));
+            } else {
+              b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
+              b.add(++i, new Instruction(Op.IMUL, ins.a, Register.rax));
+            }
+            b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
+          } else {
+            if (ins.dest.equals(ins.a)) {
+              if (ins.b.isImm64N32()) {
+                b.set(i, new Instruction(Op.MOV, ins.b, Register.rax));
+                b.add(++i, new Instruction(Op.IMUL, Register.rax, ins.dest));
+              } else {
+                b.set(i, new Instruction(Op.IMUL, ins.b, ins.dest));
+              }
+            } else if (ins.dest.equals(ins.b)) {
+              if (ins.a.isImm64N32()) {
+                b.set(i, new Instruction(Op.MOV, ins.a, Register.rax));
+                b.add(++i, new Instruction(Op.IMUL, Register.rax, ins.dest));
+              } else {
+                b.set(i, new Instruction(Op.IMUL, ins.a, ins.dest));
+              }
+            } else if (ins.a.isImm32()) {
+              b.set(i, new Instruction(ins.a, Op.HACK_IMUL, ins.b, ins.dest));
+            } else if (ins.b.isImm32()) {
+              b.set(i, new Instruction(ins.b, Op.HACK_IMUL, ins.a, ins.dest));
+            } else if (ins.a.isImm64N32()) {
+              b.set(i, new Instruction(Op.MOV, ins.a, ins.dest));
+              b.add(++i, new Instruction(Op.IMUL, ins.b, ins.dest));
+            } else {
+              b.set(i, new Instruction(Op.MOV, ins.b, ins.dest));
+              b.add(++i, new Instruction(Op.IMUL, ins.a, ins.dest));
+            }
           }
         } else if (ins.dest == Value.dummy) {
           if (ins.b.isReg() && !ins.a.isImm64N32() || ins.b.isMem() && (ins.a.isImm32() || ins.a.isReg())) {

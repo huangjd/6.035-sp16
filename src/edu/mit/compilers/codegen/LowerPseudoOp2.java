@@ -53,11 +53,20 @@ public class LowerPseudoOp2 extends BasicBlockTraverser {
           b.add(++i, new Instruction(Op.JAE, new Symbol("_exit.0")));
         }
         break;
+      case JMP:
+      case RET:
+      case NO_RETURN:
+        b.set(i, new Instruction(ins.op, ins.a));
+        break;
       default:
         if (ins.op.pseudoOp() && !ins.op.isa()) {
           b.set(i, new Instruction(Op.DELETED));
         }
         break;
+      }
+      if (ins.op.jcc()) {
+        b.set(i, new Instruction(ins.op, ins.a));
+        b.add(++i, new Instruction(Op.JMP, ins.b));
       }
     }
   }

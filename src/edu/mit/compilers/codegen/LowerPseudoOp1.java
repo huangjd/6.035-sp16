@@ -111,12 +111,14 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
               new Memory(Register.orbp, ((int) ((Imm64) ins.a).val - 4) * 8, Type.r64)));
           break;
         }
-      } else if (ins.op.jcc()) {
-        b.set(j, new Instruction(ins.op, ins.a));
-        b.add(++j, new Instruction(Op.JMP, ins.b));
-      } else if (ins.op == Op.JMP) {
-        b.set(j, new Instruction(Op.JMP, ins.a));
-      } else if (ins.op == Op.RET) {
+      } /*
+         * else if (ins.op.jcc()) {
+         * b.set(j, new Instruction(ins.op, ins.a));
+         * b.add(++j, new Instruction(Op.JMP, ins.b));
+         * } else if (ins.op == Op.JMP) {
+         * b.set(j, new Instruction(Op.JMP, ins.a));
+         * }
+         */else if (ins.op == Op.RET) {
         b.set(j, new Instruction(Op.RET));
       }
       i = j;

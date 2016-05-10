@@ -90,12 +90,28 @@ class Main {
       System.out.println("----- IR set up stack frame -----");
       System.out.print(ir.toString());
     }
+
+    if (CLI.opts[CLI2.Optimization.BRANCH.index]) {
+      new JumpOptimize().traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- Branch Optimize -----");
+        System.out.print(ir.toString());
+      }
+    }
+
     new LowerPseudoOp2(CLI.opts[CLI2.Optimization.PEEPHOLE.index]).traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR lower pseudo op II -----");
       System.out.print(ir.toString());
     }
-    // new Linearizer().traverse(ir);
+
+    if (CLI.opts[CLI2.Optimization.BRANCH.index]) {
+      new TrivialJumpRemove().traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- Branch Optimize -----");
+        System.out.print(ir.toString());
+      }
+    }
     return ir;
   }
 

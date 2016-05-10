@@ -78,6 +78,10 @@ public class StackFrameSetup extends BasicBlockAnalyzeTransformTraverser {
                     mem.multiplier)));
           }
         }
+        if (ins.op == Op.HACK_IMUL) {
+          b.get(i).dest = ins.dest;
+        }
+
       } else {
         if (ins.op == Op.PROLOGUE) {
           b.set(i, new Instruction(Op.PUSH, Register.rbp));
