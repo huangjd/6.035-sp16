@@ -165,7 +165,7 @@ public class Lower3Operand extends BasicBlockTraverser {
               b.add(++i, new Instruction(Op.MOV, Register.rax, ins.dest));
             }
           } else if (ins.dest.equals(ins.b)) {
-            if (ins.a.isReg() || ins.a.isImm64N32()) {
+            if (ins.a.isReg() || ins.a.isImm32()) {
               b.set(i, new Instruction(ins.op, ins.a, ins.b));
             } else {
               b.set(i, new Instruction(Op.MOV, ins.a, Register.rax));
