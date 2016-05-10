@@ -5,12 +5,18 @@ import edu.mit.compilers.codegen.Operand.Type;
 
 public class LowerPseudoOp1 extends BasicBlockTraverser {
 
+  boolean regalloc = false;
+
+  public LowerPseudoOp1(boolean regalloc) {
+    this.regalloc = regalloc;
+  }
+
   @Override
   protected void visit(BasicBlock b) {
     for (int i = 0; i < b.size(); i++) {
       Instruction ins = b.get(i);
       int j = i;
-      if (ins instanceof DivInstruction) {
+      /*if (ins instanceof DivInstruction) {
         Operand div = ins.dest;
         Operand mod = ((DivInstruction) ins).dest2;
 
@@ -85,42 +91,50 @@ public class LowerPseudoOp1 extends BasicBlockTraverser {
         }
         b.add(++j, new Instruction(Value.dummy, Op.END_XCALL));
 
-      } else if (ins.op == Op.GET_ARG) {
+      } else */ if (ins.op == Op.GET_ARG) {
         assert (ins.a instanceof Imm64);
-        switch ((int) ((Imm64) ins.a).val) {
-        case 0:
-          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rdi));
-          break;
-        case 1:
-          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rsi));
-          break;
-        case 2:
-          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rdx));
-          break;
-        case 3:
-          b.set(j, new Instruction(ins.dest, Op.MOV, Register.rcx));
-          break;
-        case 4:
-          b.set(j, new Instruction(ins.dest, Op.MOV, Register.r8));
-          break;
-        case 5:
-          b.set(j, new Instruction(ins.dest, Op.MOV, Register.r9));
-          break;
-        default:
-          b.set(j, new Instruction(ins.dest, Op.MOV,
-              new Memory(Register.orbp, ((int) ((Imm64) ins.a).val - 4) * 8, Type.r64)));
-          break;
+        if (regalloc) {
+          if (ins.a.toLong() >= 6) {
+            b.set(j, new Instruction(ins.dest, Op.MOV,
+                new Memory(Register.orbp, ((int) ((Imm64) ins.a).val - 4) * 8, Type.r64)));
+          }
+        } else {
+          switch (ins.a.toLong().intValue()) {
+          case 0:
+            b.set(j, new Instruction(ins.dest, Op.MOV, Register.rdi));
+            break;
+          case 1:
+            b.set(j, new Instruction(ins.dest, Op.MOV, Register.rsi));
+            break;
+          case 2:
+            b.set(j, new Instruction(ins.dest, Op.MOV, Register.rdx));
+            break;
+          case 3:
+            b.set(j, new Instruction(ins.dest, Op.MOV, Register.rcx));
+            break;
+          case 4:
+            b.set(j, new Instruction(ins.dest, Op.MOV, Register.r8));
+            break;
+          case 5:
+            b.set(j, new Instruction(ins.dest, Op.MOV, Register.r9));
+            break;
+          default:
+            b.set(j, new Instruction(ins.dest, Op.MOV,
+                new Memory(Register.orbp, ((int) ((Imm64) ins.a).val - 4) * 8, Type.r64)));
+            break;
+          }
         }
-      } /*
-         * else if (ins.op.jcc()) {
-         * b.set(j, new Instruction(ins.op, ins.a));
-         * b.add(++j, new Instruction(Op.JMP, ins.b));
-         * } else if (ins.op == Op.JMP) {
-         * b.set(j, new Instruction(Op.JMP, ins.a));
-         * }
-         */else if (ins.op == Op.RET) {
-        b.set(j, new Instruction(Op.RET));
       }
+      /*
+      else if (ins.op.jcc()) {
+        b.set(j, new Instruction(ins.op, ins.a));
+        b.add(++j, new Instruction(Op.JMP, ins.b));
+      } else if (ins.op == Op.JMP) {
+        b.set(j, new Instruction(Op.JMP, ins.a));
+      }
+       */else if (ins.op == Op.RET) {
+         b.set(j, new Instruction(Op.RET));
+       }
       i = j;
     }
   }

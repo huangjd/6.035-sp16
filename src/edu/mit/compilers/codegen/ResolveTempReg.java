@@ -84,8 +84,9 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
     return new State(out);
   }
 
-  public void transform2(BasicBlock b) {
-    int out = ((State) get(b).out).val;
+  @Override
+  public void transform(BasicBlock b) {
+    int out = ((State) get(b).in).val;
     for (int i = b.size() - 1; i >= 0; i--) {
       Instruction ins = b.get(i);
       assert (ins.twoOperand || ins.op.stage() >= stage);
@@ -124,6 +125,8 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
             pre.add(new Instruction(Op.MOV, ins.b, constreg));
           }
           ins.b = constreg;
+        } else {
+          constreg = ins.b;
         }
         pre.add(new Instruction(Op.MOV, ins.a, Register.rax));
         pre.add(new Instruction(Op.CQO));
@@ -169,17 +172,17 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
           post.add(new Instruction(Op.MOV, saver, savee));
           regsToSave &= ~(1 << k);
         }
-        assert(offset + 8 * (count) == stackNeeded);
+        assert (8 * (count) == stackNeeded);
         if (ins.dest != Value.dummy) {
           post.add(new Instruction(Op.MOV, Register.rax, ins.dest));
         }
 
         for (int j = 6; j < args.size(); j++) {
           if (args.get(j).getType() == Type.r64) {
-            pre.addAll(Instruction.emitMov(args.get(j), new Memory(Register.rsp, -(j - 6) * 8, Type.r64)));
+            pre.addAll(Instruction.emitMov(args.get(j), new Memory(Register.rsp, (j - 6) * 8, Type.r64)));
           } else {
             pre.add(new Instruction(Op.MOVSX, args.get(j), Register.rax));
-            pre.add(new Instruction(Op.MOV, Register.rax, new Memory(Register.rsp, -(j - 6) * 8, Type.r64)));
+            pre.add(new Instruction(Op.MOV, Register.rax, new Memory(Register.rsp, (j - 6) * 8, Type.r64)));
           }
         }
         ArrayList<Operand> reshuffle = new ArrayList<>();
@@ -216,9 +219,6 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
         pre.addAll(post);
         b.replaceIns(i, pre);
         break;
-      case GET_ARG:
-
-        break;
       }
       out |= readset;
 
@@ -233,8 +233,7 @@ public class ResolveTempReg extends BasicBlockAnalyzeTransformPass {
     }
   }
 
-  @Override
-  public void transform(BasicBlock b) {
+  public void transform2(BasicBlock b) {
     int used = ((State) get(b).out).val;
 
     for (int i = b.size() - 1; i >= 0; i--) {

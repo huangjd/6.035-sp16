@@ -60,6 +60,10 @@ public abstract class Operand {
   public String toString(Type type) {
     return toString();
   }
+
+  public Long toLong() {
+    return null;
+  }
 }
 
 class JumpTarget extends Operand {
@@ -116,6 +120,11 @@ class Imm64 extends Operand {
   public boolean equals(Object arg0) {
     return arg0 instanceof Imm64 && ((Imm64) arg0).val == val;
   }
+
+  @Override
+  public Long toLong() {
+    return val;
+  }
 }
 
 class Imm8 extends Operand {
@@ -147,6 +156,11 @@ class Imm8 extends Operand {
   @Override
   public boolean equals(Object arg0) {
     return arg0 instanceof Imm8 && ((Imm8) arg0).val == val;
+  }
+
+  @Override
+  public Long toLong() {
+    return (long) val;
   }
 }
 

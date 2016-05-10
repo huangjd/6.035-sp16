@@ -34,10 +34,18 @@ class Main {
       }
     }
 
-    new LowerPseudoOp1().traverse(ir);
+    new LowerPseudoOp1(CLI.opts[CLI2.Optimization.REGALLOC.index]).traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR lower pseudo op I -----");
       System.out.print(ir.toString());
+    }
+
+    if (CLI.opts[CLI2.Optimization.REGALLOC.index]) {
+      new RegisterPreAllocator().traverse(ir);
+      if (CLI.debug) {
+        System.out.println("----- Register preallocation -----");
+        System.out.print(ir.toString());
+      }
     }
 
     /*
@@ -69,22 +77,24 @@ class Main {
      * }
      * }
      */
-
     new BasicStackAllocator().traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR allocate stack vars -----");
       System.out.print(ir.toString());
     }
+
     new Lower3Operand().traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR lower 3 operands -----");
       System.out.print(ir.toString());
     }
+
     new ResolveTempReg(CLI.opts[CLI2.Optimization.OMITRBP.index]).reverseTraverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR resolve temp regs -----");
       System.out.print(ir.toString());
     }
+
     new StackFrameSetup(CLI.opts[CLI2.Optimization.OMITRBP.index]).traverse(ir);
     if (CLI.debug) {
       System.out.println("----- IR set up stack frame -----");

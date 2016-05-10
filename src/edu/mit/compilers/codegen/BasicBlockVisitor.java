@@ -69,7 +69,7 @@ extends HashMap<BasicBlock, BasicBlockVisitor<T>.Data> {
           }
         } else {
           for (BasicBlock predecessor : b.comefroms) {
-            queue.add(new QueueNode(predecessor, newIn));
+            queue.add(new QueueNode(predecessor, newOut));
           }
         }
       }
