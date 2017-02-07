@@ -1,4 +1,1 @@
-Java Skeleton Code for 6.035
-
-# tests
-Public tests
+6.035 Spring 2016 - Decaf compiler
